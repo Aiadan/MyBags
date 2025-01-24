@@ -26,17 +26,32 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     * [solved] renenble new categorizer and make it so that we will store new items and mark them so for a bit long. Right clicking on the title should remove items from new group.
 * [solved] make categories foldable
 * [solved] folded group when have too many items should not leak onto other columns. They are folded in the end.
-* [!!!] ~[solved] [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
 * [solved] crafting an item, ie. hearty simple stew, when it wasnt in the equipment before wont show it in the bags, reopenning is required.
 * [solved] could make search actually filter items (done with changing the bag size, but to be tested whether that is better / sufficient)
-    * [*todo*] could make search actually filter items (without changing bag size)
 * [solved] when creating a category clicking Enter should create a category, not close the prompt. comment: that was harder than expected...
+* [solved] scale should not force user to be at 0.75
+    * now scale is being overwritten and automatically calculated always and can go below 0.75
+* could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
+* [!] it seems that saving a positition of group in the bag on other char can cause discepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what. 
+* [!] make the window be smaller than restricted 75% of the original addon
+* [!] persist information that a given category is currently folded
+
 * rewrite categorization
     * custom category for whatever reason disapears.
     * there is a bug in custom categories making the assignments to custom categories list grow and grow.
     * the rename I am quite certian does not work as it should ie. will loose some preassigned items
+    * TECH - categoriesColumnAssignment should be a part of a Mixin as it contains container specific setup. 
+    * does it mean folded should also be a per container setting?
+    * The main error I made was to add new functionalities when I was supposed to in reality just extend custom categorizer. If I'd do that, then there wouldn't be issues.
+* [!!!] position of the window should be changed to top if we are to be filtering.
+* [!!!] ~[solved] [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
+    *  (see todo-1) this should not be handled here. Currently i am thinking that it is a responsibility of the drawing layer to make sure everything fits. This should just assign columns as is defined by user, without splitting as at this stage we have no knowledge about size in pixels of the column or the screen size. So to resolve it we'd need to do split logic of the same thing in the drawin layer anyways.
+* [!!] the query doesnt work sometimes on bag open. This is because some data is not loaded at that moment in time. We have to find a workaround ie. use async function, though I'm not sure how this would have to work. Maybe we need to separate recategorization of item buttons from displaying them. I think this would also help with other situations where we'd like to not refresh the assignments.
+* [!!] Removing of equipment set does not update the categorizer.
 
-* persist information that a given category is currently folded
+* resizing via scrolling should work on all empty spaces
+* in custom categories GUI it should state "Query" above the query text input.
+* tech - rename folded to collapsed
 * show many items are inside folded group
 * add option to force new line on a given category
 * unassigned group should always be visible
@@ -71,7 +86,6 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ~the draggin workaround with empty button might not work properly when the bag is full, reagent is bought or pulled from bank / merchant. We could verify the type of the item dragged and then if it is reagent then try by default to put in the reagent. Or maybe there is some other, more generic function which would just put the item into the bags?~ Actually it seems game somehow handles this correctly when trying to assign from merchant, but still not from bank. Either I figure this out, leave as it [as you can still right click], or create a check if reagent then assign another empty button from reagent frame.
 * Add ability to hide category so it won't show, nor the items in it
 * add ability to disable category so it will stop catching items, but will exist. Items assigned by category will no longer be caught by this category. If they are moved to another category from unassigned, they will get removed from this category.
-* Removing of equipment set set does not update the categorizer
 * Handle use case when opening bag with something inside, so that preferably, if possible, the place where the item bag was a second ago, did not disapear and remain either empty, or replaced with an empty itembutton. That makes me actually wonderr -what happens if I move an item onto an empty item button? Will it assing a new category properly? I think it should as at this point in time that item button should not be yet recategorized... Anyway - here is a sample output of opening a container with items inside it:
 ```
     itemOnClick
@@ -102,6 +116,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 ```
 * when opening bags sometimes not all info about items is available. Create a callback to readjust after data is loaded. Might cause a weird flicker so would need to verify how acceptable that is.
 * create some nice default categories based on what I end up with as my query categories in TWW
+* I have decided to not include button for authenticator that is available in normal bags. Consider adding it via adding to layout update self:LayoutAddSlots(); as well as support for this button. Although I have no idea how I could test it
 * [REJECTED - in order to keep simplicity and default behaviour ] consider making the number of columns configurable
 
 ### unknown what they were about, meaning lost in the ether
