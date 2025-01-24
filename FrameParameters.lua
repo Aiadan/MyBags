@@ -35,7 +35,7 @@ local function GetContainerScaleSingleBag(bag)
     end
 
     -- Choose the most restrictive scaling factor
-    containerScale = math.min(scaleByHeight, scaleByWidth)
+    containerScale = math.min(scaleByHeight, scaleByWidth, 1)
 
     return containerScale;
 end
