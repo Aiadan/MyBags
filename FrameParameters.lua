@@ -56,7 +56,7 @@ function FrameParametersOverride:OverrideScale(frame, ignoreFile)
         --     scale = frame:GetScale();     -- ignore the change
         -- end
         scale = GetContainerScaleSingleBag(self)
-        print("SetScale", scale);
+        AddonNS.printDebug("SetScale", scale);
         return oldSetScale(self, scale);
     end
 end
@@ -67,7 +67,7 @@ function FrameParametersOverride:OverrideHeight(frame, ignoreFile)
     local oldSetHeight = frame.SetHeight
     function frame:SetHeight(height)
         local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
-        print("SetHeight", stack);
+        AddonNS.printDebug("SetHeight", stack);
         -- if string.find(stack, ignoreFile) then
         --     height = frame:GetHeight() -- ignore the change
         -- end
@@ -80,7 +80,7 @@ function FrameParametersOverride:OverrideWidth(frame, ignoreFile)
     local oldSetWidth = frame.SetWidth
     function frame:SetWidth(width)
         local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
-        print("SetWidth", stack);
+        AddonNS.printDebug("SetWidth", stack);
         -- if string.find(stack, ignoreFile) then
         --     width = frame:GetWidth() -- ignore the change
         -- end
@@ -93,8 +93,8 @@ function FrameParametersOverride:OverridePoint(frame, ignoreFile)
    -- local oldSetPoint = frame.SetPoint
     function frame:SetPoint(...)
         local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
-        print("SetPoint", stack);
-        print("SetPoint", debugstack());
+        AddonNS.printDebug("SetPoint", stack);
+        AddonNS.printDebug("SetPoint", debugstack());
         -- if string.find(stack, ignoreFile) then
         --     width = frame:GetWidth() -- ignore the change
         -- end
@@ -107,8 +107,8 @@ function FrameParametersOverride:OverrideSize(frame, ignoreFile)
     local oldSetSize = frame.SetSize
     function frame:SetSize(width, height)
         local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
-        print("SetSize", stack);
-        print("SetSize", debugstack());
+        AddonNS.printDebug("SetSize", stack);
+        AddonNS.printDebug("SetSize", debugstack());
         self:SetWidth(width)
         self:SetHeight(height)
     end
