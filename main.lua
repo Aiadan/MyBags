@@ -29,8 +29,8 @@ function AddonNS.Events:BAG_UPDATE(event, bagID)
     end
 end
 
-function AddonNS.Events:CATEGORIZER_CATEGORIES_UPDATED(event) -- todo: i just copied and modified the function from above - but it needs comments or fixing following the comments I just added there above
-    AddonNS.printDebug("CATEGORIZER_CATEGORIES_UPDATED")
+local function categoriesUpdated(event) -- todo: i just copied and modified the function from above - but it needs comments or fixing following the comments I just added there above
+    AddonNS.printDebug("CATEGORIZER_CATEGORIES_UPDATED received and locked: ", lockedUpdates)
     if not lockedUpdates then
         RunNextFrame(function()
             AddonNS.printDebug("CATEGORIZER_CATEGORIES_UPDATED FIRED")
@@ -48,7 +48,7 @@ function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
     container:UpdateItemLayout();
 end
 
-AddonNS.Events:RegisterCustomEvent("CATEGORIZER_CATEGORIES_UPDATED");
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, categoriesUpdated);
 AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE");
 
 AddonNS.Events:RegisterEvent("BAG_UPDATE");

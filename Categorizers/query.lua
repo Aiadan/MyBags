@@ -396,8 +396,9 @@ function QueryCategorizer:Categorize(itemID, itemButton)
 
     if (not itemName) then
         local item = Item:CreateFromItemID(itemID)
+        AddonNS.printDebug("SCHEDULING refresh when item loads", itemInfo.itemName);
         item:ContinueOnItemLoad(function()
-            AddonNS.printDebug("SCHEDULING refresh when item loads", itemInfo.itemName);
+            AddonNS.printDebug("Item loaded");
             AddonNS.Events:TriggerCustomEvent(CATEGORIZER_CATEGORIES_UPDATED, QueryCategorizer);
         end)
     end
