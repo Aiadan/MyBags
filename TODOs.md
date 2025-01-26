@@ -35,6 +35,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     * I have resolved it in a way that I have moved it for now into a separate file. It should still be a part of the mixin.
 * [solved][!!] the query doesnt work sometimes on bag open. This is because some data is not loaded at that moment in time. We have to find a workaround ie. use async function, though I'm not sure how this would have to work. Maybe we need to separate recategorization of item buttons from displaying them. I think this would also help with other situations where we'd like to not refresh the assignments.
     * I just added update when categorizer updates. Works like a dream. (hopefully ;))
+* [solved] Folding now casues update the frame size
 * [!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what. 
 
 * rewrite categorization
@@ -66,7 +67,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     dynamic:
     * assigned items
     ```
-
+* make update container layout based on events, not so that changing state causes that. Folded already does that.
 * could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
 * resizing via scrolling should work on all empty spaces
 * in custom categories GUI it should state "Query" above the query text input.

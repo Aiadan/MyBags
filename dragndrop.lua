@@ -110,7 +110,6 @@ function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)
         local refreshView = false
         if button == "LeftButton" then
             toggleFolding(self.ItemCategory);
-            refreshView = true;
         elseif button == "RightButton" then
             if (self.OnRightClick) then
                 refreshView = self:OnRightClick(container);
