@@ -29,12 +29,11 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * [solved] crafting an item, ie. hearty simple stew, when it wasnt in the equipment before wont show it in the bags, reopenning is required.
 * [solved] could make search actually filter items (done with changing the bag size, but to be tested whether that is better / sufficient)
 * [solved] when creating a category clicking Enter should create a category, not close the prompt. comment: that was harder than expected...
-* [solved] scale should not force user to be at 0.75
+* [solved][!] make the window be smaller than restricted 75% of the original addon
     * now scale is being overwritten and automatically calculated always and can go below 0.75
-* could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
-* [!] it seems that saving a positition of group in the bag on other char can cause discepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what. 
-* [!] make the window be smaller than restricted 75% of the original addon
-* [!] persist information that a given category is currently folded
+* [solved][!] persist information that a given category is currently folded
+    * I have resolved it in a way that I have moved it for now into a separate file. It should still be a part of the mixin.
+* [!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what. 
 
 * rewrite categorization
     * custom category for whatever reason disapears.
@@ -45,10 +44,28 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     * The main error I made was to add new functionalities when I was supposed to in reality just extend custom categorizer. If I'd do that, then there wouldn't be issues.
 * [!!!] position of the window should be changed to top if we are to be filtering.
 * [!!!] ~[solved] [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
-    *  (see todo-1) this should not be handled here. Currently i am thinking that it is a responsibility of the drawing layer to make sure everything fits. This should just assign columns as is defined by user, without splitting as at this stage we have no knowledge about size in pixels of the column or the screen size. So to resolve it we'd need to do split logic of the same thing in the drawin layer anyways.
+    *  (see todo-1) this should not be handled here. Currently i am thinking th9at it is a responsibility of the drawing layer to make sure everything fits. This should just assign columns as is defined by user, without splitting as at this stage we have no knowledge about size in pixels of the column or the screen size. So to resolve it we'd need to do split logic of the same thing in the drawin layer anyways.
 * [!!] the query doesnt work sometimes on bag open. This is because some data is not loaded at that moment in time. We have to find a workaround ie. use async function, though I'm not sure how this would have to work. Maybe we need to separate recategorization of item buttons from displaying them. I think this would also help with other situations where we'd like to not refresh the assignments.
-* [!!] Removing of equipment set does not update the categorizer.
+* [!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
 
+* [PLAN] Plan for proper groupping:
+    ```
+    local sampleCategory = {
+        name="",
+        categorizer = "", -- whewther categorizer was used to generate this one. These are special kind of categories and should be treated separtely. Most operations such as renames should not be available to these.
+        protected = "",
+        query = ""
+    }
+
+    Per container setttings:
+    stored:
+    * collapsed
+    * column assignment
+    dynamic:
+    * assigned items
+    ```
+
+* could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
 * resizing via scrolling should work on all empty spaces
 * in custom categories GUI it should state "Query" above the query text input.
 * tech - rename folded to collapsed
@@ -62,7 +79,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * add colours to categories
 * highlight selected category in the bags and make it temporary visible via always visible or similar functionality.
 * [not an issue] how to change a bag to a different bag? edit: the same as way any other bag. Click the arrow at the bottom, then you can replace them
-
+* make folded a part of a mixin for container, not separate entity
 * [in progress] clearup the todos as I think there are duplicates and also these have become unordered due to that
 * if ther was a way to properly higlight that an item would have been categorized differentlty by QL if it was unassigned directly by id to a category, we maybe would not need protected categories(Although I think it always should be an option, and those categories would also work before assignment by id). In the menu there should be an option to "always show given category".
     * categorize by QL if protected

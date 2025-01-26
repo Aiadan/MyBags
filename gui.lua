@@ -1,4 +1,5 @@
 local addonName, AddonNS = ...
+local isFolded = AddonNS.Folded.isFolded;
 local ITEM_SPACING = AddonNS.Const.ITEM_SPACING;
 
 local GS = LibStub("MyLibrary_GUI");
@@ -179,7 +180,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         -- fs.fs:SetWidth(categoryGUIInfo.width)
         f:SetHeight(categoryGUIInfo.height)
         f.OnRightClick = categoryGUIInfo.category.OnRightClick;
-        f:SetText((categoryGUIInfo.category.name or "Unassigned")..(categoryGUIInfo.category.folded and " |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a" or "")); -- .
+        f:SetText((categoryGUIInfo.category.name or "Unassigned")..(isFolded(categoryGUIInfo.category) and " |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a" or "")); -- .
         f:Show()
         -- f:Raise();
     end

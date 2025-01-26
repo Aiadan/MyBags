@@ -1,4 +1,5 @@
 local addonName, AddonNS = ...
+local isFolded = AddonNS.Folded.isFolded;
 
 local ITEM_SPACING = AddonNS.Const.ITEM_SPACING;
 AddonNS.itemButtonPlaceholder = {}
@@ -117,7 +118,7 @@ local function newIterator(container, index)
 
             for i, categoryObj in ipairs(categoriesObj) do
                 local categoryItemsCount = #categoryObj.items;
-                local isCategoryFolded = categoryObj.category.folded;
+                local isCategoryFolded = isFolded(categoryObj.category);
                 local categoryRequiresNewLine = isCategoryFolded or categoryObj.category.separateLine;
                 local requiredNewLine =
                     categoryRequiresNewLine
@@ -140,7 +141,7 @@ local function newIterator(container, index)
                         (
                             isCategoryFolded
                             or (not nextCategoryExists)
-                            or categoriesObj[i + 1].category.folded
+                            or isFolded(categoriesObj[i + 1].category)
                             or categoriesObj[i + 1].category.separateLine
                             or #currentRow + categoryItemsCount + #categoriesObj[i + 1].items > AddonNS.Const.ITEMS_PER_ROW
                         )

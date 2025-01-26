@@ -34,7 +34,9 @@ end
 AddonNS.Events:OnDbLoaded(AddonNS.init)
 
 function AddonNS.printDebug(...)
-    -- print(...)
+--@debug@
+    print(...)
+--@end-debug@
 end
 
 AddonNS.Const ={
@@ -52,11 +54,6 @@ AddonNS.Const.MAX_ITEMS_PER_COLUMN = AddonNS.Const.MAX_ROWS * AddonNS.Const.ITEM
 
 
 --@debug@
-function GLOBAL_MyBagsExtra()
-    return { arrangedItems, positionsInBags,
-        categoryPositions }
-end
-
 function GLOBAL_MyBagsEnableDebug()
     AddonNS.printDebug = function(...) print(...) end
 end

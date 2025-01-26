@@ -3,7 +3,7 @@ local addonName, AddonNS = ...
 local MAX_ITEMS_PER_COLUMN = AddonNS.Const.MAX_ITEMS_PER_COLUMN
 local NUM_COLUMNS = AddonNS.Const.NUM_COLUMNS;
 local UNASSIGNE_CATEGORY_DB_STORAGE_NAME=AddonNS.Const.UNASSIGNE_CATEGORY_DB_STORAGE_NAME
-
+local isFolded = AddonNS.Folded.isFolded;
 local categoriesColumnAssignments = {};
 for i=1,  AddonNS.Const.NUM_COLUMNS do
     table.insert(categoriesColumnAssignments, {});
@@ -42,7 +42,7 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     -- Helper function to add category to a column, splitting if necessary
     local function addCategoryToColumn(category, items, column)
         local firstColumn = nil;
-        items = not category.folded and items or {AddonNS.itemButtonPlaceholder}; -- clear items to be placed if the category is to be folded so they would not leak onto other columns
+        items = not isFolded(category) and items or {AddonNS.itemButtonPlaceholder}; -- clear items to be placed if the category is to be folded so they would not leak onto other columns
         AddonNS.ItemsOrder:Sort(items);
         if (#items == 0) then
             firstColumn = column;

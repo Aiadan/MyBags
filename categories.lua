@@ -3,10 +3,6 @@ local addonName, AddonNS = ...
 
 AddonNS.Categories = {};
 
-
-
-
-
 local UNASSIGNED_CATEGORY = { name = nil, protected = false };
 local categorizers = OrderedMap:new()
 local categories = {};
@@ -49,8 +45,6 @@ function AddonNS.Categories:GetCategoryByName(categoryName)
     if categoryName == AddonNS.Const.UNASSIGNE_CATEGORY_DB_STORAGE_NAME then return UNASSIGNED_CATEGORY end;
     return categories[categoryName]
 end
-
-
 
 local function categoryRenamed(eventName, fromCategoryName, toCategoryName)
     AddonNS.printDebug(eventName)

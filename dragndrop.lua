@@ -1,6 +1,7 @@
 local addonName, AddonNS = ...
 
 AddonNS.DragAndDrop = {};
+local toggleFolding = AddonNS.Folded.toggleFolding;
 
 
 local rows = 0;
@@ -108,7 +109,7 @@ function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)
     else
         local refreshView = false
         if button == "LeftButton" then
-            self.ItemCategory.folded = not self.ItemCategory.folded
+            toggleFolding(self.ItemCategory);
             refreshView = true;
         elseif button == "RightButton" then
             if (self.OnRightClick) then
