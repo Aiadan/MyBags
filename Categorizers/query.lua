@@ -2,7 +2,7 @@ local addonName, AddonNS = ...
 AddonNS = AddonNS or {}
 local QueryCategorizer = {};
 AddonNS.QueryCategories = {}
-local CATEGORIZER_CATEGORIES_UPDATED = AddonNS.Events.CATEGORIZER_CATEGORIES_UPDATED;
+local CATEGORIZER_CATEGORIES_UPDATED = AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED;
 
 
 local ValueType = {
@@ -394,9 +394,10 @@ function QueryCategorizer:Categorize(itemID, itemButton)
     local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent =
         C_Item.GetItemInfo(itemInfo.hyperlink)
 
-    if(not itemName) then
+    if (not itemName) then
         local item = Item:CreateFromItemID(itemID)
         item:ContinueOnItemLoad(function()
+            AddonNS.printDebug("SCHEDULING refresh when item loads", itemInfo.itemName);
             AddonNS.Events:TriggerCustomEvent(CATEGORIZER_CATEGORIES_UPDATED, QueryCategorizer);
         end)
     end
@@ -537,5 +538,5 @@ local function categoryDeleted(eventName, categoryName)
     AddonNS.printDebug("query:", eventName)
     AddonNS.QueryCategories:DeleteQuery(categoryName)
 end
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.CUSTOM_CATEGORY_RENAMED, categoryRenamed)
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, categoryRenamed)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)

@@ -58,5 +58,5 @@ local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCate
     AddonNS.printDebug("NewItemCategorizer item moved", bagID, slotIndex)
     resetItem(bagID, slotIndex)
 end
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.ITEM_MOVED, itemMoved)
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.ITEM_CATEGORY_CHANGED, itemCategoryChanged)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, itemCategoryChanged)

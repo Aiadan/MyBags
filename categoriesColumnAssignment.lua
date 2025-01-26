@@ -217,7 +217,7 @@ local function categoryDeleted(eventName, categoryName)
 end
 
 
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.CATEGORY_MOVED, categoryMoved)
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.CATEGORY_MOVED_TO_COLUMN, categoryMovedToColumn)
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.CUSTOM_CATEGORY_RENAMED, categoryRenamed)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED, categoryMoved)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, categoryMovedToColumn)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, categoryRenamed)

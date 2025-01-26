@@ -107,4 +107,4 @@ local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCate
                          targetItemButton)
     ItemsMoved(targetedItemID, pickedItemID, pickedItemCategory ~= targetItemCategory)
 end
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.ITEM_MOVED, itemMoved)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)

@@ -79,10 +79,10 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
         end
         local info = C_Container.GetContainerItemInfo(self:GetBagID(), self:GetID());
         local targetedItemID = info and info.itemID or nil;
-        AddonNS.Events:TriggerCustomEvent(AddonNS.Events.ITEM_MOVED, itemID, targetedItemID,
+        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemID, targetedItemID,
             pickedItemCategory, targetItemCategory, pickedItemButton, self);
     elseif pickedItemCategory then -- category frame
-        AddonNS.Events:TriggerCustomEvent(AddonNS.Events.CATEGORY_MOVED,
+        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED,
             pickedItemCategory, targetItemCategory);
     end
     RunNextFrame(function()
@@ -145,14 +145,14 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
             ContainerFrameItemButton_OnClick(AddonNS.emptyItemButton, "LeftButton")
         end
         AddonNS.CustomCategories:AssignToCategory(self.ItemCategory, itemID)
-        AddonNS.Events:TriggerCustomEvent(AddonNS.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)
+        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)
         ClearCursor();
         RunNextFrame(function()
             container:UpdateItemLayout();
         end);
     elseif pickedItemCategory and (pickedItemCategory ~= targetItemCategory) then -- category frame
-        AddonNS.printDebug("sending CATEGORY_MOVED", AddonNS.Events.CATEGORY_MOVED)
-        AddonNS.Events:TriggerCustomEvent(AddonNS.Events.CATEGORY_MOVED,
+        AddonNS.printDebug("sending CATEGORY_MOVED", AddonNS.Const.Events.CATEGORY_MOVED)
+        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED,
             pickedItemCategory, targetItemCategory);
         RunNextFrame(function() -- todo: maybe these actually should be triggered at the point where action is processed... hmm
             container:OnTokenWatchChanged();
@@ -214,14 +214,14 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self)
             end
             local targetCategory = AddonNS.Categories:GetLastCategoryInColumn(columnNo);
             AddonNS.CustomCategories:AssignToCategory(targetCategory, itemID)
-            AddonNS.Events:TriggerCustomEvent(AddonNS.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)
+            AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)
             ClearCursor();
             RunNextFrame(function()
                 container:UpdateItemLayout();
             end);
         elseif pickedItemCategory then -- category frame
-            AddonNS.printDebug("sending CATEGORY_MOVED_TO_COLUMN", AddonNS.Events.CATEGORY_MOVED_TO_COLUMN)
-            AddonNS.Events:TriggerCustomEvent(AddonNS.Events.CATEGORY_MOVED_TO_COLUMN,
+            AddonNS.printDebug("sending CATEGORY_MOVED_TO_COLUMN", AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN)
+            AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN,
                 pickedItemCategory, columnNo);
             -- ClearCursor();
             RunNextFrame(function()
@@ -246,7 +246,7 @@ function AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetItemCategoryNa
         local infoType, itemID, itemLink = GetCursorInfo()
         if infoType == "item" and itemID == pickedItemID then
             local cat = AddonNS.Categories:GetCategoryByName(targetItemCategoryName);
-            AddonNS.Events:TriggerCustomEvent(AddonNS.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)
+            AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)
             if cat then
                 AddonNS.CustomCategories:AssignToCategory(cat, itemID)
             else

@@ -82,7 +82,7 @@ function AddonNS.CustomCategories:RenameCategory(fromCategoryName, toCategoryNam
         for i, v in ipairs(customCategories[toCategoryName]) do
             categorizedItems[v] = toCategoryName;
         end
-        AddonNS.Events:TriggerCustomEvent(AddonNS.Events.CUSTOM_CATEGORY_RENAMED, fromCategoryName, toCategoryName);
+        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, fromCategoryName, toCategoryName);
     end
 end
 
@@ -91,7 +91,7 @@ function AddonNS.CustomCategories:DeleteCategory(categoryName)
         categorizedItems[v] = nil;
     end
     customCategories[categoryName] = nil;
-    AddonNS.Events:TriggerCustomEvent(AddonNS.Events.CUSTOM_CATEGORY_DELETED, categoryName);
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryName);
 end
 
 
@@ -132,4 +132,4 @@ function AddonNS.CustomCategories:AssignToCategoryByName(newCategoryName, itemID
     end
 end
 
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.ITEM_MOVED, itemMoved)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)

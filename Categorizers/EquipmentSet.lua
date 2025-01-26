@@ -66,6 +66,6 @@ local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCate
         end
     end
 end
-AddonNS.Events:RegisterCustomEvent(AddonNS.Events.ITEM_MOVED, itemMoved)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)
 refreshEquipmentSets();
 AddonNS.Events:RegisterEvent("BAG_UPDATE_DELAYED", refreshEquipmentSets);
