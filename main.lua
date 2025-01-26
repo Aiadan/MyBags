@@ -11,7 +11,7 @@ local lockedUpdates = false;
 function AddonNS.Events:BAG_UPDATE(event, bagID)
     AddonNS.printDebug("BAG_UPDATE", bagID)
 
-    if (container.MyBags.updateItemLayoutCalledAtLeastOnce) then
+    if (container.MyBags.updateItemLayoutCalledAtLeastOnce) then -- todo: reading this after a while - what the hell is this :D once i know i have to add here proper comments lol
         local newFreeBagSlots = CalculateTotalNumberOfFreeBagSlots()
 
         AddonNS.printDebug("FREE BAGS", newFreeBagSlots, freeBagSlots)
@@ -23,10 +23,24 @@ function AddonNS.Events:BAG_UPDATE(event, bagID)
         end
         lockedUpdates = true;
         RunNextFrame(function()
-            lockedUpdates = false;
+            lockedUpdates = false; -- and also why is this not in the run next frame above? eh
         end);
         freeBagSlots = newFreeBagSlots;
     end
+end
+
+function AddonNS.Events:CATEGORIZER_CATEGORIES_UPDATED(event) -- todo: i just copied and modified the function from above - but it needs comments or fixing following the comments I just added there above
+    AddonNS.printDebug("CATEGORIZER_CATEGORIES_UPDATED")
+    if not lockedUpdates then
+        RunNextFrame(function()
+            AddonNS.printDebug("CATEGORIZER_CATEGORIES_UPDATED FIRED")
+            container:UpdateItemLayout();
+        end);
+    end
+    lockedUpdates = true;
+    RunNextFrame(function()
+        lockedUpdates = false;
+    end);
 end
 
 function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
@@ -34,6 +48,7 @@ function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
     container:UpdateItemLayout();
 end
 
+AddonNS.Events:RegisterCustomEvent("CATEGORIZER_CATEGORIES_UPDATED");
 AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE");
 
 AddonNS.Events:RegisterEvent("BAG_UPDATE");

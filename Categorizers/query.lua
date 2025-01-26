@@ -2,7 +2,7 @@ local addonName, AddonNS = ...
 AddonNS = AddonNS or {}
 local QueryCategorizer = {};
 AddonNS.QueryCategories = {}
-
+local CATEGORIZER_CATEGORIES_UPDATED = AddonNS.Events.CATEGORIZER_CATEGORIES_UPDATED;
 
 
 local ValueType = {
@@ -393,6 +393,13 @@ function QueryCategorizer:Categorize(itemID, itemButton)
 
     local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent =
         C_Item.GetItemInfo(itemInfo.hyperlink)
+
+    if(not itemName) then
+        local item = Item:CreateFromItemID(itemID)
+        item:ContinueOnItemLoad(function()
+            AddonNS.Events:TriggerCustomEvent(CATEGORIZER_CATEGORIES_UPDATED, QueryCategorizer);
+        end)
+    end
     local questInfo = C_Container
         .GetContainerItemQuestInfo(itemButton:GetBagID(), itemButton:GetID());
     local isQuestItem = questInfo
@@ -422,6 +429,7 @@ function QueryCategorizer:Categorize(itemID, itemButton)
 
         ilvl = itemLevel
         ,
+
         itemMinLevel = itemMinLevel
         ,
         itemType = classID

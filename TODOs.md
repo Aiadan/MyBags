@@ -33,6 +33,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     * now scale is being overwritten and automatically calculated always and can go below 0.75
 * [solved][!] persist information that a given category is currently folded
     * I have resolved it in a way that I have moved it for now into a separate file. It should still be a part of the mixin.
+* [solved][!!] the query doesnt work sometimes on bag open. This is because some data is not loaded at that moment in time. We have to find a workaround ie. use async function, though I'm not sure how this would have to work. Maybe we need to separate recategorization of item buttons from displaying them. I think this would also help with other situations where we'd like to not refresh the assignments.
+    * I just added update when categorizer updates. Works like a dream. (hopefully ;))
 * [!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what. 
 
 * rewrite categorization
@@ -45,7 +47,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * [!!!] position of the window should be changed to top if we are to be filtering.
 * [!!!] ~[solved] [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
     *  (see todo-1) this should not be handled here. Currently i am thinking th9at it is a responsibility of the drawing layer to make sure everything fits. This should just assign columns as is defined by user, without splitting as at this stage we have no knowledge about size in pixels of the column or the screen size. So to resolve it we'd need to do split logic of the same thing in the drawin layer anyways.
-* [!!] the query doesnt work sometimes on bag open. This is because some data is not loaded at that moment in time. We have to find a workaround ie. use async function, though I'm not sure how this would have to work. Maybe we need to separate recategorization of item buttons from displaying them. I think this would also help with other situations where we'd like to not refresh the assignments.
+
 * [!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
 
 * [PLAN] Plan for proper groupping:
