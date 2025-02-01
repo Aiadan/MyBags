@@ -39,7 +39,6 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         AddonNS.ItemsOrder:Sort(items);
         if (#items == 0) then
             table.insert(categoryAssignments[column], { category = category, items = items });
-            -- categoryAssignments[column], { category = category, items = itemsBatch })
         else
             columnSum[column] = columnSum[column] + #items
             table.insert(categoryAssignments[column], { category = category, items = items });

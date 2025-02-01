@@ -10,12 +10,15 @@ Some of the things are marked with [!] indicating their cruciallity before expos
         name="",
         categorizer = "", -- whewther categorizer was used to generate this one. These are special kind of categories and should be treated separtely. Most operations such as renames should not be available to these.
         ~protected = "",~ -- this has to be removed, ie. when categorizer is set, it is protected as it is protected and automatically calculated. Can be hidden under "isProtected()"
-        query = ""
+        query = "",
+        isAlwaysVisible()
+        is
     }
 
-    Stored per category:
+    Stored per custom category:
     * name
     * query
+    * alwaysVisible
     * items
         * itemid
         * maxilvl ?
