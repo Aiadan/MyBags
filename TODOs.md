@@ -2,6 +2,36 @@
 There is a number of things that I can consdier for implementation. Some are more impacting user, some are rather technical - hence the split.
 
 Some of the things are marked with [!] indicating their cruciallity before exposing this addon to wider audience.
+
+## Design changes needed
+* [PLAN] Plan for proper groupping:
+    ```
+    local sampleCategory = {
+        name="",
+        categorizer = "", -- whewther categorizer was used to generate this one. These are special kind of categories and should be treated separtely. Most operations such as renames should not be available to these.
+        ~protected = "",~ -- this has to be removed, ie. when categorizer is set, it is protected as it is protected and automatically calculated. Can be hidden under "isProtected()"
+        query = ""
+    }
+
+    Stored per category:
+    * name
+    * query
+    * items
+        * itemid
+        * maxilvl ?
+
+
+    Per container setttings:
+    stored:
+    * collapsed
+    * column assignment
+    dynamic:
+    * assigned items
+
+    Generic:
+    * items order
+    ```
+
 ## User focused
 * [solved] click on an item in the bag requires you to drop it onto a different item in anothe rcategory. You cannot click another category which is miasligned with the ability to drag onto another category. Same when draggoning on the categories in edit mode.
 * [solved] when too many items are to expand the height to far, the addon should try to automatically split given categories into separate columns.
@@ -36,37 +66,23 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * [solved][!!] the query doesnt work sometimes on bag open. This is because some data is not loaded at that moment in time. We have to find a workaround ie. use async function, though I'm not sure how this would have to work. Maybe we need to separate recategorization of item buttons from displaying them. I think this would also help with other situations where we'd like to not refresh the assignments.
     * I just added update when categorizer updates. Works like a dream. (hopefully ;))
 * [solved] Folding now casues update the frame size
-* [!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what. 
-
-* rewrite categorization
+* ~[rejected][!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what.~
+    * i dont think that is true. This if I recall correctly was due to the fact that addon was enabled in dev and non dev mode at the same time, hence the data from both started to overlap. There could be a prevention mechanism in place if at all.
+* rewrite categorization [or rather where each piece is stored for a given category]
     * custom category for whatever reason disapears.
     * there is a bug in custom categories making the assignments to custom categories list grow and grow.
     * the rename I am quite certian does not work as it should ie. will loose some preassigned items
     * TECH - categoriesColumnAssignment should be a part of a Mixin as it contains container specific setup. 
     * does it mean folded should also be a per container setting?
     * The main error I made was to add new functionalities when I was supposed to in reality just extend custom categorizer. If I'd do that, then there wouldn't be issues.
+* remove the movement of categories to separate columns when overflow happens - it did not work, and now with proper scaling it is no longer an issue - the bag will just get smaller. Remove other tickets.
 * [!!!] position of the window should be changed to top if we are to be filtering.
 * [!!!] ~[solved] [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
     *  (see todo-1) this should not be handled here. Currently i am thinking th9at it is a responsibility of the drawing layer to make sure everything fits. This should just assign columns as is defined by user, without splitting as at this stage we have no knowledge about size in pixels of the column or the screen size. So to resolve it we'd need to do split logic of the same thing in the drawin layer anyways.
 
 * [!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
 
-* [PLAN] Plan for proper groupping:
-    ```
-    local sampleCategory = {
-        name="",
-        categorizer = "", -- whewther categorizer was used to generate this one. These are special kind of categories and should be treated separtely. Most operations such as renames should not be available to these.
-        protected = "",
-        query = ""
-    }
 
-    Per container setttings:
-    stored:
-    * collapsed
-    * column assignment
-    dynamic:
-    * assigned items
-    ```
 * make update container layout based on events, not so that changing state causes that. Folded already does that.
 * could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
 * resizing via scrolling should work on all empty spaces

@@ -1,11 +1,10 @@
 local addonName, AddonNS = ...
 
-local MAX_ITEMS_PER_COLUMN = AddonNS.Const.MAX_ITEMS_PER_COLUMN
 local NUM_COLUMNS = AddonNS.Const.NUM_COLUMNS;
-local UNASSIGNE_CATEGORY_DB_STORAGE_NAME=AddonNS.Const.UNASSIGNE_CATEGORY_DB_STORAGE_NAME
+local UNASSIGNE_CATEGORY_DB_STORAGE_NAME = AddonNS.Const.UNASSIGNE_CATEGORY_DB_STORAGE_NAME
 local isFolded = AddonNS.Folded.isFolded;
 local categoriesColumnAssignments = {};
-for i=1,  AddonNS.Const.NUM_COLUMNS do
+for i = 1, AddonNS.Const.NUM_COLUMNS do
     table.insert(categoriesColumnAssignments, {});
 end
 
@@ -15,6 +14,7 @@ function AddonNS.Categories:OnInitialize()
     AddonNS.db.categoriesColumnAssignments = AddonNS.db.categoriesColumnAssignments or categoriesColumnAssignments;
     categoriesColumnAssignments = AddonNS.db.categoriesColumnAssignments;
 end
+
 AddonNS.Events:OnInitialize(AddonNS.Categories.OnInitialize)
 
 local function getBagSize(arrangedItems)
@@ -30,6 +30,7 @@ end
 function AddonNS.Categories:GetLastCategoryInColumn(columnNo)
     return categoryAssignments[columnNo][#categoryAssignments[columnNo]].category;
 end
+
 function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     for i, constantCategory in ipairs(AddonNS.Categories:GetConstantCategories()) do
         if not arrangedItems[constantCategory] then
@@ -41,45 +42,15 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     local knownCategories = {};
     -- Helper function to add category to a column, splitting if necessary
     local function addCategoryToColumn(category, items, column)
-        local firstColumn = nil;
-        items = not isFolded(category) and items or {AddonNS.itemButtonPlaceholder}; -- clear items to be placed if the category is to be folded so they would not leak onto other columns
+        items = not isFolded(category) and items or { AddonNS.itemButtonPlaceholder }; -- clear items to be placed if the category is to be folded so they would not leak onto other columns
         AddonNS.ItemsOrder:Sort(items);
         if (#items == 0) then
-            firstColumn = column;
             table.insert(categoryAssignments[column], { category = category, items = items });
             -- categoryAssignments[column], { category = category, items = itemsBatch })
         else
-            while #items > 0 do
-                local itemsBatch = {}
-                if columnSum[column] + #items > MAX_ITEMS_PER_COLUMN then -- todo-1
-                    local itemsToFit = MAX_ITEMS_PER_COLUMN - columnSum[column]
-                    itemsBatch = items;
-                    items = {};
-                    local o = 1;
-                    for i = itemsToFit + 1, #itemsBatch do
-                        items[o] = itemsBatch[i];
-                        itemsBatch[i] = nil;
-                        o = o + 1;
-                    end
-                else
-                    itemsBatch = items;
-                    items = {};
-                end
-                columnSum[column] = columnSum[column] + #itemsBatch
-                if (#itemsBatch > 0) then
-                    table.insert(categoryAssignments[column], { category = category, items = itemsBatch });
-                    firstColumn = firstColumn or column
-                end
-
-                if #items > 0 then
-                    column = column + 1
-                    if column > NUM_COLUMNS then
-                        column = 1 -- Reset to the first column if we exceed the number of columns
-                    end
-                end
-            end
+            columnSum[column] = columnSum[column] + #items
+            table.insert(categoryAssignments[column], { category = category, items = items });
         end
-        return firstColumn
     end
 
 
@@ -118,13 +89,11 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         while (columnSum[column] > predictedItemsPerColumn and column <= NUM_COLUMNS) do
             column = column + 1;
         end
-        local firstAssignedColumn = addCategoryToColumn(category, arrangedItems[category], column);
-        table.insert(categoriesColumnAssignments[firstAssignedColumn], getCategorySafeNameForStorage(category));
+        addCategoryToColumn(category, arrangedItems[category], column);
+        table.insert(categoriesColumnAssignments[column], getCategorySafeNameForStorage(category));
     end
     return categoryAssignments;
 end
-
-
 
 local function categoryMoved(eventName, pickedCategory, targetCategory)
     AddonNS.printDebug(eventName)
