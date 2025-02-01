@@ -17,13 +17,6 @@ end
 
 AddonNS.Events:OnInitialize(AddonNS.Categories.OnInitialize)
 
-local function getBagSize(arrangedItems)
-    local sum = 0;
-    for _, items in pairs(arrangedItems) do
-        sum = sum + #items;
-    end
-    return sum;
-end
 local function getCategorySafeNameForStorage(category)
     return category.name or UNASSIGNE_CATEGORY_DB_STORAGE_NAME;
 end
@@ -53,8 +46,6 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         end
     end
 
-
-
     for colIndex, categoriesNames in ipairs(categoriesColumnAssignments) do
         for _, categoryName in ipairs(categoriesNames) do
             local tempCat = AddonNS.Categories:GetCategoryByName(categoryName)
@@ -65,10 +56,7 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         end
     end
 
-
-    local predictedItemsPerColumn = getBagSize(arrangedItems) / NUM_COLUMNS * 1.1; -- 1.1 modifier to make sure initial columns get more items
-    local column = 1;
-
+    -- Assign remaining categories to the bottom of first column
     local categoriesToAssign = {};
     for category, items in pairs(arrangedItems) do
         if not knownCategories[category] then
@@ -84,11 +72,8 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
             return a.name < b.name -- Regular comparison for non-nil values
         end
     end)
-
+    local column = 1;
     for index, category in ipairs(categoriesToAssign) do
-        while (columnSum[column] > predictedItemsPerColumn and column <= NUM_COLUMNS) do
-            column = column + 1;
-        end
         addCategoryToColumn(category, arrangedItems[category], column);
         table.insert(categoriesColumnAssignments[column], getCategorySafeNameForStorage(category));
     end
