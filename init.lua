@@ -30,19 +30,16 @@ AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED = "MYBAGS_CATEGORIZER_CATEGO
 AddonNS.Const.Events.FOLDED_CHANGED = "MYBAGS_FOLDED_CHANGED"
 -- DB
 --@debug@
-local dbName = "dev_MyBagsDB"
 local globalDbName = "dev_MyBagsDBGlobal"
 --@end-debug@
 --[===[@non-debug@
-local dbName = "MyBagsDB"
 local globalDbName = "MyBagsDBGlobal";
 --@end-non-debug@]===]
 
 AddonNS.db = {};
 AddonNS.init = function()
-    _G[globalDbName] = _G[globalDbName] or _G[dbName] or {};
+    _G[globalDbName] = _G[globalDbName] or {};
     AddonNS.db = _G[globalDbName];
-    -- _G[dbName] = nil; -- we shouldnt nil it. If one has accessed the game on their alt it might overwrite their main config. It is better to leave it as is, so in worst case scenario one could still copy it manually from their main character.
 end
 
 AddonNS.Events:OnDbLoaded(AddonNS.init)
