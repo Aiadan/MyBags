@@ -2,6 +2,7 @@ local addonName, AddonNS = ...
 
 -- events
 local EquipmentSet = {};
+local CATEGORIZER_CATEGORIES_UPDATED = AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED;
 
 AddonNS.Categories:RegisterCategorizer("EquipmentSet", EquipmentSet, true);
 
@@ -46,6 +47,11 @@ local function refreshEquipmentSets()
     end
 end
 
+local function refreshEquipmentSetsAndRefresh()
+    refreshEquipmentSets()
+    AddonNS.Events:TriggerCustomEvent(CATEGORIZER_CATEGORIES_UPDATED, EquipmentSet);
+end
+
 local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCategory, targetItemCategory,
                          pickedItemButton,
                          targetItemButton)
@@ -69,3 +75,4 @@ end
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)
 refreshEquipmentSets();
 AddonNS.Events:RegisterEvent("BAG_UPDATE_DELAYED", refreshEquipmentSets);
+AddonNS.Events:RegisterEvent("EQUIPMENT_SETS_CHANGED", refreshEquipmentSetsAndRefresh);

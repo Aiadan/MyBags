@@ -70,6 +70,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     * I just added update when categorizer updates. Works like a dream. (hopefully ;))
 * [solved] Folding now casues update the frame size
 * ~[rejected][!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what.~
+* [solved][!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
     * i dont think that is true. This if I recall correctly was due to the fact that addon was enabled in dev and non dev mode at the same time, hence the data from both started to overlap. There could be a prevention mechanism in place if at all.
 * rewrite categorization [or rather where each piece is stored for a given category]
     * custom category for whatever reason disapears.
@@ -83,7 +84,6 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * [!!!] ~[solved] [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
     *  (see todo-1) this should not be handled here. Currently i am thinking th9at it is a responsibility of the drawing layer to make sure everything fits. This should just assign columns as is defined by user, without splitting as at this stage we have no knowledge about size in pixels of the column or the screen size. So to resolve it we'd need to do split logic of the same thing in the drawin layer anyways.
 
-* [!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
 
 
 * make update container layout based on events, not so that changing state causes that. Folded already does that.
