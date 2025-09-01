@@ -247,7 +247,7 @@ function AddonNS.createGUI()
         button2 = "Cancel",
         hasEditBox = true,
         OnAccept = function(self)
-            local categoryName = self.editBox:GetText()
+            local categoryName = self:GetEditBox():GetText()
             if categoryName and categoryName ~= "" then
                 AddonNS.CustomCategories:NewCategory(categoryName);
                 list:RefreshList();
@@ -274,7 +274,7 @@ function AddonNS.createGUI()
         button2 = "Cancel",
         hasEditBox = true,
         OnAccept = function(self, data)
-            local categoryName = self.editBox:GetText()
+            local categoryName = self:GetEditBox():GetText()
             if categoryName and categoryName ~= "" then
                 AddonNS.printDebug("Category renamed: ", data, categoryName)
                 AddonNS.CustomCategories:RenameCategory(data, categoryName);
@@ -288,7 +288,7 @@ function AddonNS.createGUI()
             end
         end,
         OnShow = function(self, data)
-            self.editBox:SetText(getSelectedCategoryName())
+            self:GetEditBox():SetText(getSelectedCategoryName())
         end,
         enterClicksFirstButton = true,
         timeout = 0,
@@ -329,7 +329,7 @@ function AddonNS.createGUI()
             end
         end,
         OnShow = function(self, data)
-            self.editBox:SetText(getSelectedCategoryName())
+            self:GetEditBox():SetText(getSelectedCategoryName())
         end,
         enterClicksFirstButton = true,
         timeout = 0,

@@ -401,7 +401,7 @@ function QueryCategorizer:Categorize(itemID, itemButton)
             AddonNS.printDebug("Item loaded");
             AddonNS.Events:TriggerCustomEvent(CATEGORIZER_CATEGORIES_UPDATED, QueryCategorizer);
         end)
-        return 
+        return
     end
     local questInfo = C_Container
         .GetContainerItemQuestInfo(itemButton:GetBagID(), itemButton:GetID());
@@ -422,7 +422,7 @@ function QueryCategorizer:Categorize(itemID, itemButton)
         isBound = itemInfo.isBound,
         itemName = itemInfo.itemName,
         ilvl = itemLevel,
-        itemMinLevel = itemMinLevel ,
+        itemMinLevel = itemMinLevel,
         itemType = classID,
         itemSubType = subclassID,
         inventoryType = inventoryType,
