@@ -1,3 +1,4 @@
+@ -0,0 +1,544 @@
 local addonName, AddonNS = ...
 AddonNS = AddonNS or {}
 local QueryCategorizer = {};
@@ -401,6 +402,7 @@ function QueryCategorizer:Categorize(itemID, itemButton)
             AddonNS.printDebug("Item loaded");
             AddonNS.Events:TriggerCustomEvent(CATEGORIZER_CATEGORIES_UPDATED, QueryCategorizer);
         end)
+        return 
     end
     local questInfo = C_Container
         .GetContainerItemQuestInfo(itemButton:GetBagID(), itemButton:GetID());
