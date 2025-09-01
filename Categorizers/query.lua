@@ -415,46 +415,25 @@ function QueryCategorizer:Categorize(itemID, itemButton)
 
     local allItemInfo = {
         stackCount = itemInfo.stackCount,
-
-
         quality = itemInfo.quality,
-
         isReadable = itemInfo.isReadable,
-
         hasLoot = itemInfo.hasLoot,
-
         hasNoValue = itemInfo.hasNoValue,
-
         itemID = itemInfo.itemID,
-
         isBound = itemInfo.isBound,
-
         itemName = itemInfo.itemName,
-
-        ilvl = itemLevel
-        ,
-
-        itemMinLevel = itemMinLevel
-        ,
-        itemType = classID
-        ,
-        itemSubType = subclassID
-        ,
-        inventoryType = inventoryType
-        ,
-        sellPrice = sellPrice
-        ,
-        isCraftingReagent = isCraftingReagent
-        ,
-        isQuestItem = isQuestItem
-        ,
-        questID = questID
-        ,
-        isQuestItemActive = isActive
-        ,
+        ilvl = itemLevel,
+        itemMinLevel = itemMinLevel ,
+        itemType = classID,
+        itemSubType = subclassID,
+        inventoryType = inventoryType,
+        sellPrice = sellPrice,
+        isCraftingReagent = isCraftingReagent,
+        isQuestItem = isQuestItem,
+        questID = questID,
+        isQuestItemActive = isActive,
         bindType = bindType,
         expansionID = expansionID,
-
     }
 
     for categoryName, func in pairs(queryFunctions) do
