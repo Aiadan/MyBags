@@ -1,4 +1,3 @@
-@ -0,0 +1,544 @@
 local addonName, AddonNS = ...
 AddonNS = AddonNS or {}
 local QueryCategorizer = {};
