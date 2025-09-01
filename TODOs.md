@@ -31,6 +31,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     dynamic:
     * assigned items
 
+
     Generic:
     * items order
     ```
@@ -70,8 +71,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     * I just added update when categorizer updates. Works like a dream. (hopefully ;))
 * [solved] Folding now casues update the frame size
 * ~[rejected][!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what.~
-* [solved][!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
     * i dont think that is true. This if I recall correctly was due to the fact that addon was enabled in dev and non dev mode at the same time, hence the data from both started to overlap. There could be a prevention mechanism in place if at all.
+* [solved][!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
 * rewrite categorization [or rather where each piece is stored for a given category]
     * custom category for whatever reason disapears.
     * there is a bug in custom categories making the assignments to custom categories list grow and grow.
