@@ -37,42 +37,42 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     ```
 
 ## User focused
-* [solved] click on an item in the bag requires you to drop it onto a different item in anothe rcategory. You cannot click another category which is miasligned with the ability to drag onto another category. Same when draggoning on the categories in edit mode.
-* [solved] when too many items are to expand the height to far, the addon should try to automatically split given categories into separate columns.
-* [solved] when dropping an item on bg [outside of category] it should it be assigned to latest category in the column.
-* [solved] when buying from merchant you should be able to assign to a category automatically when dropping on an item 
-* [solved] when buying from merchant you should be able to drop an item onto a free space to buy the item as long as there is an itembutton available
-* [solved] When moving items from vendor or bank by mouse consider allowing for direct association with a category. Currently only dropping on items would work, but in the case of bank this results in items switching places. The only way is to right click which is doable, but then association with category has to be done afterwards resulting in two clicks which would be good to avoid.
-* [solved] when moving an item from bank you should be able to assing to a category
-* [solved] make it possible to always display certain categories, even if it is empty currently. I mean "Junk" - I want to see it all the time for cleanup purposes.
-* [solved] as we have to use placedholder anyway rewrite the Junk how it is handled, and just add a category with one placeholder item to the arrange list and remove all the other code as it is not needed lol.... :|
-* [solved] using placeholder items which allowed for better categories placements from the begining
-* [solved] initial categories assignment is done by alphabetic order. Useful when we will allow for import of custom categories or external categorizers
-* [solved] the gear categorizer could add icon of the category at the begining? :)
-* [solved] BAG_UPDATE is a bit broken - it was supposed not to refresh the view when items are removed, but fixing one bug caused it to no longer work this way in all cicrumstances. To verify what can we do about it, when actually this event is sent and what info we can get from it.
-* [solved] create a categorizer that is based on a query language. Categorizer would create protected categories (is this actually needed?).
-* [solved] the config should be stored in account wide config so maybe at some point we could introduce profiles.
-* [solved]blizzMove addon breakes it seems with this addon - to check whether it breaks only with this addon, or with it disabled as well as it currently does not work properly with other things like talents window so it might just be broken blizzmove.
-    * [solved] the way I solved is that it now works with BlizzMove. However I noticed that by default this addon does not remember scaling of the bags, so I might need to implement such functionality in the end. I'd rather make a merge request, unfortunately the licensing is "all rights reseved" in blizz move addon.
-* [solved] add option to mark category as always visible
+* ✅ click on an item in the bag requires you to drop it onto a different item in anothe rcategory. You cannot click another category which is miasligned with the ability to drag onto another category. Same when draggoning on the categories in edit mode.
+* ✅ when too many items are to expand the height to far, the addon should try to automatically split given categories into separate columns.
+* ✅ when dropping an item on bg [outside of category] it should it be assigned to latest category in the column.
+* ✅ when buying from merchant you should be able to assign to a category automatically when dropping on an item 
+* ✅ when buying from merchant you should be able to drop an item onto a free space to buy the item as long as there is an itembutton available
+* ✅ When moving items from vendor or bank by mouse consider allowing for direct association with a category. Currently only dropping on items would work, but in the case of bank this results in items switching places. The only way is to right click which is doable, but then association with category has to be done afterwards resulting in two clicks which would be good to avoid.
+* ✅ when moving an item from bank you should be able to assing to a category
+* ✅ make it possible to always display certain categories, even if it is empty currently. I mean "Junk" - I want to see it all the time for cleanup purposes.
+* ✅ as we have to use placedholder anyway rewrite the Junk how it is handled, and just add a category with one placeholder item to the arrange list and remove all the other code as it is not needed lol.... :|
+* ✅ using placeholder items which allowed for better categories placements from the begining
+* ✅ initial categories assignment is done by alphabetic order. Useful when we will allow for import of custom categories or external categorizers
+* ✅ the gear categorizer could add icon of the category at the begining? :)
+* ✅ BAG_UPDATE is a bit broken - it was supposed not to refresh the view when items are removed, but fixing one bug caused it to no longer work this way in all cicrumstances. To verify what can we do about it, when actually this event is sent and what info we can get from it.
+* ✅ create a categorizer that is based on a query language. Categorizer would create protected categories (is this actually needed?).
+* ✅ the config should be stored in account wide config so maybe at some point we could introduce profiles.
+* ✅blizzMove addon breakes it seems with this addon - to check whether it breaks only with this addon, or with it disabled as well as it currently does not work properly with other things like talents window so it might just be broken blizzmove.
+    * ✅ the way I solved is that it now works with BlizzMove. However I noticed that by default this addon does not remember scaling of the bags, so I might need to implement such functionality in the end. I'd rather make a merge request, unfortunately the licensing is "all rights reseved" in blizz move addon.
+* ✅ add option to mark category as always visible
 * [solved - by preventing Blizz UI changing the scale] consider adding option to manage scale (or at least remember between each open), placement of bag as well as prevent it from auto closing.
-* [solved][changed - see sub point] reenable new categorizer to work properly with merchant. Maybe mark those items bought from merchant somehow?
-    * [solved] renenble new categorizer and make it so that we will store new items and mark them so for a bit long. Right clicking on the title should remove items from new group.
-* [solved] make categories foldable
-* [solved] folded group when have too many items should not leak onto other columns. They are folded in the end.
-* [solved] crafting an item, ie. hearty simple stew, when it wasnt in the equipment before wont show it in the bags, reopenning is required.
-* [solved] could make search actually filter items (done with changing the bag size, but to be tested whether that is better / sufficient)
-* [solved] when creating a category clicking Enter should create a category, not close the prompt. comment: that was harder than expected...
-* [solved][!] make the window be smaller than restricted 75% of the original addon
+* ✅[changed - see sub point] reenable new categorizer to work properly with merchant. Maybe mark those items bought from merchant somehow?
+    * ✅ renenble new categorizer and make it so that we will store new items and mark them so for a bit long. Right clicking on the title should remove items from new group.
+* ✅ make categories foldable
+* ✅ folded group when have too many items should not leak onto other columns. They are folded in the end.
+* ✅ crafting an item, ie. hearty simple stew, when it wasnt in the equipment before wont show it in the bags, reopenning is required.
+* ✅ could make search actually filter items (done with changing the bag size, but to be tested whether that is better / sufficient)
+* ✅ when creating a category clicking Enter should create a category, not close the prompt. comment: that was harder than expected...
+* ✅[!] make the window be smaller than restricted 75% of the original addon
     * now scale is being overwritten and automatically calculated always and can go below 0.75
-* [solved][!] persist information that a given category is currently folded
+* ✅[!] persist information that a given category is currently folded
     * I have resolved it in a way that I have moved it for now into a separate file. It should still be a part of the mixin.
-* [solved][!!] the query doesnt work sometimes on bag open. This is because some data is not loaded at that moment in time. We have to find a workaround ie. use async function, though I'm not sure how this would have to work. Maybe we need to separate recategorization of item buttons from displaying them. I think this would also help with other situations where we'd like to not refresh the assignments.
+* ✅[!!] the query doesnt work sometimes on bag open. This is because some data is not loaded at that moment in time. We have to find a workaround ie. use async function, though I'm not sure how this would have to work. Maybe we need to separate recategorization of item buttons from displaying them. I think this would also help with other situations where we'd like to not refresh the assignments.
     * I just added update when categorizer updates. Works like a dream. (hopefully ;))
-* [solved] Folding now casues update the frame size
-* ~[rejected][!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what.~
+* ✅ Folding now casues update the frame size
+* ~👎[!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what.~
     * i dont think that is true. This if I recall correctly was due to the fact that addon was enabled in dev and non dev mode at the same time, hence the data from both started to overlap. There could be a prevention mechanism in place if at all.
-* [solved][!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
+* ✅[!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
 * rewrite categorization [or rather where each piece is stored for a given category]
     * custom category for whatever reason disapears.
     * there is a bug in custom categories making the assignments to custom categories list grow and grow.
@@ -82,7 +82,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     * The main error I made was to add new functionalities when I was supposed to in reality just extend custom categorizer. If I'd do that, then there wouldn't be issues.
 * remove the movement of categories to separate columns when overflow happens - it did not work, and now with proper scaling it is no longer an issue - the bag will just get smaller. Remove other tickets.
 * [!!!] position of the window should be changed to top if we are to be filtering.
-* [!!!] ~[solved] [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
+* [!!!] ~✅ [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
     *  (see todo-1) this should not be handled here. Currently i am thinking th9at it is a responsibility of the drawing layer to make sure everything fits. This should just assign columns as is defined by user, without splitting as at this stage we have no knowledge about size in pixels of the column or the screen size. So to resolve it we'd need to do split logic of the same thing in the drawin layer anyways.
 
 
