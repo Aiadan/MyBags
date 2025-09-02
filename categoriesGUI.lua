@@ -261,7 +261,7 @@ function AddonNS.createGUI()
         hideOnEscape = true,
         preferredIndex = 3, -- Avoids some UI taint issues
         EditBoxOnEnterPressed = function(self)
-            self:GetParent().button1:Click();
+            self:GetParent():GetButton1():Click();
         end,
         EditBoxOnEscapePressed = function(self)
             self:GetParent():Hide();
@@ -296,7 +296,7 @@ function AddonNS.createGUI()
         hideOnEscape = true,
         preferredIndex = 3, -- Avoids some UI taint issues
         EditBoxOnEnterPressed = function(self)
-            self:GetParent().button1:Click();
+            self:GetParent():GetButton1():Click();
         end,
         EditBoxOnEscapePressed = function(self)
             self:GetParent():Hide();
