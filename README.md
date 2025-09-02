@@ -41,10 +41,17 @@ Some other worth mentioning:
 * left click category to fold it / collapse
 * searching works as a filter (to be verify whether this is helpful or not)
 
-## Move, resize, do not close
+## Q&A
+List of questions about things regarding the addon or possible extentions.
+
+### Move, resize, do not close
 I do not plan at this moment to add this functionality and it can be achieved via these two addons:
 * [BlizzMove](https://github.com/Kiatra/BlizzMove) - move and scale. Unfortunately it does not currently (at the moment of writing) remeber user defined scale and reset with each open. One of the reasons I am considering adding such functionality within this addon.
 * [NoAutoClose](https://github.com/NumyAddon/NoAutoClose) - prevents automatic close of frames when too many open at the same time.
+
+### Show simple ilvl
+Can be achieved using this addon:
+* [Simple Item Levels](https://www.curseforge.com/wow/addons/simple-item-level)
 
 ## Design Decisions
 
