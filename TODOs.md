@@ -97,7 +97,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * unassigned group should always be visible
 * query categorizer should check categories in the order of alphabet till category ordering is introduced
 * add an ability to move categories on the list, so that categorization would not be based on the order of (well, currently random) alhabet
-* category should be selected after creation and list should scroll to it so it was visible
+* ✅ category should be selected after creation and list should scroll to it so it was visible
 * categories that currently do not catch any items from backpack into their group, could be considered as rendered at the bottom of the list of categories? Or maybe that is a stupid idea which will only complicate this further. the reason is that when one have a lot of categories, this creates this quite complex list to navigate.
 * add colours to categories
 * highlight selected category in the bags and make it temporary visible via always visible or similar functionality.

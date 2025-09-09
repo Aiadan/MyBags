@@ -45,7 +45,7 @@ AddonNS.Events:OnDbLoaded(AddonNS.init)
 
 function AddonNS.printDebug(...)
 --@debug@
-    print(...)
+    -- print(...)
 --@end-debug@
 end
 

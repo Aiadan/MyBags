@@ -257,6 +257,9 @@ function AddonNS.createGUI()
             if categoryName and categoryName ~= "" then
                 AddonNS.CustomCategories:NewCategory(categoryName);
                 list:RefreshList();
+                list:SelectRowByPredicate(function(row)
+                    return row[1] == categoryName
+                end)
             else
                 AddonNS.printDebug("Please enter a category name.")
             end
