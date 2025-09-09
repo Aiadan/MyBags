@@ -35,13 +35,14 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     local knownCategories = {};
     -- Helper function to add category to a column, splitting if necessary
     local function addCategoryToColumn(category, items, column)
+        local count = #items;
         items = not isCollapsed(category) and items or { AddonNS.itemButtonPlaceholder }; -- clear items to be placed if the category is to be collapsed so they would not leak onto other columns
         AddonNS.ItemsOrder:Sort(items);
         if (#items == 0) then
-            table.insert(categoryAssignments[column], { category = category, items = items });
+            table.insert(categoryAssignments[column], { category = category, items = items, itemsCount = count });
         else
             columnSum[column] = columnSum[column] + #items
-            table.insert(categoryAssignments[column], { category = category, items = items });
+            table.insert(categoryAssignments[column], { category = category, items = items, itemsCount = count });
         end
     end
 

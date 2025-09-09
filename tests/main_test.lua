@@ -13,6 +13,7 @@ ContainerFrameCombinedBags = {
   end,
 }
 
+local placeholder = {}
 local addonEnv = {
   Const = {
     ITEM_SPACING = 0,
@@ -23,10 +24,11 @@ local addonEnv = {
     Events = {},
   },
   Collapsed = { isCollapsed = function() return true end },
+  itemButtonPlaceholder = placeholder,
   Categories = {
     ArrangeCategoriesIntoColumns = function()
       return {
-        { { category = { name = "Test" }, items = {1,2,3} } }
+        { { category = { name = "Test" }, items = {placeholder}, itemsCount = 3 } }
       }
     end,
   },
