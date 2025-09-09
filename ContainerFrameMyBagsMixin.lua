@@ -1,5 +1,5 @@
 local addonName, AddonNS = ...
-local isFolded = AddonNS.Folded.isFolded;
+local isCollapsed = AddonNS.Collapsed.isCollapsed;
 
 
 local function extend(f, f2)
@@ -43,7 +43,7 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
 
     self:UpdateFrameSize();
     for i, itemButton in ipairs(itemButtons) do
-        if (itemButton.ItemCategory and not isFolded(itemButton.ItemCategory)) then
+        if (itemButton.ItemCategory and not isCollapsed(itemButton.ItemCategory)) then
             local newXOffset = self.MyBags.positionsInBags[itemButton:GetBagID()][itemButton:GetID()].x;
             local newYOffset = -self.MyBags.positionsInBags[itemButton:GetBagID()][itemButton:GetID()].y + yFrameOffset;
             itemButton:ClearAllPoints();

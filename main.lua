@@ -1,5 +1,5 @@
 local addonName, AddonNS = ...
-local isFolded = AddonNS.Folded.isFolded;
+local isCollapsed = AddonNS.Collapsed.isCollapsed;
 
 local ITEM_SPACING = AddonNS.Const.ITEM_SPACING;
 AddonNS.itemButtonPlaceholder = {}
@@ -49,7 +49,7 @@ function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
 end
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, updateOnTokenWatchChangedOnNextFrame);
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.FOLDED_CHANGED, updateOnTokenWatchChangedOnNextFrame);
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.COLLAPSED_CHANGED, updateOnTokenWatchChangedOnNextFrame);
 
 AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE");
 
@@ -135,8 +135,8 @@ local function newIterator(container, index)
 
             for i, categoryObj in ipairs(categoriesObj) do
                 local categoryItemsCount = #categoryObj.items;
-                local isCategoryFolded = isFolded(categoryObj.category);
-                local categoryRequiresNewLine = isCategoryFolded or categoryObj.category.separateLine;
+                local isCategoryCollapsed = isCollapsed(categoryObj.category);
+                local categoryRequiresNewLine = isCategoryCollapsed or categoryObj.category.separateLine;
                 local requiredNewLine =
                     categoryRequiresNewLine
                     or #currentRow == 0
@@ -156,9 +156,9 @@ local function newIterator(container, index)
                 local expandCategoryToRightColumnBoundary =
                     (#currentRow + categoryItemsCount < AddonNS.Const.ITEMS_PER_ROW and
                         (
-                            isCategoryFolded
+                            isCategoryCollapsed
                             or (not nextCategoryExists)
-                            or isFolded(categoriesObj[i + 1].category)
+                            or isCollapsed(categoriesObj[i + 1].category)
                             or categoriesObj[i + 1].category.separateLine
                             or #currentRow + categoryItemsCount + #categoriesObj[i + 1].items > AddonNS.Const.ITEMS_PER_ROW
                         )
@@ -171,13 +171,13 @@ local function newIterator(container, index)
                         y = currentRowY - AddonNS.Const.CATEGORY_HEIGHT,
                         width = itemSize *
                             (categoryItemsCount > AddonNS.Const.ITEMS_PER_ROW and AddonNS.Const.ITEMS_PER_ROW or categoryItemsCount + expandCategoryToRightColumnBoundary),
-                        height = AddonNS.Const.CATEGORY_HEIGHT + ((not isCategoryFolded and
+                        height = AddonNS.Const.CATEGORY_HEIGHT + ((not isCategoryCollapsed and
                             math.ceil(categoryItemsCount / AddonNS.Const.ITEMS_PER_ROW) *
                             itemSize) or 0),
                     });
                 rowWithNewCategory = true;
                 local items = categoryObj.items;
-                if (not isCategoryFolded) then
+                if (not isCategoryCollapsed) then
                     for j = #items, 1, -1 do
                         local item = items[j];
                         table.insert(currentRow, item)
