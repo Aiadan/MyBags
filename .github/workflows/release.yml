@@ -22,12 +22,21 @@ jobs:
       # we first have to clone the AddOn project, this is a required step
       - name: Clone project
         uses: actions/checkout@v3
+
+      - name: Install Lua
+        run: sudo apt-get update && sudo apt-get install -y lua5.1
         
       - name: Rename .toc file
         run: mv '!dev_MyBags.toc' MyBags.toc
 
       - name: Add .toc file to Git #workaround for the package to accept this file and not ignore it
         run: git add MyBags.toc
+
+      - name: Run tests
+        run: lua tests/Categorizers/query_test.lua
+
+      - name: Remove tests directory
+        run: rm -rf tests
 
       # once cloned, we just run the GitHub Action for the packager project
       - name: Package and release
