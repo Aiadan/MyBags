@@ -92,7 +92,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * resizing via scrolling should work on all empty spaces
 * ✅ in custom categories GUI it should state "Query" above the query text input.
 * ✅ tech - rename folded to collapsed
-* show many items are inside collapsed group
+* ✅ show many items are inside collapsed group
 * add option to force new line on a given category
 * unassigned group should always be visible
 * query categorizer should check categories in the order of alphabet till category ordering is introduced

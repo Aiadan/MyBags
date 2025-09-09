@@ -134,7 +134,7 @@ local function newIterator(container, index)
             end
 
             for i, categoryObj in ipairs(categoriesObj) do
-                local categoryItemsCount = #categoryObj.items;
+                local categoryItemsCount = categoryObj.itemsCount or #categoryObj.items;
                 local isCategoryCollapsed = isCollapsed(categoryObj.category);
                 local categoryRequiresNewLine = isCategoryCollapsed or categoryObj.category.separateLine;
                 local requiredNewLine =
@@ -167,6 +167,7 @@ local function newIterator(container, index)
                 table.insert(container.MyBags.categoryPositions,
                     {
                         category = categoryObj.category,
+                        itemsCount = categoryItemsCount,
                         x = columnStartX + itemSize * #currentRow - ITEM_SPACING / 2,
                         y = currentRowY - AddonNS.Const.CATEGORY_HEIGHT,
                         width = itemSize *
