@@ -12,13 +12,13 @@ local ValueType = {
     -- ITEM_QUALITY = 4,
 }
 
-function trim(text)
+local function trim(text)
     return text:match("^%s*(.-)%s*$")
 end
 
 local OpEnum = { AND = 1, OR = 2, NOT = 3 };
 
-function prepare(query)
+local function prepare(query)
     query = string.gsub(query, "%(", " ( ")
     query = string.gsub(query, "%)", " ) ")
     query = string.gsub(query, "([%=%!%~%<%>]+)", " %1 ")
@@ -32,7 +32,6 @@ function prepare(query)
     return query;
 end
 
--- -- print(prepare("()and<=(asd)"))
 local function toboolean(text)
     return text == "true" and true or false
 end
@@ -484,31 +483,9 @@ function AddonNS.QueryCategories:OnInitialize()
     end
 end
 
-local function test()
-    local query = "itemType !=4 or itemType != 5 and itemType = 3" -- AND (itemType = 'weapon' AND ilvl >= 20)
-
-    -- local query = " (type = 'weapon' AND level >= 20) OR (name = 'Epic')"
-    local prepareed = prepare(query);
-    print(prepareed)
-    local func = evaluate(prepareed);
-    local testItem = {
-        itemName = "Epic",
-        isCraftingReagent = true,
-        itemType = 3,
-        ilvl = 120
-    }
-    print("Lets go!")
-    print(func(testItem))
-end
-
--- test()
-
 AddonNS.Events:OnInitialize(AddonNS.QueryCategories.OnInitialize)
 
 AddonNS.Categories:RegisterCategorizer("Query", QueryCategorizer, false);
-
-
-
 
 local function categoryRenamed(eventName, fromCategoryName, toCategoryName)
     AddonNS.printDebug("query:", eventName)
@@ -521,3 +498,9 @@ local function categoryDeleted(eventName, categoryName)
 end
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, categoryRenamed)
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
+
+AddonNS._Test = AddonNS._Test or {}
+AddonNS._Test.Query = {
+    prepare = prepare,
+    evaluate = evaluate,
+}
