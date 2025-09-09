@@ -172,8 +172,8 @@ function AddonNS.createGUI()
 
     --- [[ Query label ]]
     local queryLabel = containerFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal");
-    queryLabel:SetText("Query");
-    queryLabel:SetPoint("TOPLEFT", newButton, "BOTTOMLEFT", 6, -5);
+    queryLabel:SetText("Query:");
+    queryLabel:SetPoint("TOPLEFT", newButton, "BOTTOMLEFT", 4, -5);
     containerFrame.queryLabel = queryLabel
 
 
@@ -182,7 +182,7 @@ function AddonNS.createGUI()
     local textScrollFrame = CreateFrame("ScrollFrame", nil, containerFrame, "InputScrollFrameTemplate")
     textScrollFrame.hideCharCount = true;
     -- textScrollFrame:SetHeight(height)
-    textScrollFrame:SetPoint("TOPLEFT", queryLabel, "BOTTOMLEFT", 0, -2);
+    textScrollFrame:SetPoint("TOPLEFT", queryLabel, "BOTTOMLEFT", 2, -8);
     textScrollFrame:SetPoint("BOTTOMRIGHT", containerFrame, "BOTTOMRIGHT", -10, 30);
     -- textScrollFrame:SetPoint("RIGHT", containerFrame, "RIGHT", -posX, posY);
     -- textScrollFrame:SetPoint("LEFT", containerFrame, "LEFT", -posX, posY);

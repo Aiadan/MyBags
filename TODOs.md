@@ -90,7 +90,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * make update container layout based on events, not so that changing state causes that. Folded already does that.
 * could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
 * resizing via scrolling should work on all empty spaces
-* in custom categories GUI it should state "Query" above the query text input.
+* ✅in custom categories GUI it should state "Query" above the query text input.
 * tech - rename folded to collapsed
 * show many items are inside folded group
 * add option to force new line on a given category
