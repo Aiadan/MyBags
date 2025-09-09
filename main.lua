@@ -6,6 +6,25 @@ AddonNS.itemButtonPlaceholder = {}
 
 local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
+
+local function addCategoriesToTooltip(tooltip)
+    local owner = tooltip:GetOwner();
+    if not owner or not owner.ItemCategories or #owner.ItemCategories == 0 then return end
+    GameTooltip_AddBlankLineToTooltip(tooltip);
+    local assigned = owner.ItemCategories[1];
+    if assigned and assigned.name then
+        GameTooltip_AddNormalLine(tooltip, "Category: " .. assigned.name);
+    end
+    if #owner.ItemCategories > 1 then
+        local names = {};
+        for i = 2, #owner.ItemCategories do
+            table.insert(names, owner.ItemCategories[i].name);
+        end
+        GameTooltip_AddNormalLine(tooltip, "Also matches: " .. table.concat(names, ", "));
+    end
+end
+
+GameTooltip:HookScript("OnTooltipSetItem", addCategoriesToTooltip);
 local freeBagSlots = 10000;
 local lockedUpdates = false;
 function AddonNS.Events:BAG_UPDATE(event, bagID)

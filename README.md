@@ -40,6 +40,7 @@ Some other worth mentioning:
 * All items by default land in Unassigned category.
 * left click category to collapse it
 * searching works as a filter (to be verify whether this is helpful or not)
+* item tooltip lists other matching categories for easier troubleshooting
 
 ## Q&A
 List of questions about things regarding the addon or possible extentions.
