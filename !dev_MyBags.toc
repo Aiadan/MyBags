@@ -28,7 +28,7 @@
 
 utils/orderedMap.lua
 init.lua
-folded.lua
+collapsed.lua
 main.lua
 ContainerFrameMyBagsMixin.lua
 FrameParameters.lua
