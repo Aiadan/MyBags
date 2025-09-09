@@ -95,7 +95,6 @@ function AddonNS.DragAndDrop.categoryStartDrag(self)
     AddonNS.DragAndDrop.cleanUp()
     AddonNS.printDebug("categoryStartDrag")
     pickedItemCategory = self.ItemCategory;
-
     AddonNS.printDebug("categoryStartDrag", pickedItemCategory)
 end
 

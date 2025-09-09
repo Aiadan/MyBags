@@ -116,7 +116,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * show somewhere how many empty spaces are left
 * display empty space if available to show how many items we can still add as well as allow for stack splits.
 * add the effect when dragging to indicate that a given cateogry is protected so you cannot assign to it - ie red background, shield pickture and some small text? And when howevering over a category to which you can assign indicate with text that it will be assigned to this one?
-* add sound when picking a category - maybe use the same sound that is used picking up items for simplicity
+* ✅(sound of bag) add sound when picking a category - maybe use the same sound that is used picking up items for simplicity
 * there is a lot of bad code, broken domains. Especially in the place of:
   * custom categories and categories,
   * which code [class/domain] should trigger visual updates as it is a random to an extent at this point
@@ -158,6 +158,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * create some nice default categories based on what I end up with as my query categories in TWW
 * I have decided to not include button for authenticator that is available in normal bags. Consider adding it via adding to layout update self:LayoutAddSlots(); as well as support for this button. Although I have no idea how I could test it
 * [REJECTED - in order to keep simplicity and default behaviour ] consider making the number of columns configurable
+    * this will be replaced by resizing which will on horizontal drag cause to add or remove number of columns
 
 ### unknown what they were about, meaning lost in the ether
 * unassigned to junk was behaving weirdly

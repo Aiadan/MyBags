@@ -159,11 +159,13 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                 draggableFrame:Show()
                 draggableFrame:StartDragging()
                 AddonNS.DragAndDrop.categoryStartDrag(self);
+                PlaySound(1183 );
                 AddonNS.printDebug("OnDragStart", button)
             end)
             f:SetScript("OnDragStop", function(self)
                 draggableFrame:Hide()
                 draggableFrame:StopDragging()
+                PlaySound(1200);
                 AddonNS.printDebug("OnDragStop")
             end)
             f.fs = fs;
