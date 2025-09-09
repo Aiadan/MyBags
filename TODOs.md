@@ -73,6 +73,11 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ~👎[!] it seems that saving a positition of group in the bag on other char can cause discrepancies between how items are saved on other leading into having items in groups which are then displayed in number of separate columns [ some are empty]. Probably caused by the fact that there is not domain split of the repsonsibilities. Hence this rework with this bug is even more critical to make sure which part of the app is repsonsible for what.~
     * i dont think that is true. This if I recall correctly was due to the fact that addon was enabled in dev and non dev mode at the same time, hence the data from both started to overlap. There could be a prevention mechanism in place if at all.
 * ✅[!!] Removing of equipment set does not update the categorizer. Gear sets categorizer seem to not work properly on some characters, as well as does not seem to update categorization properly once items gear set association have been modified
+* ✅ in custom categories GUI it should state "Query" above the query text input.
+* ✅ tech - rename folded to collapsed
+* ✅ show many items are inside collapsed group
+* ✅ category should be selected after creation and list should scroll to it so it was visible
+* ✅(sound of bag) add sound when picking a category - maybe use the same sound that is used picking up items for simplicity
 * rewrite categorization [or rather where each piece is stored for a given category]
     * custom category for whatever reason disapears.
     * there is a bug in custom categories making the assignments to custom categories list grow and grow.
@@ -90,14 +95,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * make update container layout based on events, not so that changing state causes that. Collapsed already does that.
 * could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
 * resizing via scrolling should work on all empty spaces
-* ✅ in custom categories GUI it should state "Query" above the query text input.
-* ✅ tech - rename folded to collapsed
-* ✅ show many items are inside collapsed group
 * add option to force new line on a given category
 * unassigned group should always be visible
 * query categorizer should check categories in the order of alphabet till category ordering is introduced
 * add an ability to move categories on the list, so that categorization would not be based on the order of (well, currently random) alhabet
-* ✅ category should be selected after creation and list should scroll to it so it was visible
 * categories that currently do not catch any items from backpack into their group, could be considered as rendered at the bottom of the list of categories? Or maybe that is a stupid idea which will only complicate this further. the reason is that when one have a lot of categories, this creates this quite complex list to navigate.
 * add colours to categories
 * highlight selected category in the bags and make it temporary visible via always visible or similar functionality.
@@ -116,7 +117,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * show somewhere how many empty spaces are left
 * display empty space if available to show how many items we can still add as well as allow for stack splits.
 * add the effect when dragging to indicate that a given cateogry is protected so you cannot assign to it - ie red background, shield pickture and some small text? And when howevering over a category to which you can assign indicate with text that it will be assigned to this one?
-* ✅(sound of bag) add sound when picking a category - maybe use the same sound that is used picking up items for simplicity
+
 * there is a lot of bad code, broken domains. Especially in the place of:
   * custom categories and categories,
   * which code [class/domain] should trigger visual updates as it is a random to an extent at this point
