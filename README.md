@@ -38,7 +38,7 @@ Some other worth mentioning:
   * for equipment sets (with pretty icons ;) )
   * for New items. Right click on category name to move items to their preassigned categories.
 * All items by default land in Unassigned category.
-* left click category to fold it / collapse
+* left click category to collapse it
 * searching works as a filter (to be verify whether this is helpful or not)
 
 ## Q&A

@@ -78,7 +78,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     * there is a bug in custom categories making the assignments to custom categories list grow and grow.
     * the rename I am quite certian does not work as it should ie. will loose some preassigned items
     * TECH - categoriesColumnAssignment should be a part of a Mixin as it contains container specific setup. 
-    * does it mean folded should also be a per container setting?
+    * does it mean collapsed should also be a per container setting?
     * The main error I made was to add new functionalities when I was supposed to in reality just extend custom categorizer. If I'd do that, then there wouldn't be issues.
 * remove the movement of categories to separate columns when overflow happens - it did not work, and now with proper scaling it is no longer an issue - the bag will just get smaller. Remove other tickets.
 * [!!!] position of the window should be changed to top if we are to be filtering.
@@ -87,12 +87,12 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 
 
-* make update container layout based on events, not so that changing state causes that. Folded already does that.
+* make update container layout based on events, not so that changing state causes that. Collapsed already does that.
 * could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
 * resizing via scrolling should work on all empty spaces
-* ✅in custom categories GUI it should state "Query" above the query text input.
-* tech - rename folded to collapsed
-* show many items are inside folded group
+* ✅ in custom categories GUI it should state "Query" above the query text input.
+* ✅ tech - rename folded to collapsed
+* show many items are inside collapsed group
 * add option to force new line on a given category
 * unassigned group should always be visible
 * query categorizer should check categories in the order of alphabet till category ordering is introduced
@@ -102,7 +102,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * add colours to categories
 * highlight selected category in the bags and make it temporary visible via always visible or similar functionality.
 * [not an issue] how to change a bag to a different bag? edit: the same as way any other bag. Click the arrow at the bottom, then you can replace them
-* make folded a part of a mixin for container, not separate entity
+* make collapsed a part of a mixin for container, not separate entity
 * [in progress] clearup the todos as I think there are duplicates and also these have become unordered due to that
 * if ther was a way to properly higlight that an item would have been categorized differentlty by QL if it was unassigned directly by id to a category, we maybe would not need protected categories(Although I think it always should be an option, and those categories would also work before assignment by id). In the menu there should be an option to "always show given category".
     * categorize by QL if protected
