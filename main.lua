@@ -167,6 +167,7 @@ local function newIterator(container, index)
                 table.insert(container.MyBags.categoryPositions,
                     {
                         category = categoryObj.category,
+                        itemsCount = categoryItemsCount,
                         x = columnStartX + itemSize * #currentRow - ITEM_SPACING / 2,
                         y = currentRowY - AddonNS.Const.CATEGORY_HEIGHT,
                         width = itemSize *
