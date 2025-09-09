@@ -170,13 +170,19 @@ function AddonNS.createGUI()
     end)
 
 
+    --- [[ Query label ]]
+    local queryLabel = containerFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal");
+    queryLabel:SetText("Query");
+    queryLabel:SetPoint("TOPLEFT", newButton, "BOTTOMLEFT", 6, -5);
+    containerFrame.queryLabel = queryLabel
+
 
     -- [[ GUI - textScrollFrame]]
     --  local function createEditBox(frame, posX, posY, height)
     local textScrollFrame = CreateFrame("ScrollFrame", nil, containerFrame, "InputScrollFrameTemplate")
     textScrollFrame.hideCharCount = true;
     -- textScrollFrame:SetHeight(height)
-    textScrollFrame:SetPoint("TOPLEFT", newButton, "BOTTOMLEFT", 6, -10);
+    textScrollFrame:SetPoint("TOPLEFT", queryLabel, "BOTTOMLEFT", 0, -2);
     textScrollFrame:SetPoint("BOTTOMRIGHT", containerFrame, "BOTTOMRIGHT", -10, 30);
     -- textScrollFrame:SetPoint("RIGHT", containerFrame, "RIGHT", -posX, posY);
     -- textScrollFrame:SetPoint("LEFT", containerFrame, "LEFT", -posX, posY);
