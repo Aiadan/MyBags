@@ -24,7 +24,8 @@ local function addCategoriesToTooltip(tooltip)
     end
 end
 
-GameTooltip:HookScript("OnTooltipSetItem", addCategoriesToTooltip);
+TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, addCategoriesToTooltip)
+
 local freeBagSlots = 10000;
 local lockedUpdates = false;
 function AddonNS.Events:BAG_UPDATE(event, bagID)
