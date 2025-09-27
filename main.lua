@@ -12,15 +12,12 @@ local function addCategoriesToTooltip(tooltip)
     if not owner or not owner.ItemCategories or #owner.ItemCategories == 0 then return end
     GameTooltip_AddBlankLineToTooltip(tooltip);
     local assigned = owner.ItemCategories[1];
-    if assigned and assigned.name then
-        GameTooltip_AddNormalLine(tooltip, "Category: " .. assigned.name);
-    end
-    if #owner.ItemCategories > 1 then
-        local names = {};
-        for i = 2, #owner.ItemCategories do
-            table.insert(names, owner.ItemCategories[i].name);
+
+    if #owner.ItemCategories > 0 then
+        GameTooltip_AddNormalLine(tooltip, "MyBags matched categories: ");
+        for i = 1, #owner.ItemCategories do
+            GameTooltip_AddNormalLine(tooltip, i .. ". " .. owner.ItemCategories[i].name);
         end
-        GameTooltip_AddNormalLine(tooltip, "Also matches: " .. table.concat(names, ", "));
     end
 end
 
@@ -68,7 +65,8 @@ function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
     container:UpdateItemLayout();
 end
 
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, updateOnTokenWatchChangedOnNextFrame);
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED,
+updateOnTokenWatchChangedOnNextFrame);
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.COLLAPSED_CHANGED, updateOnTokenWatchChangedOnNextFrame);
 
 AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE");
