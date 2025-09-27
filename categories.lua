@@ -24,6 +24,8 @@ end
 
 function AddonNS.Categories:Categorize(itemID, itemButton)
     local categoryName;
+    local firstCategory = nil;
+    local matchedCategories = {};
     for _, categorizerDef in categorizers:iterate() do
         categoryName = categorizerDef.categorizer:Categorize(itemID, itemButton);
         if categoryName then
@@ -35,8 +37,18 @@ function AddonNS.Categories:Categorize(itemID, itemButton)
                     description = categorizerDef.description
                 };
             end
-            return categories[categoryName];
+            local categoryObj = categories[categoryName];
+            table.insert(matchedCategories, categoryObj);
+            if not firstCategory then
+                firstCategory = categoryObj;
+            end
         end;
+    end
+    if itemButton then
+        itemButton.ItemCategories = matchedCategories;
+    end
+    if firstCategory then
+        return firstCategory;
     end
     return UNASSIGNED_CATEGORY
 end

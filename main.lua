@@ -6,6 +6,23 @@ AddonNS.itemButtonPlaceholder = {}
 
 local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
+
+local function addCategoriesToTooltip(tooltip)
+    local owner = tooltip:GetOwner();
+    if not owner or not owner.ItemCategories or #owner.ItemCategories == 0 then return end
+    GameTooltip_AddBlankLineToTooltip(tooltip);
+    local assigned = owner.ItemCategories[1];
+
+    if #owner.ItemCategories > 0 then
+        GameTooltip_AddNormalLine(tooltip, "MyBags matched categories: ");
+        for i = 1, #owner.ItemCategories do
+            GameTooltip_AddNormalLine(tooltip, i .. ". " .. owner.ItemCategories[i].name);
+        end
+    end
+end
+
+TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, addCategoriesToTooltip)
+
 local freeBagSlots = 10000;
 local lockedUpdates = false;
 function AddonNS.Events:BAG_UPDATE(event, bagID)
@@ -48,7 +65,8 @@ function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
     container:UpdateItemLayout();
 end
 
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, updateOnTokenWatchChangedOnNextFrame);
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED,
+updateOnTokenWatchChangedOnNextFrame);
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.COLLAPSED_CHANGED, updateOnTokenWatchChangedOnNextFrame);
 
 AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE");
