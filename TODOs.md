@@ -7,29 +7,35 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * [PLAN] Plan for proper groupping:
     ```
     local sampleCategory = {
+        id = "" -- generated id or concatenation of categorizer id and name of the categorized category. Needed for container settings. Categorizer ids are not stored.
         name="",
         categorizer = "", -- whewther categorizer was used to generate this one. These are special kind of categories and should be treated separtely. Most operations such as renames should not be available to these.
         ~protected = "",~ -- this has to be removed, ie. when categorizer is set, it is protected as it is protected and automatically calculated. Can be hidden under "isProtected()"
+        isProtected()
         query = "",
         isAlwaysVisible()
         is
     }
 
-    Stored per custom category:
-    * name
-    * query
-    * alwaysVisible
-    * items
-        * itemid
-        * maxilvl ?
+    Stored data:
+        Stored per custom category:
+        * id
+        * name
+        * query
+        * alwaysVisible
+        * items
+            * itemid
+            * maxilvl ?
+            * item name ? [if we are able to check easily which items has a possiblity of alternative name]
 
 
-    Per container setttings:
-    stored:
-    * collapsed
-    * column assignment
-    dynamic:
-    * assigned items
+        Per container setttings:
+        stored [per category id]:
+        * collapsed
+        * column assignment
+
+        dynamically calculated:
+        * assigned items
 
 
     Generic:
@@ -37,6 +43,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
     ```
 
 ## User focused
+
 * ✅ click on an item in the bag requires you to drop it onto a different item in anothe rcategory. You cannot click another category which is miasligned with the ability to drag onto another category. Same when draggoning on the categories in edit mode.
 * ✅ when too many items are to expand the height to far, the addon should try to automatically split given categories into separate columns.
 * ✅ when dropping an item on bg [outside of category] it should it be assigned to latest category in the column.
@@ -53,18 +60,18 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ create a categorizer that is based on a query language. Categorizer would create protected categories (is this actually needed?).
 * ✅ the config should be stored in account wide config so maybe at some point we could introduce profiles.
 * ✅blizzMove addon breakes it seems with this addon - to check whether it breaks only with this addon, or with it disabled as well as it currently does not work properly with other things like talents window so it might just be broken blizzmove.
-    * ✅ the way I solved is that it now works with BlizzMove. However I noticed that by default this addon does not remember scaling of the bags, so I might need to implement such functionality in the end. I'd rather make a merge request, unfortunately the licensing is "all rights reseved" in blizz move addon.
+  * ✅ the way I solved is that it now works with BlizzMove. However I noticed that by default this addon does not remember scaling of the bags, so I might need to implement such functionality in the end. I'd rather make a merge request, unfortunately the licensing is "all rights reseved" in blizz move addon.
 * ✅ add option to mark category as always visible
 * [solved - by preventing Blizz UI changing the scale] consider adding option to manage scale (or at least remember between each open), placement of bag as well as prevent it from auto closing.
 * ✅[changed - see sub point] reenable new categorizer to work properly with merchant. Maybe mark those items bought from merchant somehow?
-    * ✅ renenble new categorizer and make it so that we will store new items and mark them so for a bit long. Right clicking on the title should remove items from new group.
+  * ✅ renenble new categorizer and make it so that we will store new items and mark them so for a bit long. Right clicking on the title should remove items from new group.
 * ✅ make categories foldable
 * ✅ folded group when have too many items should not leak onto other columns. They are folded in the end.
 * ✅ crafting an item, ie. hearty simple stew, when it wasnt in the equipment before wont show it in the bags, reopenning is required.
 * ✅ could make search actually filter items (done with changing the bag size, but to be tested whether that is better / sufficient)
 * ✅ when creating a category clicking Enter should create a category, not close the prompt. comment: that was harder than expected...
 * ✅[!] make the window be smaller than restricted 75% of the original addon
-    * now scale is being overwritten and automatically calculated always and can go below 0.75
+  * now scale is being overwritten and automatically calculated always and can go below 0.75
 * ✅[!] persist information that a given category is currently folded
     * I have resolved it in a way that I have moved it for now into a separate file. It should still be a part of the mixin.
 * ✅[!!] the query doesnt work sometimes on bag open. This is because some data is not loaded at that moment in time. We have to find a workaround ie. use async function, though I'm not sure how this would have to work. Maybe we need to separate recategorization of item buttons from displaying them. I think this would also help with other situations where we'd like to not refresh the assignments.
