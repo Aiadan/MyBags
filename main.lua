@@ -7,6 +7,22 @@ AddonNS.itemButtonPlaceholder = {}
 local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
 
+local function triggerContainerOnTokenWatchChanged()
+    securecallfunction(container.OnTokenWatchChanged, container);
+end
+AddonNS.TriggerContainerOnTokenWatchChanged = triggerContainerOnTokenWatchChanged;
+local function triggerContainerUpdateItemLayout()
+    securecallfunction(container.UpdateItemLayout, container);
+end
+local function queueContainerUpdateItemLayout()
+    RunNextFrame(function()
+        print("QueueContainerUpdateItemLayout fired")
+        AddonNS.printDebug("QueueContainerUpdateItemLayout fired");
+        triggerContainerUpdateItemLayout();
+    end);
+end
+
+AddonNS.QueueContainerUpdateItemLayout = queueContainerUpdateItemLayout;
 local function addCategoriesToTooltip(tooltip)
     local owner = tooltip:GetOwner();
     if not owner or not owner.ItemCategories or #owner.ItemCategories == 0 then return end
@@ -33,10 +49,7 @@ function AddonNS.Events:BAG_UPDATE(event, bagID)
 
         AddonNS.printDebug("FREE BAGS", newFreeBagSlots, freeBagSlots)
         if newFreeBagSlots <= freeBagSlots and not lockedUpdates then
-            RunNextFrame(function()
-                AddonNS.printDebug("FIRED")
-                container:UpdateItemLayout();
-            end);
+            queueContainerUpdateItemLayout();
         end
         lockedUpdates = true;
         RunNextFrame(function()
@@ -51,7 +64,7 @@ local function updateOnTokenWatchChangedOnNextFrame(event) -- todo: i just copie
     if not lockedUpdates then
         RunNextFrame(function()
             AddonNS.printDebug("updateOnTokenWatchChangedOnNextFrame FIRED")
-            container:OnTokenWatchChanged();
+            triggerContainerOnTokenWatchChanged();
         end);
     end
     lockedUpdates = true;
@@ -62,7 +75,7 @@ end
 
 function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
     AddonNS.printDebug("INVENTORY_SEARCH_UPDATE", bagID)
-    container:UpdateItemLayout();
+    triggerContainerUpdateItemLayout();
 end
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED,

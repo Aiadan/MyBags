@@ -164,9 +164,7 @@ function AddonNS.createGUI()
     -- Function to run when the checkbox is clicked
     alwaysShowCheckbox:SetScript("OnClick", function(self)
         AddonNS.CategorShowAlways:SetAlwaysShow(getSelectedCategoryName(), self:GetChecked())
-        RunNextFrame(function()
-            container:UpdateItemLayout();
-        end);
+        AddonNS.QueueContainerUpdateItemLayout();
     end)
 
 
@@ -210,9 +208,7 @@ function AddonNS.createGUI()
 
     saveQueryButton:SetScript("OnClick", function(self, button)
         AddonNS.QueryCategories:SetQuery(getSelectedCategoryName(), containerFrame.textScrollFrame.EditBox:GetText())
-        RunNextFrame(function()
-            container:UpdateItemLayout();
-        end);
+        AddonNS.QueueContainerUpdateItemLayout();
     end)
 
 
@@ -288,9 +284,7 @@ function AddonNS.createGUI()
                 AddonNS.printDebug("Category renamed: ", data, categoryName)
                 AddonNS.CustomCategories:RenameCategory(data, categoryName);
                 -- Add your category creation logic here
-                RunNextFrame(function()
-                    container:UpdateItemLayout();
-                end);
+                AddonNS.QueueContainerUpdateItemLayout();
                 list:RefreshList();
             else
                 AddonNS.printDebug("Please enter a category name.")
@@ -319,9 +313,7 @@ function AddonNS.createGUI()
         OnAccept = function(self, data)
             AddonNS.printDebug("Category deleted: ", data)
             AddonNS.CustomCategories:DeleteCategory(data);
-            RunNextFrame(function()
-                container:UpdateItemLayout();
-            end);
+            AddonNS.QueueContainerUpdateItemLayout();
             list:RefreshList();
             if list:GetSelected() then -- todo this is a duplicated code
                 renameButton:Enable()
