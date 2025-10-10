@@ -382,6 +382,19 @@ local queryCategories = {
 
 local queryFunctions = {
 }
+local seen = {}
+
+
+local function shouldProcess(id)
+    local now = debugprofilestop()
+    local last = seen[id]
+    if last and (now - last) < 1000 then
+        return false
+    end
+    -- record this check
+    seen[id] = now
+    return true
+end
 
 function QueryCategorizer:Categorize(itemID, itemButton)
     local itemInfo = C_Container
@@ -393,7 +406,8 @@ function QueryCategorizer:Categorize(itemID, itemButton)
     local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent =
         C_Item.GetItemInfo(itemInfo.hyperlink)
 
-    if (not itemName) then
+    -- shouldprocess here is a function to prevent situation which happens with mythic keystone where it goes into a loop as even though the function below finishes the one above is not able to read that info and hence going back to the loop.
+    if (not itemName and shouldProcess(itemID)) then
         local item = Item:CreateFromItemID(itemID)
         AddonNS.printDebug("SCHEDULING refresh when item loads", itemInfo.itemName);
         item:ContinueOnItemLoad(function()
