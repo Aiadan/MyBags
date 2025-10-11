@@ -382,9 +382,8 @@ local queryCategories = {
 
 local queryFunctions = {
 }
+
 local seen = {}
-
-
 local function shouldProcess(id)
     local now = debugprofilestop()
     local last = seen[id]
