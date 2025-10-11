@@ -1,16 +1,9 @@
 local addonName, AddonNS = ...
 local isCollapsed = AddonNS.Collapsed.isCollapsed;
-
-
-local function extend(f, f2)
-    return function(...)
-        return f2(f, ...);
-    end
-end
-
 local ITEM_SPACING = AddonNS.Const.ITEM_SPACING;
 
 local ContainerFrameMyBagsMixin = {};
+local TaintingContainerFrameMyBagsMixin = {};
 
 function ContainerFrameMyBagsMixin:MyBagsInit()
     self.MyBags = {};
@@ -55,8 +48,6 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
     end
 
     AddonNS.gui:RegenerateCategories(yFrameOffset, self.MyBags.categoryPositions);
-
-
 end
 
 function ContainerFrameMyBagsMixin:EnumerateValidItems()
@@ -70,9 +61,15 @@ function ContainerFrameMyBagsMixin:EnumerateValidItems()
     return ContainerFrameCombinedBagsMixin.EnumerateValidItems(self);
 end
 
-function ContainerFrameMyBagsMixin:UpdateItemSlots(...)
+--[[
+Note:
+this expansion allows to get reagent bags. It cannot overwrite functions of bags,
+and has to be hooked as otherwise when player is in combat and opens the bags for
+the first time the path gets tainted and it is no longer possible to use items like
+potions during combat
+]]
+local function updateItemSlots(self, ...)
     AddonNS.printDebug("UpdateItemSlots")
-    ContainerFrameCombinedBagsMixin.UpdateItemSlots(self, ...);
 
     local bagSize = ContainerFrame_GetContainerNumSlots(Enum.BagIndex.ReagentBag);
     for i = 1, bagSize do
@@ -81,16 +78,20 @@ function ContainerFrameMyBagsMixin:UpdateItemSlots(...)
         itemButton:Initialize(Enum.BagIndex.ReagentBag, slotID);
     end
 end;
+hooksecurefunc(ContainerFrameCombinedBags, "UpdateItemSlots", updateItemSlots)
 
 -- need to overwrite this as it is used during enumeration of items in the bags so otherwise it would not incorporate reagentsContainer
-function ContainerFrameMyBagsMixin:SetBagSize()
+local function setBagSize(self)
     self.size = 0;
     for i = 0, Enum.BagIndex.ReagentBag, 1 do
         self.size = self.size + ContainerFrame_GetContainerNumSlots(i);
     end
 end
+hooksecurefunc(ContainerFrameCombinedBags, "SetBagSize", setBagSize)
 
-function ContainerFrameMyBagsMixin:MatchesBagID(id) -- override to include reagent bags
+
+
+function TaintingContainerFrameMyBagsMixin:MatchesBagID(id) -- override to include reagent bags, marked as something that can still easily taint.
     return id >= Enum.BagIndex.Backpack and id <= Enum.BagIndex.ReagentBag;
 end
 
@@ -113,4 +114,24 @@ function ContainerFrameMyBagsMixin:GetRows()
 end
 
 Mixin(ContainerFrameCombinedBags, ContainerFrameMyBagsMixin);
+
+--[[ 
+This is a workaround for quite and interesting tainting. MatchesBagID is called by MainMenuBarBagButtons (currently line 140)
+When this is done during during combat this flow gets tainted. Hence we would need to check if bag was opened in a safe space, ie. making sure all
+calls were made and then, and only then we can hook those functions. As matchesBagID does not seem to be critical, users might not notice it not working
+as expected during combat - this is impacting reagents after all and low chances are someone will try to use / do something with them while fighting.
+There is a chance that with recent changes to handling item movements that might not be needed, as I am not sure at current time what would
+be caused by remove of that overriding that function. Nontheless this shows how this can be done if needed.
+This functionality currently checks for calls to itself, but probably to make it more generic we should just check if bag was open in safe environment and
+then hook / mixing / overwrite all needed functions.
+]]
+local taintingContainerFrameMyBagsMixinMatchesBagIDHooked = false;
+local function tryHook(self, id)
+    if (not taintingContainerFrameMyBagsMixinMatchesBagIDHooked and id > 0 and not InCombatLockdown()) then
+        Mixin(ContainerFrameCombinedBags, TaintingContainerFrameMyBagsMixin);
+        taintingContainerFrameMyBagsMixinMatchesBagIDHooked = true;
+    end
+end
+hooksecurefunc(ContainerFrameCombinedBags, "MatchesBagID", tryHook)
+
 ContainerFrameCombinedBags:MyBagsInit();
