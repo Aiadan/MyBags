@@ -129,7 +129,6 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
         between slots is much faster as it does not require a sync to a server, as the item physicially
         does not move, we change only the location of itembuttons hence it is super quick ]]
             C_Container.PickupContainerItem(self:GetBagID(), self:GetID()) -- [faster movement feature]
-            print("picked")
         end
         local info = C_Container.GetContainerItemInfo(self:GetBagID(), self:GetID());
         local targetedItemID = info and info.itemID or nil;
