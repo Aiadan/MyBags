@@ -11,6 +11,19 @@ local pickedItemCategory = nil;
 local pickedItemButton = nil;
 local container = AddonNS.container;
 
+local recentAt = 0
+local TTL = 0.10 -- 100 ms
+local cachedInfoType, cachedItemID, cachedItemLink;
+
+local function getCachedCursorInfo()
+    local now = GetTime();
+    if (now - recentAt > TTL) then
+        cachedInfoType, cachedItemID, cachedItemLink = GetCursorInfo();
+        recentAt = now;
+    end
+    return cachedInfoType, cachedItemID, cachedItemLink;
+end
+
 function AddonNS.DragAndDrop.cleanUp()
     AddonNS.printDebug("cleanUp")
     pickedItemButton = nil;
@@ -42,7 +55,7 @@ category -> category
 function AddonNS.DragAndDrop.itemOnClick(self, button)
     AddonNS.printDebug("itemOnClick")
     if button == "LeftButton" then
-        local infoType, itemID, itemLink = GetCursorInfo()
+        local infoType, itemID, itemLink = getCachedCursorInfo()
         AddonNS.printDebug(pickedItemButton, infoType, itemID, itemLink)
         if (infoType) then
             AddonNS.DragAndDrop.itemOnReceiveDrag(self)
@@ -50,6 +63,10 @@ function AddonNS.DragAndDrop.itemOnClick(self, button)
             AddonNS.DragAndDrop.itemStartDrag(self);
         end
     end
+end
+
+function AddonNS.DragAndDrop.itemStopDrag(self) -- its only here to refresh cursor as we are hooking to onreceiveddrag and that means that cursor is cleared by the time it arrives to our code. Hence we will Cache it and use that instead.
+    getCachedCursorInfo()
 end
 
 function AddonNS.DragAndDrop.itemStartDrag(self)
@@ -63,16 +80,19 @@ function AddonNS.DragAndDrop.itemStartDrag(self)
     end
 end
 
-function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
-    AddonNS.printDebug("itemOnReceiveDrag")
+function AddonNS.DragAndDrop.itemOnReceiveDrag(self, ...)
+    print("itemOnReceiveDrag")
+    
 
     local targetItemCategory = self.ItemCategory;
 
-    local infoType, itemID, itemLink = GetCursorInfo()
+    local infoType, itemID, itemLink = getCachedCursorInfo()
     if (infoType == "merchant") then
         itemID = GetMerchantItemID(itemID)
         infoType = "item";
     end
+    print("infotype",infoType)
+
     if (infoType == "item") then
         if (pickedItemButton and itemID ~= pickedItemID) then
             AddonNS.DragAndDrop.cleanUp()
@@ -98,7 +118,7 @@ end
 
 function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)
     AddonNS.printDebug("categoryOnMouseUp")
-    local infoType = GetCursorInfo()
+    local infoType = getCachedCursorInfo()
     if infoType then
         if button == "LeftButton" then
             AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
@@ -126,13 +146,13 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
 
     AddonNS.printDebug("categoryOnReceiveDrag", targetItemCategory)
 
-    local infoType, itemID, itemLink = GetCursorInfo()
+    local infoType, itemID = getCachedCursorInfo()
     if (infoType == "merchant") then
         itemID = GetMerchantItemID(itemID)
         infoType = "item";
     end
     if (infoType == "item") then
-        if (pickedItemButton and itemID ~= pickedItemID) then
+        if (pickedItemButton and itemID ~= pickedItemID) then -- todo: jak to jest sytuacja? chyba ze idzie z banku lub od vendora - w kazdym razie nie z naszego buttona
             AddonNS.DragAndDrop.cleanUp()
         end
         if not pickedItemButton and AddonNS.emptyItemButton then -- why is this here, this causes problems now, lol.... - it should not be from reagents bag. and it should only click, when the item is not taken from the bag
@@ -192,7 +212,7 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self)
     AddonNS.printDebug("backgroundOnReceiveDrag")
     local columnNo = GetMouseSectionRelativeToFrame(self)
     if (columnNo) then
-        local infoType, itemID, itemLink = GetCursorInfo()
+        local infoType, itemID, itemLink = getCachedCursorInfo()
         if (infoType == "merchant") then
             itemID = GetMerchantItemID(itemID)
             infoType = "item";
@@ -233,7 +253,7 @@ function AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetItemCategoryNa
     AddonNS.printDebug("customCategoryGUIOnReceiveDrag", pickedItemCategory, targetItemCategoryName)
 
     if (pickedItemButton) then -- button
-        local infoType, itemID, itemLink = GetCursorInfo()
+        local infoType, itemID, itemLink = getCachedCursorInfo()
         if infoType == "item" and itemID == pickedItemID then
             local cat = AddonNS.Categories:GetCategoryByName(targetItemCategoryName);
             AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)

@@ -103,19 +103,10 @@ local function newIterator(container, index)
             -- TODO: prolly need to remove this hook when not merged bags are used to not destroy by accident proper categorisations?
             -- todo: this should be done once during these creation steps, not here.
 
-            itemButton:SetScript("PreClick", function(...)
-                AddonNS.DragAndDrop.itemOnClick(...)
-            end);
-
-            local oldOnReceiveDrag = itemButton:GetScript("OnReceiveDrag")
-            itemButton:SetScript("OnReceiveDrag",
-                function(...)
-                    AddonNS.printDebug("overwritten OnReceiveDrag")
-                    AddonNS.DragAndDrop.itemOnReceiveDrag(...);
-                    oldOnReceiveDrag(...)
-                end);
             itemButton:HookScript("OnDragStart", AddonNS.DragAndDrop.itemStartDrag);
-
+            itemButton:HookScript("OnDragStop", AddonNS.DragAndDrop.itemStopDrag);
+            itemButton:HookScript("PreClick", AddonNS.DragAndDrop.itemOnClick);
+            itemButton:HookScript("OnReceiveDrag", AddonNS.DragAndDrop.itemOnReceiveDrag);
             itemButton.myBagAddonHooked = true;
         end
 
