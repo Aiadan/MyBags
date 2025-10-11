@@ -89,6 +89,7 @@ backgroundFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background
 backgroundFrame:SetBackdropColor(0, 1, 0, 0)
 backgroundFrame:EnableMouse(true)
 backgroundFrame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
+backgroundFrame:SetScript("OnMouseUp", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
 
 backgroundFrame:SetPoint("BOTTOMRIGHT", AddonNS.container.MoneyFrame, "TOPRIGHT", 0, 0)
 
