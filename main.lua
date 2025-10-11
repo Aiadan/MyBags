@@ -16,7 +16,6 @@ local function triggerContainerUpdateItemLayout()
 end
 local function queueContainerUpdateItemLayout()
     RunNextFrame(function()
-        print("QueueContainerUpdateItemLayout fired")
         AddonNS.printDebug("QueueContainerUpdateItemLayout fired");
         triggerContainerUpdateItemLayout();
     end);
