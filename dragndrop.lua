@@ -99,6 +99,7 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self, ...)
         itemID = GetMerchantItemID(itemID)
         infoType = "item";
     else 
+    elseif(pickedItemButton) then
         --[[ INFO: this magic here is because in AddonNS.DragAndDrop.itemStopDrag we added cleraring curosor, 
         so then main game uses PickupContainerItem which pickups item on which drag ends, 
         so this function here is to put that item back... :D but because of that the movement of items 
