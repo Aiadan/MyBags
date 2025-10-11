@@ -49,16 +49,18 @@ local function itemCategoryChanged(eventName, pickedItemID, pickedItemButton)
         local slotIndex = pickedItemButton:GetID()
         AddonNS.printDebug("NewItemCategorizer itemCategoryChanged", bagID, slotIndex)
         resetItem(bagID, slotIndex)
-    end 
+    end
 end
 
 local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCategory, targetItemCategory,
                          pickedItemButton,
                          targetItemButton)
-    local bagID = pickedItemButton:GetBagID();
-    local slotIndex = pickedItemButton:GetID()
-    AddonNS.printDebug("NewItemCategorizer item moved", bagID, slotIndex)
-    resetItem(bagID, slotIndex)
+    if (pickedItemButton) then
+        local bagID = pickedItemButton:GetBagID();
+        local slotIndex = pickedItemButton:GetID()
+        AddonNS.printDebug("NewItemCategorizer item moved", bagID, slotIndex)
+        resetItem(bagID, slotIndex)
+    end
 end
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, itemCategoryChanged)
