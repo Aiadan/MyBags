@@ -92,6 +92,9 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅(sound of bag) add sound when picking a category - maybe use the same sound that is used picking up items for simplicity
 * ✅ code now allows for proper splits of items without issues
 * ✅ (this was done long ago I think) when opening bags sometimes not all info about items is available. Create a callback to readjust after data is loaded. Might cause a weird flicker so would need to verify how acceptable that is.
+* ✅ removed code that caused tainting, now it should hopefully be fine
+* ✅ added workaround for infinite loop caused by bug in how the game loads info about mythic keystones
+* ✅ *improved greatly how you can move items around the backback*
 
 ### TODO
 
