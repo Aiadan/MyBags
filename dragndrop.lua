@@ -58,6 +58,7 @@ function AddonNS.DragAndDrop.itemOnClick(self, button)
         local infoType, itemID, itemLink = getCachedCursorInfo()
         AddonNS.printDebug(pickedItemButton, infoType, itemID, itemLink)
         if (infoType) then
+            ClearCursor();
             AddonNS.DragAndDrop.itemOnReceiveDrag(self)
         else
             AddonNS.DragAndDrop.itemStartDrag(self);
@@ -67,6 +68,7 @@ end
 
 function AddonNS.DragAndDrop.itemStopDrag(self) -- its only here to refresh cursor as we are hooking to onreceiveddrag and that means that cursor is cleared by the time it arrives to our code. Hence we will Cache it and use that instead.
     getCachedCursorInfo()
+    ClearCursor(); -- see INFO in itemOnReceiveDrag function
 end
 
 function AddonNS.DragAndDrop.itemStartDrag(self)
@@ -90,6 +92,13 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self, ...)
     if (infoType == "merchant") then
         itemID = GetMerchantItemID(itemID)
         infoType = "item";
+    else 
+        --[[ INFO: this magic here is because in AddonNS.DragAndDrop.itemStopDrag we added cleraring curosor, 
+        so then main game uses PickupContainerItem which pickups item on which drag ends, 
+        so this function here is to put that item back... :D but because of that the movement of items 
+        between slots is much faster as it does not require a sync to a server, as the item physicially 
+        does not move, we change only the location of itembuttons hence it is super quick ]]
+        C_Container.PickupContainerItem(self:GetBagID(), self:GetID()) 
     end
     print("infotype",infoType)
 
