@@ -92,6 +92,7 @@ backgroundFrame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.backgroundOnRecei
 backgroundFrame:SetScript("OnMouseUp", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
 
 backgroundFrame:SetPoint("BOTTOMRIGHT", AddonNS.container.MoneyFrame, "TOPRIGHT", 0, 0)
+backgroundFrame.myBagAddonHooked = true;
 
 
 function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)

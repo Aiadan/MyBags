@@ -53,9 +53,10 @@ category -> category
 
 ]]
 
-hooksecurefunc(C_Container, "SplitContainerItem", function(bag, slot, amount) -- to force placement onto an emptyItemButton
-  pickedItemButton = nil;
-end)
+hooksecurefunc(C_Container, "SplitContainerItem",
+    function(bag, slot, amount) -- to force placement onto an emptyItemButton
+        pickedItemButton = nil;
+    end)
 
 
 function AddonNS.DragAndDrop.itemOnClick(self, button)
@@ -64,7 +65,9 @@ function AddonNS.DragAndDrop.itemOnClick(self, button)
         local infoType, itemID, itemLink = getCachedCursorInfo()
         AddonNS.printDebug(pickedItemButton, infoType, itemID, itemLink)
         if (infoType) then
-            ClearCursor();
+            if (pickedItemButton) then
+                ClearCursor(); -- [faster movement feature] see INFO in itemOnReceiveDrag function
+            end
             AddonNS.DragAndDrop.itemOnReceiveDrag(self)
         else
             AddonNS.DragAndDrop.itemStartDrag(self);
@@ -72,9 +75,19 @@ function AddonNS.DragAndDrop.itemOnClick(self, button)
     end
 end
 
+local function isMouseOverHookedFrame()
+    local mouseFoci = GetMouseFoci()
+    local f = mouseFoci[1]
+    if f and (f.myBagAddonHooked or f.ItemCategory) then
+        return true
+    end
+    return false
+end
 function AddonNS.DragAndDrop.itemStopDrag(self) -- its only here to refresh cursor as we are hooking to onreceiveddrag and that means that cursor is cleared by the time it arrives to our code. Hence we will Cache it and use that instead.
     getCachedCursorInfo()
-    ClearCursor(); -- see INFO in itemOnReceiveDrag function
+    if (isMouseOverHookedFrame()) then -- [faster movement feature] 
+        ClearCursor(); -- see INFO in itemOnReceiveDrag function
+    end
 end
 
 function AddonNS.DragAndDrop.itemStartDrag(self)
@@ -89,8 +102,8 @@ function AddonNS.DragAndDrop.itemStartDrag(self)
 end
 
 function AddonNS.DragAndDrop.itemOnReceiveDrag(self, ...)
-    print("itemOnReceiveDrag")
-    
+    AddonNS.printDebug("itemOnReceiveDrag")
+
 
     local targetItemCategory = self.ItemCategory;
 
@@ -98,16 +111,14 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self, ...)
     if (infoType == "merchant") then
         itemID = GetMerchantItemID(itemID)
         infoType = "item";
-    else 
-    elseif(pickedItemButton) then
-        --[[ INFO: this magic here is because in AddonNS.DragAndDrop.itemStopDrag we added cleraring curosor, 
-        so then main game uses PickupContainerItem which pickups item on which drag ends, 
-        so this function here is to put that item back... :D but because of that the movement of items 
-        between slots is much faster as it does not require a sync to a server, as the item physicially 
+    elseif (pickedItemButton) then-- [faster movement feature] 
+        --[[ INFO: this magic here is because in AddonNS.DragAndDrop.itemStopDrag we added cleraring curosor,
+        so then main game uses PickupContainerItem which pickups item on which drag ends,
+        so this function here is to put that item back... :D but because of that the movement of items
+        between slots is much faster as it does not require a sync to a server, as the item physicially
         does not move, we change only the location of itembuttons hence it is super quick ]]
-        C_Container.PickupContainerItem(self:GetBagID(), self:GetID()) 
+        C_Container.PickupContainerItem(self:GetBagID(), self:GetID()) -- [faster movement feature] 
     end
-    print("infotype",infoType)
 
     if (infoType == "item") then
         if (pickedItemButton and itemID ~= pickedItemID) then
@@ -168,10 +179,10 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
         infoType = "item";
     end
     if (infoType == "item") then
-        if (pickedItemButton and itemID ~= pickedItemID) then -- todo: jak to jest sytuacja? chyba ze idzie z banku lub od vendora - w kazdym razie nie z naszego buttona
+        if (pickedItemButton and itemID ~= pickedItemID) then
             AddonNS.DragAndDrop.cleanUp()
         end
-        if not pickedItemButton and AddonNS.emptyItemButton then -- why is this here, this causes problems now, lol.... - it should not be from reagents bag. and it should only click, when the item is not taken from the bag
+        if not pickedItemButton and AddonNS.emptyItemButton then
             ContainerFrameItemButton_OnClick(AddonNS.emptyItemButton, "LeftButton")
         end
         AddonNS.CustomCategories:AssignToCategory(self.ItemCategory, itemID)

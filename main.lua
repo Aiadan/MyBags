@@ -8,12 +8,18 @@ local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
 
 local function triggerContainerOnTokenWatchChanged()
+    AddonNS.printDebug("triggerContainerOnTokenWatchChanged fired")
     securecallfunction(container.OnTokenWatchChanged, container);
 end
+
 AddonNS.TriggerContainerOnTokenWatchChanged = triggerContainerOnTokenWatchChanged;
+
 local function triggerContainerUpdateItemLayout()
     securecallfunction(container.UpdateItemLayout, container);
 end
+
+AddonNS.TriggerContainerUpdateItemLayout = triggerContainerUpdateItemLayout;
+
 local function queueContainerUpdateItemLayout()
     RunNextFrame(function()
         AddonNS.printDebug("QueueContainerUpdateItemLayout fired");
@@ -22,6 +28,7 @@ local function queueContainerUpdateItemLayout()
 end
 
 AddonNS.QueueContainerUpdateItemLayout = queueContainerUpdateItemLayout;
+
 local function addCategoriesToTooltip(tooltip)
     local owner = tooltip:GetOwner();
     if not owner or not owner.ItemCategories or #owner.ItemCategories == 0 then return end
