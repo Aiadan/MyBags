@@ -60,7 +60,7 @@ hooksecurefunc(C_Container, "SplitContainerItem",
 
 local function getItemIdFromButton(buttonItem)
     local info = buttonItem and buttonItem.GetBagID and
-    C_Container.GetContainerItemInfo(buttonItem:GetBagID(), buttonItem:GetID());
+        C_Container.GetContainerItemInfo(buttonItem:GetBagID(), buttonItem:GetID());
     return info and info.itemID
 end
 
@@ -121,17 +121,21 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
     end
 
     if (infoType == "item") then
-        if (pickedItemButton and (itemID ~= pickedItemID or itemID ~= getItemIdFromButton(self))) then -- i think this is here to prevent some weird situation when pickeditembutton is not cleared, but now I am going to extend it with check for faster movement feature
-            AddonNS.DragAndDrop.cleanUp()
-            --[[ INFO: this magic here is because in AddonNS.DragAndDrop.itemStopDrag we added cleraring curosor,
+        local info = C_Container.GetContainerItemInfo(self:GetBagID(), self:GetID());
+        local targetedItemID = info and info.itemID or nil;
+        if (pickedItemButton) then
+            if (itemID ~= pickedItemID) then -- i think this is here to prevent some weird situation when pickeditembutton is not cleared, but now I am going to extend it with check for faster movement feature
+                AddonNS.DragAndDrop.cleanUp()
+            end
+            if itemID ~= getItemIdFromButton(self) then
+                --[[ INFO: this magic here is because in AddonNS.DragAndDrop.itemStopDrag we added cleraring curosor,
         so then main game uses PickupContainerItem which pickups item on which drag ends,
         so this function here is to put that item back... :D but because of that the movement of items
         between slots is much faster as it does not require a sync to a server, as the item physicially
         does not move, we change only the location of itembuttons hence it is super quick ]]
-            C_Container.PickupContainerItem(self:GetBagID(), self:GetID()) -- [faster movement feature]
+                C_Container.PickupContainerItem(self:GetBagID(), self:GetID()) -- [faster movement feature]
+            end
         end
-        local info = C_Container.GetContainerItemInfo(self:GetBagID(), self:GetID());
-        local targetedItemID = info and info.itemID or nil;
         AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemID, targetedItemID,
             pickedItemCategory, targetItemCategory, pickedItemButton, self);
     elseif pickedItemCategory then -- category frame
