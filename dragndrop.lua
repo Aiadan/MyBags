@@ -58,6 +58,11 @@ hooksecurefunc(C_Container, "SplitContainerItem",
         pickedItemButton = nil;
     end)
 
+local function getItemIdFromButton(buttonItem)
+    local info = buttonItem and buttonItem.GetBagID and
+    C_Container.GetContainerItemInfo(buttonItem:GetBagID(), buttonItem:GetID());
+    return info and info.itemID
+end
 
 function AddonNS.DragAndDrop.itemOnClick(self, button)
     AddonNS.printDebug("itemOnClick")
@@ -65,7 +70,7 @@ function AddonNS.DragAndDrop.itemOnClick(self, button)
         local infoType, itemID, itemLink = getCachedCursorInfo()
         AddonNS.printDebug(pickedItemButton, infoType, itemID, itemLink)
         if (infoType) then
-            if (pickedItemButton) then
+            if (pickedItemButton and itemID ~= getItemIdFromButton(self)) then
                 ClearCursor(); -- [faster movement feature] see INFO in itemOnReceiveDrag function
             end
             AddonNS.DragAndDrop.itemOnReceiveDrag(self)
@@ -75,35 +80,37 @@ function AddonNS.DragAndDrop.itemOnClick(self, button)
     end
 end
 
-local function isMouseOverHookedFrame()
+local function isMouseOverHookedFrame(targetedItemID)
     local mouseFoci = GetMouseFoci()
     local f = mouseFoci[1]
     if f and (f.myBagAddonHooked or f.ItemCategory) then
+        if (getItemIdFromButton(f)) then
+            return getItemIdFromButton(f) ~= targetedItemID;
+        end
         return true
     end
     return false
 end
-function AddonNS.DragAndDrop.itemStopDrag(self) -- its only here to refresh cursor as we are hooking to onreceiveddrag and that means that cursor is cleared by the time it arrives to our code. Hence we will Cache it and use that instead.
-    getCachedCursorInfo()
-    if (isMouseOverHookedFrame()) then -- [faster movement feature] 
-        ClearCursor(); -- see INFO in itemOnReceiveDrag function
+function AddonNS.DragAndDrop.itemStopDrag(self)                 -- its only here to refresh cursor as we are hooking to onreceiveddrag and that means that cursor is cleared by the time it arrives to our code. Hence we will Cache it and use that instead.
+    getCachedCursorInfo()                                       -- this is here to cache the value even when it would be removed by Blizzard code
+    if (isMouseOverHookedFrame(getItemIdFromButton(self))) then -- [faster movement feature]
+        ClearCursor();                                          -- see INFO in itemOnReceiveDrag function
     end
 end
 
 function AddonNS.DragAndDrop.itemStartDrag(self)
     AddonNS.DragAndDrop.cleanUp()
     AddonNS.printDebug("itemStartDrag")
-    local info = C_Container.GetContainerItemInfo(self:GetBagID(), self:GetID());
-    if (info) then
+    local itemID = getItemIdFromButton(self)
+    if (itemID) then
         pickedItemButton = self;
-        pickedItemID = info.itemID
+        pickedItemID = itemID;
         pickedItemCategory = self.ItemCategory;
     end
 end
 
-function AddonNS.DragAndDrop.itemOnReceiveDrag(self, ...)
+function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
     AddonNS.printDebug("itemOnReceiveDrag")
-
 
     local targetItemCategory = self.ItemCategory;
 
@@ -111,18 +118,18 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self, ...)
     if (infoType == "merchant") then
         itemID = GetMerchantItemID(itemID)
         infoType = "item";
-    elseif (pickedItemButton) then-- [faster movement feature] 
-        --[[ INFO: this magic here is because in AddonNS.DragAndDrop.itemStopDrag we added cleraring curosor,
+    end
+
+    if (infoType == "item") then
+        if (pickedItemButton and (itemID ~= pickedItemID or itemID ~= getItemIdFromButton(self))) then -- i think this is here to prevent some weird situation when pickeditembutton is not cleared, but now I am going to extend it with check for faster movement feature
+            AddonNS.DragAndDrop.cleanUp()
+            --[[ INFO: this magic here is because in AddonNS.DragAndDrop.itemStopDrag we added cleraring curosor,
         so then main game uses PickupContainerItem which pickups item on which drag ends,
         so this function here is to put that item back... :D but because of that the movement of items
         between slots is much faster as it does not require a sync to a server, as the item physicially
         does not move, we change only the location of itembuttons hence it is super quick ]]
-        C_Container.PickupContainerItem(self:GetBagID(), self:GetID()) -- [faster movement feature] 
-    end
-
-    if (infoType == "item") then
-        if (pickedItemButton and itemID ~= pickedItemID) then
-            AddonNS.DragAndDrop.cleanUp()
+            C_Container.PickupContainerItem(self:GetBagID(), self:GetID()) -- [faster movement feature]
+            print("picked")
         end
         local info = C_Container.GetContainerItemInfo(self:GetBagID(), self:GetID());
         local targetedItemID = info and info.itemID or nil;
