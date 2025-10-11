@@ -52,6 +52,12 @@ category -> category
 - change category order
 
 ]]
+
+hooksecurefunc(C_Container, "SplitContainerItem", function(bag, slot, amount) -- to force placement onto an emptyItemButton
+  pickedItemButton = nil;
+end)
+
+
 function AddonNS.DragAndDrop.itemOnClick(self, button)
     AddonNS.printDebug("itemOnClick")
     if button == "LeftButton" then
