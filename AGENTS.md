@@ -4,6 +4,12 @@
 - Place automated tests under the `tests/` directory, mirroring the source tree of the files they cover (e.g., tests for `Categorizers/query.lua` belong in `tests/Categorizers/query_test.lua`).
 - When perfoming any task make sure proper adjustments to documentation in markdown files are done, especially make sure if there is a ticket in TODOs.md that is being resolve, that it is properly prefixed with checkmark icon.
 
+## Testing
+
+- Run categorizer unit tests with `lua tests/Categorizers/query_test.lua`.
+- Run category registration tests with `lua tests/categories_test.lua`.
+- Run SavedVariable integration coverage with `lua tests/integration/persistence/savedvariable_test.lua`.
+
 ## Code readability
 
 Make sure that simple things like `obj[key] = obj[key] or default` are not wrapped unnecessarly into function unless this clearly increases clarity.
