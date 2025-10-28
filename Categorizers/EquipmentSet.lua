@@ -52,27 +52,6 @@ local function refreshEquipmentSetsAndRefresh()
     AddonNS.Events:TriggerCustomEvent(CATEGORIZER_CATEGORIES_UPDATED, EquipmentSet);
 end
 
-local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCategory, targetItemCategory,
-                         pickedItemButton,
-                         targetItemButton)
-    local pickedESCategory = pickedItemButton and EquipmentSet:Categorize(nil, pickedItemButton)
-    local targetESCategory = targetItemButton and EquipmentSet:Categorize(nil, targetItemButton)
-    if targetItemButton then
-        if pickedESCategory then
-            setItemSetCategory(targetItemButton:GetBagID(), targetItemButton:GetID(), pickedESCategory)
-        else
-            cleanItemCategory(targetItemButton:GetBagID(), targetItemButton:GetID())
-        end
-    end
-    if pickedItemButton then
-        if targetESCategory then
-            setItemSetCategory(pickedItemButton:GetBagID(), pickedItemButton:GetID(), targetESCategory)
-        else
-            cleanItemCategory(pickedItemButton:GetBagID(), pickedItemButton:GetID())
-        end
-    end
-end
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)
 refreshEquipmentSets();
 AddonNS.Events:RegisterEvent("BAG_UPDATE_DELAYED", refreshEquipmentSets);
 AddonNS.Events:RegisterEvent("EQUIPMENT_SETS_CHANGED", refreshEquipmentSetsAndRefresh);

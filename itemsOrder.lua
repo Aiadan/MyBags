@@ -105,6 +105,8 @@ end
 local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCategory, targetItemCategory,
                          pickedItemButton,
                          targetItemButton)
-    ItemsMoved(targetedItemID, pickedItemID, pickedItemCategory ~= targetItemCategory)
+    if (pickedItemCategory == targetItemCategory or pickedItemCategory ~= targetItemCategory and not targetItemCategory:IsProtected() and not pickedItemCategory:IsProtected()) then
+        ItemsMoved(targetedItemID, pickedItemID, pickedItemCategory ~= targetItemCategory)
+    end
 end
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)
