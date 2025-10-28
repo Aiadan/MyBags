@@ -30,14 +30,13 @@ MyBags is pure Lua and requires no build step. Run tests with the system `lua` i
 - Unit: `lua tests/Categorizers/query_test.lua`
 - Integration (persistence: migration, layout, assignment, sentinel): `lua tests/integration/persistence/savedvariable_test.lua`
 
-Before shipping substantial changes, run the full suite. When storage semantics evolve, extend the integration scenarios accordingly.
+ 
 
 ## Code style guidelines
 
 - Pure Lua; stick to ASCII unless a file already uses special glyphs (e.g., colour codes).
 - Prefer simple, explicit helpers; do not wrap primitives like `foo = foo or default` unless it clearly improves clarity.
-- Guard new data structures against nil; lazily initialize tables and sanitize all SavedVariable input.
-- Persist only necessary data; avoid empty strings/tables in SavedVariables. Do not duplicate stored information.
+- Guard new data structures against nil; lazily initialize tables.
 - Use the `AddonNS` namespace consistently; expose functionality via `AddonNS` tables.
 - Favour descriptive local function names; keep closures near their use.
 - Call `AddonNS.QueueContainerUpdateItemLayout()` sparingly and only when state changes.
@@ -47,10 +46,12 @@ Before shipping substantial changes, run the full suite. When storage semantics 
 - Location: place automated tests under `tests/`, mirroring the source tree (e.g., `Categorizers/query.lua` → `tests/Categorizers/query_test.lua`).
 - Quality: avoid tests that only verify a method was called; prefer behaviour and state assertions.
 - Scope: include unit tests for categorizer/query logic and integration tests for SavedVariables lifecycle. Update integration when persistence paths change.
+- Run: execute the full suite before shipping substantial changes.
 
 ## SavedVariables and storage
 
 - Store only what is necessary. Avoid persisting empty values/strings/tables to reduce load time and memory overhead.
+- Sanitize all input read from SavedVariables; strip empty tables/strings and normalise shapes.
 - Prohibit duplication. Examples of what NOT to do:
   - Do not persist an ID mapped to a value that redundantly maps back to the same ID (derive dynamically on load if needed):
 
@@ -81,6 +82,4 @@ Before shipping substantial changes, run the full suite. When storage semantics 
 
 ## Repository rules
 
-- Avoid tests that are purely call-count/mocking checks; focus on behaviour and state.
 - Keep changes minimal and focused. Do not fix unrelated issues.
-- Sanitize SavedVariables and avoid persisting empty or duplicate data.
