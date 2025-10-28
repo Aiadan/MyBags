@@ -83,3 +83,7 @@ MyBags is pure Lua and requires no build step. Run tests with the system `lua` i
 ## Repository rules
 
 - Keep changes minimal and focused. Do not fix unrelated issues.
+
+## ExecPlans
+
+When writing complex features or significant refactors, use an ExecPlan (as described in .agent/PLANS.md) from design to implementation.
