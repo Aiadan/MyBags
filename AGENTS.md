@@ -5,11 +5,55 @@
 - When perfoming any task make sure proper adjustments to documentation in markdown files are done, especially make sure if there is a ticket in TODOs.md that is being resolve, that it is properly prefixed with checkmark icon.
 
 ## Code readability
+
 Make sure that simple things like `obj[key] = obj[key] or default` are not wrapped unnecessarly into function unless this clearly increases clarity.
 
 ## Storage and memory
 
-- Make sure that whatever is stored in SavedVariable is necessary. Avoid storing empty values, strings, tables. This can cause big overhead while storing this data or even reading into memory - avoid this as long as it does not hinder the efficiency. 
+- Make sure that whatever is stored in SavedVariable is necessary. Avoid storing empty values, strings, tables. This can cause big overhead while storing this data or even reading into memory - avoid this as long as it does not hinder the efficiency.
+- Avoid storage of data duplication. Things like these are prohibited:
+  - storing id mapped to value which again is mapped to id - such things can be read and created dynamically upon loading if needed and adds unnecessary overhead to storage and hence is prohibited:
+
+    ```lua
+    ["items"] = {
+        [191229] = {
+            ["itemid"] = 191229,
+        },
+    }
+    ```
+
+  - storing same information under different entity ie. for categories storing in which column it resides and separately having entity which stores information per column which categories are associated with it - that is prohibited:
+
+    ```lua
+    ["categories"] = {
+        ["byId"] = {
+        },
+    },
+    ["categoryState"] = {
+        ["equipment-set:5"] = {
+            ["column"] = 1,
+        },
+        ["equipment-set:1"] = {
+            ["column"] = 2,
+        },
+        ["equipment-set:2"] = {
+            ["column"] = 3,
+        },
+    },
+    ["categoryLayout"] = {
+        ["columns"] = {
+            {
+                "equipment-set:5",
+            },
+            {
+                "equipment-set:1",
+            },
+            {
+                "equipment-set:2",
+            },
+        },
+    },
+        ```
 
 ## Backward compatibility
 
