@@ -72,7 +72,7 @@ MyBags is pure Lua and requires no build step. Run tests with the system `lua` i
 
 - When changing storage formats, ensure users do not lose setup. Provide a reader/migration that translates old formats to new.
 - Simple additive extensions typically do not require backward-compat shims.
-- For major storage changes, consider using a new SavedVariables variable to allow safe rollback until stable. Plan a later cleanup to remove deprecated variables.
+- For major storage changes, consider using a new SavedVariables variable to allow safe rollback until stable. Plan a later cleanup to remove deprecated variables. On load, try the new SavedVariable. If missing, fall back to the old one. On logout, always save in the new format to complete migration.
 
 ## Planning and documentation
 
