@@ -41,12 +41,19 @@ MyBags is pure Lua and requires no build step. Run tests with the system `lua` i
 - Favour descriptive local function names; keep closures near their use.
 - Call `AddonNS.QueueContainerUpdateItemLayout()` sparingly and only when state changes.
 
+## AI Agent Code Organization Policy
+
+All AI agents must follow the Separation of Concerns principle. Each file, module, or agent must focus on a single, well-defined responsibility. Helper functions that directly support that responsibility are permitted within the same scope. Shared or unrelated logic must be implemented in separate modules and imported where needed. Agents must not duplicate or embed logic outside their defined concern but should rely on clear interfaces or service modules that expose necessary functionality.
+
+This policy also applies to generic or reusable components such as utility functions, data maps, or classes that could serve multiple agents or modules. Such tools must be implemented in dedicated files and imported where needed, ensuring that shared logic exists only once and can be maintained or extended independently.
+
 ## Testing instructions
 
 - Location: place automated tests under `tests/`, mirroring the source tree (e.g., `Categorizers/query.lua` → `tests/Categorizers/query_test.lua`).
 - Quality: avoid tests that only verify a method was called; prefer behaviour and state assertions.
 - Scope: include unit tests for categorizer/query logic and integration tests for SavedVariables lifecycle. Update integration when persistence paths change.
 - Run: execute the full suite before shipping substantial changes.
+- Test removal policy: never remove test cases unless the underlying logic they cover is removed. Document any removals or substantial test changes with rationale in `.agents/TESTS_REMOVED.md` (or in execspec if that workflow is used).
 
 ## SavedVariables and storage
 
