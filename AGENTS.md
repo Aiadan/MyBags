@@ -1,76 +1,86 @@
-# Repository Agent Instructions
+# Repository Agent Guide
 
-- Do not create any tests that would be purly based on checking whether given method is called. Such tests bring zero value and cause it to be harder to modify code afterwards.
-- Place automated tests under the `tests/` directory, mirroring the source tree of the files they cover (e.g., tests for `Categorizers/query.lua` belong in `tests/Categorizers/query_test.lua`).
-- When perfoming any task make sure proper adjustments to documentation in markdown files are done, especially make sure if there is a ticket in TODOs.md that is being resolve, that it is properly prefixed with checkmark icon.
+This guide is for AI agents (e.g., Codex CLI) contributing to MyBags. It consolidates policies, coding standards, and test commands so changes are safe, minimal, and consistent.
 
-## Testing
+## Project overview
 
-- Run categorizer unit tests with `lua tests/Categorizers/query_test.lua`.
-- Run category registration tests with `lua tests/categories_test.lua`.
-- Run SavedVariable integration coverage with `lua tests/integration/persistence/savedvariable_test.lua`.
+MyBags is a World of Warcraft bag addon focused on manual organisation. It extends Blizzard's combined bags rather than replacing them, letting players create bespoke categories while keeping default behaviours. Bank and reagent bags remain out of scope currently.
 
-## Code readability
+- Manual grouping: users drag items or categories to reorganise quickly; flows such as vendor purchases or bank transfers respect assignments.
+- Built-in categorizers: always-present Equipment Set (with icons) and New Items (right-click to clear). Everything else starts in the Unassigned bucket until placed.
+- Design philosophy: simplicity over configuration; minimal persistence; compatibility with default bag features and helpers like BlizzMove.
 
-Make sure that simple things like `obj[key] = obj[key] or default` are not wrapped unnecessarly into function unless this clearly increases clarity.
+Runtime interaction:
 
-## Storage and memory
+- Drag-and-drop emits events like `ITEM_MOVED`; dragging onto custom categories reassigns items unless the destination is protected.
+- Protected categories remain read-only for user moves.
+- Collapsing categories works for all categories, including the Unassigned category.
 
-- Make sure that whatever is stored in SavedVariable is necessary. Avoid storing empty values, strings, tables. This can cause big overhead while storing this data or even reading into memory - avoid this as long as it does not hinder the efficiency.
-- Avoid storage of data duplication. Things like these are prohibited:
-  - storing id mapped to value which again is mapped to id - such things can be read and created dynamically upon loading if needed and adds unnecessary overhead to storage and hence is prohibited:
+Categories comprise:
+
+- Dynamic categorizers (e.g., Equipment Set, New) keyed by (categorizer, identifier).
+- Custom categorizers (user-managed) with per-item assignments and optional query-based logic.
+- “Unassigned” sentinel tracked via `UNASSIGNED_CATEGORY_DB_STORAGE_NAME`.
+
+## Build and test commands
+
+MyBags is pure Lua and requires no build step. Run tests with the system `lua` interpreter from the addon's root (`Interface/AddOns/!dev_MyBags`).
+
+- Unit: `lua tests/categories_test.lua`
+- Unit: `lua tests/Categorizers/query_test.lua`
+- Integration (persistence: migration, layout, assignment, sentinel): `lua tests/integration/persistence/savedvariable_test.lua`
+
+Before shipping substantial changes, run the full suite. When storage semantics evolve, extend the integration scenarios accordingly.
+
+## Code style guidelines
+
+- Pure Lua; stick to ASCII unless a file already uses special glyphs (e.g., colour codes).
+- Prefer simple, explicit helpers; do not wrap primitives like `foo = foo or default` unless it clearly improves clarity.
+- Guard new data structures against nil; lazily initialize tables and sanitize all SavedVariable input.
+- Persist only necessary data; avoid empty strings/tables in SavedVariables. Do not duplicate stored information.
+- Use the `AddonNS` namespace consistently; expose functionality via `AddonNS` tables.
+- Favour descriptive local function names; keep closures near their use.
+- Call `AddonNS.QueueContainerUpdateItemLayout()` sparingly and only when state changes.
+
+## Testing instructions
+
+- Location: place automated tests under `tests/`, mirroring the source tree (e.g., `Categorizers/query.lua` → `tests/Categorizers/query_test.lua`).
+- Quality: avoid tests that only verify a method was called; prefer behaviour and state assertions.
+- Scope: include unit tests for categorizer/query logic and integration tests for SavedVariables lifecycle. Update integration when persistence paths change.
+
+## SavedVariables and storage
+
+- Store only what is necessary. Avoid persisting empty values/strings/tables to reduce load time and memory overhead.
+- Prohibit duplication. Examples of what NOT to do:
+  - Do not persist an ID mapped to a value that redundantly maps back to the same ID (derive dynamically on load if needed):
 
     ```lua
     ["items"] = {
-        [191229] = {
-            ["itemid"] = 191229,
-        },
+      [191229] = { ["itemid"] = 191229 },
     }
     ```
 
-  - storing same information under different entity ie. for categories storing in which column it resides and separately having entity which stores information per column which categories are associated with it - that is prohibited:
+  - Do not store the same information under multiple entities (e.g., storing per-category column and separately listing categories per column is prohibited):
 
     ```lua
-    ["categories"] = {
-        ["byId"] = {
-        },
-    },
-    ["categoryState"] = {
-        ["equipment-set:5"] = {
-            ["column"] = 1,
-        },
-        ["equipment-set:1"] = {
-            ["column"] = 2,
-        },
-        ["equipment-set:2"] = {
-            ["column"] = 3,
-        },
-    },
-    ["categoryLayout"] = {
-        ["columns"] = {
-            {
-                "equipment-set:5",
-            },
-            {
-                "equipment-set:1",
-            },
-            {
-                "equipment-set:2",
-            },
-        },
-    },
-        ```
+    ["categoryState"] = { ["equipment-set:5"] = { ["column"] = 1 } },
+    ["categoryLayout"] = { ["columns"] = { {"equipment-set:5"} } }
+    ```
 
 ## Backward compatibility
 
-- Make sure that whenever you change how things are stored, that users updating their addons will not loose their addon setup. That means there should always be a function which reads old format of data stored and translates it to a new one.
-- Simple extensions of information stored usually does not require keeping backward compatibility.
-- When making big changes to how and or what data is stored consider using a new SavedVariables variable so it is safe when needed to rollback to old data until a version is stable when a new code will be created to remove the old variable.
+- When changing storage formats, ensure users do not lose setup. Provide a reader/migration that translates old formats to new.
+- Simple additive extensions typically do not require backward-compat shims.
+- For major storage changes, consider using a new SavedVariables variable to allow safe rollback until stable. Plan a later cleanup to remove deprecated variables.
 
-## Planning
+## Planning and documentation
 
-Any plans, documentation, decisions or anything else you would like to create yourself please store in .md files inside .agents directory in this project.
+- Store plans/decisions you create under `.agents/` as Markdown files.
+- Modify `TODOs.md` only when resolving an existing item; prefix completed items with a checkmark icon as appropriate.
+- Modify `README.md` only when explicitly asked, or when resolving a `TODOs.md` item that requires it.
 
-You can modify TODO.md only when resolving one of the items listed there.
+## Repository rules
 
-You can modify README.md only when explicitly asked or when esolving one of the items listed in TODO.md
+- Avoid tests that are purely call-count/mocking checks; focus on behaviour and state.
+- Keep changes minimal and focused. Do not fix unrelated issues.
+- Sanitize SavedVariables and avoid persisting empty or duplicate data.
