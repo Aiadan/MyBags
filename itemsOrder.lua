@@ -105,7 +105,7 @@ end
 local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCategory, targetItemCategory,
                          pickedItemButton,
                          targetItemButton)
-    if (pickedItemCategory == targetItemCategory or pickedItemCategory ~= targetItemCategory and not targetItemCategory:IsProtected() and not pickedItemCategory:IsProtected()) then
+    if (pickedItemCategory == targetItemCategory or pickedItemCategory ~= targetItemCategory and not targetItemCategory.protected and not pickedItemCategory.protected) then
         ItemsMoved(targetedItemID, pickedItemID, pickedItemCategory ~= targetItemCategory)
     end
 end
