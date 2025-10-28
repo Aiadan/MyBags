@@ -18,7 +18,7 @@ Runtime interaction:
 
 Categories comprise:
 
-- Dynamic categorizers (e.g., Equipment Set, New) keyed by (categorizer, identifier).
+- Dynamic categorizers (e.g., Equipment Set, New)
 - Custom categorizers (user-managed) with per-item assignments and optional query-based logic.
 - “Unassigned” sentinel tracked via `UNASSIGNED_CATEGORY_DB_STORAGE_NAME`.
 
