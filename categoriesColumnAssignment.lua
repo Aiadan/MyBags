@@ -65,7 +65,8 @@ end
 
 function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     ensureColumns()
-    for category in AddonNS.Categories:GetConstantCategories() do
+    local constantCategories = AddonNS.Categories:GetConstantCategories()
+    for _, category in ipairs(constantCategories) do
         if not arrangedItems[category] then
             arrangedItems[category] = { AddonNS.itemButtonPlaceholder }
         end
