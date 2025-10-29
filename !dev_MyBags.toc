@@ -11,10 +11,10 @@
 #@end-debug@
 
 #@non-debug@
-# ## SavedVariables: MyBagsDB
+# ## SavedVariables: MyBagsDB, MyBagsDBGlobal
 #@end-non-debug@
 #@debug@
-## SavedVariables: dev_MyBagsDB
+## SavedVariables: dev_MyBagsDB, dev_MyBagsDBGlobal
 #@end-debug@
 
 #@debug@
