@@ -53,7 +53,7 @@ This policy also applies to generic or reusable components such as utility funct
 - Quality: avoid tests that only verify a method was called; prefer behaviour and state assertions.
 - Scope: include unit tests for categorizer/query logic and integration tests for SavedVariables lifecycle. Update integration when persistence paths change.
 - Run: execute the full suite before shipping substantial changes.
-- Test removal policy: never remove test cases unless the underlying logic they cover is removed. Document any removals or substantial test changes with rationale in `.agents/TESTS_REMOVED.md` (or in execspec if that workflow is used).
+- Test removal policy: never remove test cases unless the underlying logic they cover is removed. Document any removals or substantial test changes with rationale in `.agent/TESTS_REMOVED.md` (or in execspec if that workflow is used).
 
 ## SavedVariables and storage
 
@@ -83,7 +83,7 @@ This policy also applies to generic or reusable components such as utility funct
 
 ## Planning and documentation
 
-- Store plans/decisions you create under `.agents/` as Markdown files.
+- Store plans/decisions you create under `.agent/` as Markdown files.
 - Modify `TODOs.md` only when resolving an existing item; prefix completed items with a checkmark icon as appropriate.
 - Modify `README.md` only when explicitly asked, or when resolving a `TODOs.md` item that requires it.
 
