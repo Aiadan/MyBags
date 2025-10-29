@@ -7,9 +7,16 @@ local addonEnv = {
   Events = {
     OnInitialize = function() end,
     RegisterCustomEvent = function() end,
+    TriggerCustomEvent = function() end,
   },
   Categories = {
     RegisterCategorizer = function() end,
+  },
+  CategoryStore = {
+    All = function()
+      return function() end
+    end,
+    SetQuery = function() end,
   },
   printDebug = function() end,
 }

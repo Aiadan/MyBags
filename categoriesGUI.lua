@@ -31,63 +31,80 @@ function AddonNS.createGUI()
     local list
     do
         categoriesContainter.list = WowList:CreateNew(addonName .. "_categoriesList",
-
             {
-                height = 400, -- Height of the entire list frame
-                rows = 20,    -- Number of rows to display
+                height = 400,
+                rows = 20,
                 columns = {
                     {
                         name = "Name",
                         width = 230,
-                        sortFunction = function(a, b) return string.lower(a) < string.lower(b) end,
-                        displayFunction = function(cellData, rowData, columnIndex, rowIndex)
-                            return cellData, { 1, 1, 1, 1 } -- White color
-                        end
+                        displayFunction = function(cellData, rowData)
+                            local displayName = rowData.name or "(unnamed)"
+                            return displayName, { 1, 1, 1, 1 }
+                        end,
                     },
                     {
                         name = "Show",
                         width = 90,
-                        displayFunction = function(cellData, rowData, columnIndex, rowIndex)
-                            return "With items", { 1, 1, 0, 1 } -- Yellow color
+                        displayFunction = function(cellData, rowData)
+                            if rowData.alwaysVisible then
+                                return "Always", { 0, 1, 0, 1 }
+                            end
+                            return "With items", { 1, 1, 0, 1 }
                         end,
-                    }
-                }
-            }, categoriesContainter);
+                    },
+                },
+            }, categoriesContainter)
 
         list = categoriesContainter.list;
-        list:SetPoint('TOPLEFT', categoriesContainter, 'TOPLEFT', 0, 0);
-        list:SetMultiSelection(false);
-        list:SetButtonOnMouseDownFunction(
-            function(rowData, button)
-                AddonNS.DragAndDrop.customCategoryGUIOnMouseUp(rowData[1], button)
-            end, true)
+        list:SetPoint('TOPLEFT', categoriesContainter, 'TOPLEFT', 0, 0)
+        list:SetMultiSelection(false)
+        list:SetButtonOnMouseDownFunction(function(rowData, button)
+            AddonNS.DragAndDrop.customCategoryGUIOnMouseUp(rowData.id, button)
+        end, true)
 
-        list:SetButtonOnReceiveDragFunction(
-            function(rowData)
-                AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(rowData[1])
-            end)
+        list:SetButtonOnReceiveDragFunction(function(rowData)
+            AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(rowData.id)
+        end)
+    end
+
+    local function getSelectedRow()
+        local selection = list:GetSelected()
+        return selection and selection[1] or nil
+    end
+
+    local function getSelectedCategory()
+        local row = getSelectedRow()
+        if not row then
+            return nil
+        end
+        return AddonNS.CategoryStore:Get(row.id)
     end
 
 
     function list:RefreshList()
         list:RemoveAll()
-        local categories = AddonNS.CustomCategories:GetCategories()
-        for key, value in pairs(categories) do
-            list:AddData({ key })
+        local entries = {}
+        for _, category in pairs(AddonNS.CustomCategories:GetCategories()) do
+            table.insert(entries, category)
         end
-
-        -- workaround start
-        local queryCategories = AddonNS.QueryCategories:GetCategories() -- todo: remove this once query is merged with custom.
-        for key, value in pairs(queryCategories) do
-            if not categories[key] then
-                list:AddData({ key })
+        table.sort(entries, function(left, right)
+            local leftName = left:GetName() or ""
+            local rightName = right:GetName() or ""
+            leftName = string.lower(leftName)
+            rightName = string.lower(rightName)
+            if leftName == rightName then
+                return left.id < right.id
             end
-        end
-        -- workaround end
-
-        list:Sort(1, function(a, b)
-            return string.lower(a) < string.lower(b)
+            return leftName < rightName
         end)
+        for _, category in ipairs(entries) do
+            list:AddData({
+                id = category.id,
+                name = category:GetName(),
+                alwaysVisible = category.alwaysVisible or false,
+            })
+        end
         list:UpdateView()
     end
 
@@ -115,10 +132,13 @@ function AddonNS.createGUI()
     renameButton:SetText("Rename")
 
     renameButton:SetScript("OnClick", function(self, button)
-        local data = list:GetSelected()
-        local dialog = StaticPopup_Show("RENAME_CATEGORY_CONFIRM", data[1][1]);
-        if (dialog) then
-            dialog.data = data[1][1];
+        local category = getSelectedCategory()
+        if not category then
+            return
+        end
+        local dialog = StaticPopup_Show("RENAME_CATEGORY_CONFIRM", category:GetName() or "")
+        if dialog then
+            dialog.data = category.id
         end
     end)
 
@@ -130,17 +150,19 @@ function AddonNS.createGUI()
     deleteButton:SetText("Delete")
 
     deleteButton:SetScript("OnClick", function(self, button)
-        local data = list:GetSelected()
-        local dialog = StaticPopup_Show("DELETE_CATEGORY_CONFIRM", data[1][1]);
-        if (dialog) then
-            dialog.data = data[1][1];
+        local category = getSelectedCategory()
+        if not category then
+            return
+        end
+        local dialog = StaticPopup_Show("DELETE_CATEGORY_CONFIRM", category:GetName() or "")
+        if dialog then
+            dialog.data = category.id
         end
     end)
 
-
-
-    local function getSelectedCategoryName()
-        return list:GetSelected()[1][1];
+    local function getSelectedCategoryId()
+        local category = getSelectedCategory()
+        return category and category.id or nil
     end
 
 
@@ -163,8 +185,11 @@ function AddonNS.createGUI()
 
     -- Function to run when the checkbox is clicked
     alwaysShowCheckbox:SetScript("OnClick", function(self)
-        AddonNS.CategorShowAlways:SetAlwaysShow(getSelectedCategoryName(), self:GetChecked())
-        AddonNS.QueueContainerUpdateItemLayout();
+        local categoryId = getSelectedCategoryId()
+        if categoryId then
+            AddonNS.CategorShowAlways:SetAlwaysShow(categoryId, self:GetChecked())
+            AddonNS.QueueContainerUpdateItemLayout();
+        end
     end)
 
 
@@ -207,8 +232,11 @@ function AddonNS.createGUI()
     saveQueryButton:SetText("Save Query")
 
     saveQueryButton:SetScript("OnClick", function(self, button)
-        AddonNS.QueryCategories:SetQuery(getSelectedCategoryName(), containerFrame.textScrollFrame.EditBox:GetText())
-        AddonNS.QueueContainerUpdateItemLayout();
+        local categoryId = getSelectedCategoryId()
+        if categoryId then
+            AddonNS.QueryCategories:SetQuery(categoryId, containerFrame.textScrollFrame.EditBox:GetText())
+            AddonNS.QueueContainerUpdateItemLayout();
+        end
     end)
 
 
@@ -217,22 +245,21 @@ function AddonNS.createGUI()
     alwaysShowCheckbox:Disable()
     saveQueryButton:Disable()
     list:RegisterCallback("SelectionChanged", function()
-        if list:GetSelected() then
+        local category = getSelectedCategory()
+        if category then
             renameButton:Enable()
             alwaysShowCheckbox:Enable()
-            alwaysShowCheckbox:SetChecked(AddonNS.CategorShowAlways:ShouldAlwaysShow(getSelectedCategoryName()))
+            alwaysShowCheckbox:SetChecked(AddonNS.CategorShowAlways:ShouldAlwaysShow(category))
             deleteButton:Enable()
             saveQueryButton:Enable()
-            local query = AddonNS.QueryCategories:GetQuery(getSelectedCategoryName())
-
-            containerFrame.textScrollFrame.EditBox:SetText(query);
+            containerFrame.textScrollFrame.EditBox:SetText(AddonNS.QueryCategories:GetQuery(category))
         else
             alwaysShowCheckbox:SetChecked(false)
             alwaysShowCheckbox:Disable()
             renameButton:Disable()
             deleteButton:Disable()
             saveQueryButton:Disable()
-            containerFrame.textScrollFrame.EditBox:SetText("");
+            containerFrame.textScrollFrame.EditBox:SetText("")
         end
     end)
 
@@ -251,11 +278,13 @@ function AddonNS.createGUI()
         OnAccept = function(self)
             local categoryName = self:GetEditBox():GetText()
             if categoryName and categoryName ~= "" then
-                AddonNS.CustomCategories:NewCategory(categoryName);
-                list:RefreshList();
-                list:SelectRowByPredicate(function(row)
-                    return row[1] == categoryName
-                end)
+                local category = AddonNS.CustomCategories:NewCategory(categoryName)
+                list:RefreshList()
+                if category then
+                    list:SelectRowByPredicate(function(row)
+                        return row.id == category.id
+                    end)
+                end
             else
                 AddonNS.printDebug("Please enter a category name.")
             end
@@ -283,15 +312,18 @@ function AddonNS.createGUI()
             if categoryName and categoryName ~= "" then
                 AddonNS.printDebug("Category renamed: ", data, categoryName)
                 AddonNS.CustomCategories:RenameCategory(data, categoryName);
-                -- Add your category creation logic here
                 AddonNS.QueueContainerUpdateItemLayout();
                 list:RefreshList();
+                list:SelectRowByPredicate(function(row)
+                    return row.id == data
+                end)
             else
                 AddonNS.printDebug("Please enter a category name.")
             end
         end,
         OnShow = function(self, data)
-            self:GetEditBox():SetText(getSelectedCategoryName())
+            local category = AddonNS.CategoryStore:Get(data)
+            self:GetEditBox():SetText(category and category:GetName() or "")
         end,
         enterClicksFirstButton = true,
         timeout = 0,
@@ -315,22 +347,12 @@ function AddonNS.createGUI()
             AddonNS.CustomCategories:DeleteCategory(data);
             AddonNS.QueueContainerUpdateItemLayout();
             list:RefreshList();
-            if list:GetSelected() then -- todo this is a duplicated code
-                renameButton:Enable()
-                alwaysShowCheckbox:Enable()
-                alwaysShowCheckbox:SetChecked(AddonNS.CategorShowAlways:ShouldAlwaysShow(getSelectedCategoryName()))
-                deleteButton:Enable()
-                local query = AddonNS.QueryCategories:GetQuery(getSelectedCategoryName())
-                containerFrame.textScrollFrame.EditBox:SetText(query);
-            else
-                alwaysShowCheckbox:SetChecked(false)
-                alwaysShowCheckbox:Enable()
-                renameButton:Disable()
-                deleteButton:Disable()
-            end
-        end,
-        OnShow = function(self, data)
-            self:GetEditBox():SetText(getSelectedCategoryName())
+            renameButton:Disable()
+            deleteButton:Disable()
+            alwaysShowCheckbox:SetChecked(false)
+            alwaysShowCheckbox:Disable()
+            saveQueryButton:Disable()
+            containerFrame.textScrollFrame.EditBox:SetText("")
         end,
         enterClicksFirstButton = true,
         timeout = 0,

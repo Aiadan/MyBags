@@ -1,177 +1,181 @@
 local addonName, AddonNS = ...
 
 local NUM_COLUMNS = AddonNS.Const.NUM_COLUMNS;
-local UNASSIGNE_CATEGORY_DB_STORAGE_NAME = AddonNS.Const.UNASSIGNE_CATEGORY_DB_STORAGE_NAME
 local isCollapsed = AddonNS.Collapsed.isCollapsed;
-local categoriesColumnAssignments = {};
-for i = 1, AddonNS.Const.NUM_COLUMNS do
-    table.insert(categoriesColumnAssignments, {});
-end
+local layoutColumns = AddonNS.CategoryStore:GetLayoutColumns();
 
 local categoryAssignments;
 
-function AddonNS.Categories:OnInitialize()
-    AddonNS.db.categoriesColumnAssignments = AddonNS.db.categoriesColumnAssignments or categoriesColumnAssignments;
-    categoriesColumnAssignments = AddonNS.db.categoriesColumnAssignments;
+local function ensureColumns()
+    layoutColumns = AddonNS.CategoryStore:GetLayoutColumns();
+    for index = 1, NUM_COLUMNS do
+        layoutColumns[index] = layoutColumns[index] or {}
+    end
 end
 
-AddonNS.Events:OnInitialize(AddonNS.Categories.OnInitialize)
-
-local function getCategorySafeNameForStorage(category)
-    return category.name or UNASSIGNE_CATEGORY_DB_STORAGE_NAME;
+local function resolveCategoryId(input)
+    if not input then
+        return nil
+    end
+    local inputType = type(input)
+    if inputType == "string" then
+        return input
+    end
+    if inputType == "table" then
+        if input.id then
+            return input.id
+        end
+        if input.name then
+            local category = AddonNS.Categories:GetCategoryByName(input.name)
+            return category and category.id or nil
+        end
+    end
+    return nil
 end
+
+local function addCategoryToColumn(categoryAssignmentsForColumn, category, items)
+    local itemCount = #items;
+    local displayItems = items;
+    if isCollapsed(category) then
+        displayItems = { AddonNS.itemButtonPlaceholder }
+    end
+    AddonNS.ItemsOrder:Sort(displayItems);
+    table.insert(categoryAssignmentsForColumn, { category = category, items = displayItems, itemsCount = itemCount });
+end
+
 function AddonNS.Categories:GetLastCategoryInColumn(columnNo)
-    return categoryAssignments[columnNo][#categoryAssignments[columnNo]].category;
+    ensureColumns()
+    local column = categoryAssignments and categoryAssignments[columnNo]
+    if not column or #column == 0 then
+        return AddonNS.CategoryStore:GetUnassigned()
+    end
+    return column[#column].category
+end
+
+local function appendToLayout(columnIndex, categoryId)
+    ensureColumns()
+    local column = layoutColumns[columnIndex]
+    for _, id in ipairs(column) do
+        if id == categoryId then
+            return
+        end
+    end
+    table.insert(column, categoryId)
 end
 
 function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
-    for i, constantCategory in ipairs(AddonNS.Categories:GetConstantCategories()) do
-        if not arrangedItems[constantCategory] then
-            arrangedItems[constantCategory] = { AddonNS.itemButtonPlaceholder }
-        end
-    end
-    categoryAssignments = { {}, {}, {} };
-    local columnSum = { 0, 0, 0 };
-    local knownCategories = {};
-    -- Helper function to add category to a column, splitting if necessary
-    local function addCategoryToColumn(category, items, column)
-        local count = #items;
-        items = not isCollapsed(category) and items or { AddonNS.itemButtonPlaceholder }; -- clear items to be placed if the category is to be collapsed so they would not leak onto other columns
-        AddonNS.ItemsOrder:Sort(items);
-        if (#items == 0) then
-            table.insert(categoryAssignments[column], { category = category, items = items, itemsCount = count });
-        else
-            columnSum[column] = columnSum[column] + #items
-            table.insert(categoryAssignments[column], { category = category, items = items, itemsCount = count });
+    ensureColumns()
+    for category in AddonNS.Categories:GetConstantCategories() do
+        if not arrangedItems[category] then
+            arrangedItems[category] = { AddonNS.itemButtonPlaceholder }
         end
     end
 
-    for colIndex, categoriesNames in ipairs(categoriesColumnAssignments) do
-        for _, categoryName in ipairs(categoriesNames) do
-            local tempCat = AddonNS.Categories:GetCategoryByName(categoryName)
-            if (arrangedItems[tempCat]) then
-                addCategoryToColumn(tempCat, arrangedItems[tempCat], colIndex);
-                knownCategories[tempCat] = true;
+    categoryAssignments = { {}, {}, {} }
+    local known = {}
+
+    for columnIndex = 1, NUM_COLUMNS do
+        local assignmentsForColumn = categoryAssignments[columnIndex]
+        local ids = layoutColumns[columnIndex]
+        for _, categoryId in ipairs(ids) do
+            local category = AddonNS.CategoryStore:Get(categoryId)
+            if category and arrangedItems[category] then
+                addCategoryToColumn(assignmentsForColumn, category, arrangedItems[category])
+                known[category] = true
             end
         end
     end
 
-    -- Assign remaining categories to the bottom of first column
-    local categoriesToAssign = {};
+    local unmatched = {}
     for category, items in pairs(arrangedItems) do
-        if not knownCategories[category] then
-            table.insert(categoriesToAssign, category);
+        if not known[category] then
+            table.insert(unmatched, category)
         end
     end
-    table.sort(categoriesToAssign, function(a, b)
-        if a.name == nil then
-            return false           -- Treat nil as greater than any other value
-        elseif b.name == nil then
-            return true            -- Treat any value as less than nil
-        else
-            return a.name < b.name -- Regular comparison for non-nil values
+    table.sort(unmatched, function(left, right)
+        local leftName = left:GetName()
+        local rightName = right:GetName()
+        if leftName == nil then
+            return false
         end
+        if rightName == nil then
+            return true
+        end
+        return leftName < rightName
     end)
-    local column = 1;
-    for index, category in ipairs(categoriesToAssign) do
-        addCategoryToColumn(category, arrangedItems[category], column);
-        table.insert(categoriesColumnAssignments[column], getCategorySafeNameForStorage(category));
+
+    local targetColumn = 1
+    for _, category in ipairs(unmatched) do
+        addCategoryToColumn(categoryAssignments[targetColumn], category, arrangedItems[category] or {})
+        appendToLayout(targetColumn, category.id)
+        targetColumn = targetColumn % NUM_COLUMNS + 1
     end
-    return categoryAssignments;
+
+    return categoryAssignments
+end
+
+local function findCategoryPosition(categoryId)
+    ensureColumns()
+    for columnIndex = 1, NUM_COLUMNS do
+        local column = layoutColumns[columnIndex]
+        for rowIndex = 1, #column do
+            if column[rowIndex] == categoryId then
+                return columnIndex, rowIndex, column
+            end
+        end
+    end
+    return nil
 end
 
 local function categoryMoved(eventName, pickedCategory, targetCategory)
     AddonNS.printDebug(eventName)
-    local pickedCategoryName = getCategorySafeNameForStorage(pickedCategory);
-    local targetCategoryName = getCategorySafeNameForStorage(targetCategory);
-    if (pickedCategoryName == targetCategoryName) then
+    local pickedCategoryId = resolveCategoryId(pickedCategory)
+    local targetCategoryId = resolveCategoryId(targetCategory)
+    if not pickedCategoryId or not targetCategoryId or pickedCategoryId == targetCategoryId then
         return
     end
-    AddonNS.printDebug("received categoryMoved event", pickedCategoryName, targetCategory.name)
-    local pickedCategoryPosition = {}
-    local targetCategoryPostion = {}
-    for colIndex, categoriesNames in ipairs(categoriesColumnAssignments) do
-        local i = 1
-        while i <= #categoriesNames do
-            if categoriesNames[i] == pickedCategoryName then
-                pickedCategoryPosition = { col = colIndex, row = i }
-                table.remove(categoriesNames, i)
-                if categoriesNames[i] == targetCategoryName then
-                    targetCategoryPostion = { col = colIndex, row = i }
-                end
-            else
-                if categoriesNames[i] == targetCategoryName then
-                    targetCategoryPostion = { col = colIndex, row = i }
-                end
-                i = i + 1
-            end
-        end
-    end
-    local placeAbove =
-        (
-            pickedCategoryPosition.col ~= targetCategoryPostion.col or
-            pickedCategoryPosition.col == targetCategoryPostion.col and pickedCategoryPosition.row > targetCategoryPostion.row) and
-        0 or 1;
-    table.insert(categoriesColumnAssignments[targetCategoryPostion.col], targetCategoryPostion.row + placeAbove,
-        pickedCategoryName)
-end
-
-
-
-local function categoryMovedToColumn(eventName, pickedCategory, column)
-    AddonNS.printDebug(eventName)
-    local pickedCategoryName = getCategorySafeNameForStorage(pickedCategory);
-    AddonNS.printDebug("received categoryMovedToColumn", pickedCategoryName, column)
-
-    for colIndex, categoriesNames in ipairs(categoriesColumnAssignments) do
-        local i = 1
-        while i <= #categoriesNames do
-            if categoriesNames[i] == pickedCategoryName then
-                table.remove(categoriesNames, i)
-                table.insert(categoriesColumnAssignments[column], pickedCategoryName)
-                return;
-            end
-            i = i + 1
-        end
-    end
-end
-
-local function categoryRenamed(eventName, fromCategoryName, toCategoryName)
-    AddonNS.printDebug(eventName)
-    if (fromCategoryName == toCategoryName) then
+    local pickedColumn, pickedRow, pickedColumnRef = findCategoryPosition(pickedCategoryId)
+    local targetColumn, targetRow = findCategoryPosition(targetCategoryId)
+    if not targetColumn then
         return
     end
-    AddonNS.printDebug("received categoryRenamed event", fromCategoryName, toCategoryName)
-    for colIndex, categoriesNames in ipairs(categoriesColumnAssignments) do
-        local i = 1
-        while i <= #categoriesNames do
-            AddonNS.printDebug(" ", categoriesNames[i]);
-            if categoriesNames[i] == fromCategoryName then
-                categoriesNames[i] = toCategoryName;
-                return;
-            end
-            i = i + 1
-        end
+    if pickedColumn then
+        table.remove(pickedColumnRef, pickedRow)
     end
+    local targetColumnRef = layoutColumns[targetColumn]
+    local placeAbove = 0
+    if pickedColumn and pickedColumn == targetColumn and pickedRow < targetRow then
+        placeAbove = 1
+    end
+    table.insert(targetColumnRef, targetRow + placeAbove, pickedCategoryId)
 end
 
-local function categoryDeleted(eventName, categoryName)
+local function categoryMovedToColumn(eventName, pickedCategory, columnIndex)
     AddonNS.printDebug(eventName)
-    for colIndex, categoriesNames in ipairs(categoriesColumnAssignments) do
-        local i = 1
-        while i <= #categoriesNames do
-            AddonNS.printDebug(" ", categoriesNames[i]);
-            if categoriesNames[i] == categoryName then
-                table.remove(categoriesNames, i);
-                return;
-            end
-            i = i + 1
-        end
+    local pickedCategoryId = resolveCategoryId(pickedCategory)
+    if not pickedCategoryId or not columnIndex then
+        return
     end
+    ensureColumns()
+    local pickedColumn, pickedRow, pickedColumnRef = findCategoryPosition(pickedCategoryId)
+    if pickedColumn and pickedColumnRef then
+        table.remove(pickedColumnRef, pickedRow)
+    end
+    table.insert(layoutColumns[columnIndex], pickedCategoryId)
 end
 
+local function categoryDeleted(eventName, category)
+    AddonNS.printDebug(eventName)
+    local categoryId = resolveCategoryId(category)
+    if not categoryId then
+        return
+    end
+    local columnIndex, rowIndex, column = findCategoryPosition(categoryId)
+    if columnIndex and column then
+        table.remove(column, rowIndex)
+    end
+end
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED, categoryMoved)
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, categoryMovedToColumn)
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, categoryRenamed)

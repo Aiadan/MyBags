@@ -102,11 +102,16 @@ local function ItemsMoved(previousItemID, pickedItemID, changedCategory)
     order_map_changed = true;
 end
 
-local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCategory, targetItemCategory,
+local function itemMoved(eventName, pickedItemID, targetedItemID, pickedCategoryId, targetCategoryId,
                          pickedItemButton,
                          targetItemButton)
-    if (pickedItemCategory == targetItemCategory or pickedItemCategory ~= targetItemCategory and not targetItemCategory.protected and not pickedItemCategory.protected) then
-        ItemsMoved(targetedItemID, pickedItemID, pickedItemCategory ~= targetItemCategory)
+    local pickedCategory = pickedCategoryId and AddonNS.CategoryStore:Get(pickedCategoryId)
+    local targetCategory = targetCategoryId and AddonNS.CategoryStore:Get(targetCategoryId)
+    local sameCategory = pickedCategoryId == targetCategoryId
+    local targetProtected = targetCategory and targetCategory:IsProtected() or false
+    local pickedProtected = pickedCategory and pickedCategory:IsProtected() or false
+    if sameCategory or (not targetProtected and not pickedProtected) then
+        ItemsMoved(targetedItemID, pickedItemID, not sameCategory)
     end
 end
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)

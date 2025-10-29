@@ -4,6 +4,7 @@ local addonEnv = {
       CUSTOM_CATEGORY_DELETED = "CUSTOM_CATEGORY_DELETED",
       CUSTOM_CATEGORY_RENAMED = "CUSTOM_CATEGORY_RENAMED",
     },
+    NUM_COLUMNS = 3,
     UNASSIGNE_CATEGORY_DB_STORAGE_NAME = "UNASSIGNED",
   },
   Events = {
@@ -14,21 +15,30 @@ local addonEnv = {
   },
   printDebug = function() end,
 }
-
 dofile("utils/orderedMap.lua")
+local storeChunk = assert(loadfile("categoryStore.lua"))
+storeChunk("MyBags", addonEnv)
+addonEnv.CategoryStore:LoadOrBootstrap({}, nil)
+
 local categoriesChunk = assert(loadfile("categories.lua"))
 categoriesChunk("MyBags", addonEnv)
 
-local function makeCategorizer(catName)
+local function makeCategorizer(id, name)
   return {
     Categorize = function(self, itemID)
-      if itemID == 1 then return catName end
+      if itemID == 1 then
+        return addonEnv.CategoryStore:RecordDynamicCategory({
+          id = id,
+          name = name,
+          protected = false,
+        })
+      end
     end,
   }
 end
 
-addonEnv.Categories:RegisterCategorizer("cat1", makeCategorizer("cat1"), false)
-addonEnv.Categories:RegisterCategorizer("cat2", makeCategorizer("cat2"), false)
+addonEnv.Categories:RegisterCategorizer("cat1", makeCategorizer("cat1", "cat1"))
+addonEnv.Categories:RegisterCategorizer("cat2", makeCategorizer("cat2", "cat2"))
 
 local itemButton = {}
 local category = addonEnv.Categories:Categorize(1, itemButton)

@@ -1,135 +1,193 @@
 local addonName, AddonNS = ...
 
--- events
-local Custom = {};
-AddonNS.CustomCategories = {}
-local categorizedItems = {}
-local customCategories = {}
+local UserCategorizer = {}
+local UserCategories = {}
+AddonNS.CustomCategories = UserCategories
 
-AddonNS.Categories:RegisterCategorizer("Custom categorizer", Custom);
+local seen = {}
 
--- function Custom:GetConstantCategories()
---     local categories = {};
---     for i, _ in pairs(customCategories) do
---         table.insert(categories, i);
---     end
---     table.sort(categories)
---     return categories;
--- end
-
-function Custom:Categorize(itemID)
-    return categorizedItems[itemID];
+local function shouldProcess(id)
+    local now = debugprofilestop()
+    local last = seen[id]
+    if last and (now - last) < 1000 then
+        return false
+    end
+    seen[id] = now
+    return true
 end
 
-function AddonNS.CustomCategories:OnInitialize()
+local function resolveCategoryIdentifier(categoryOrId)
+    if not categoryOrId then
+        return nil
+    end
+    if type(categoryOrId) == "table" then
+        return categoryOrId
+    end
+    return AddonNS.CategoryStore:Get(categoryOrId) or AddonNS.Categories:GetCategoryByName(categoryOrId)
+end
 
-    AddonNS.db.customCategories = AddonNS.db.customCategories or customCategories;
-    customCategories = AddonNS.db.customCategories;
+local function collectItemInfo(itemID, itemButton)
+    if not itemButton then
+        return nil, nil
+    end
+    local bagID = itemButton:GetBagID()
+    local slotID = itemButton:GetID()
+    local containerInfo = C_Container.GetContainerItemInfo(bagID, slotID)
+    if not containerInfo then
+        return nil, nil
+    end
+    local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent =
+        C_Item.GetItemInfo(containerInfo.hyperlink)
+    if not itemName then
+        return nil, containerInfo
+    end
+    local questInfo = C_Container.GetContainerItemQuestInfo(bagID, slotID) or {}
+    local inventoryType = C_Item.GetItemInventoryTypeByID(itemID)
+    local payload = {
+        stackCount = containerInfo.stackCount,
+        quality = containerInfo.quality,
+        isReadable = containerInfo.isReadable,
+        hasLoot = containerInfo.hasLoot,
+        hasNoValue = containerInfo.hasNoValue,
+        itemID = containerInfo.itemID,
+        isBound = containerInfo.isBound,
+        itemName = containerInfo.itemName,
+        ilvl = itemLevel,
+        itemMinLevel = itemMinLevel,
+        itemType = classID,
+        itemSubType = subclassID,
+        inventoryType = inventoryType,
+        sellPrice = sellPrice,
+        isCraftingReagent = isCraftingReagent,
+        isQuestItem = questInfo.isQuestItem,
+        questID = questInfo.questID,
+        isQuestItemActive = questInfo.isActive,
+        bindType = bindType,
+        expansionID = expansionID,
+    }
+    return payload, containerInfo
+end
 
-    for category, items in pairs(customCategories) do
-        for i, v in ipairs(items) do
-            categorizedItems[v] = category;
+function UserCategorizer:Categorize(itemID, itemButton)
+    local matches = {}
+    local seenCategories = {}
+
+    local assignedId = AddonNS.CategoryStore:GetAssignment(itemID)
+    if assignedId then
+        local assignedCategory = AddonNS.CategoryStore:Get(assignedId)
+        if assignedCategory then
+            matches[1] = assignedCategory
+            seenCategories[assignedId] = true
         end
     end
-end
 
-
-local function removeDuplicates(list)
-    local seen = {}
-    local result = {}
-
-    for _, value in ipairs(list) do
-        if not seen[value] then
-            seen[value] = true
-            table.insert(result, value)
+    local itemInfo, containerInfo = collectItemInfo(itemID, itemButton)
+    if not itemInfo then
+        if containerInfo and shouldProcess(itemID) then
+            local item = Item:CreateFromItemID(itemID)
+            item:ContinueOnItemLoad(function()
+                AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, UserCategorizer)
+            end)
         end
+        if matches[1] then
+            return matches
+        end
+        return nil
     end
 
-    return result
-end
-function AddonNS.CustomCategories:OnShutDown()
-    for categoryName, items in pairs(customCategories) do
-        customCategories[categoryName] = removeDuplicates(items);
-    end
-end
-
-AddonNS.Events:OnInitialize(AddonNS.CustomCategories.OnInitialize)
-AddonNS.Events:RegisterEvent("PLAYER_LOGOUT", AddonNS.CustomCategories.OnShutDown);
-function AddonNS.CustomCategories:GetCategories()
-    local categories = {};
-    for i, _ in pairs(customCategories) do
-        categories[i] = true;
-    end
-    return categories;
-end
-
-
-function AddonNS.CustomCategories:NewCategory(categoryName)
-    customCategories[categoryName] = customCategories[categoryName] or {};
-end
-
-function AddonNS.CustomCategories:RenameCategory(fromCategoryName, toCategoryName)
-    if (customCategories[fromCategoryName]) then
-        if (customCategories[toCategoryName]) then
-            for i, v in ipairs(customCategories[fromCategoryName]) do
-                table.insert(customCategories[toCategoryName], v);
+    for category in AddonNS.CategoryStore:All() do
+        if category.query then
+            local evaluator = AddonNS.QueryCategories:GetCompiled(category)
+            if evaluator and evaluator(itemInfo) and not seenCategories[category.id] then
+                table.insert(matches, category)
+                seenCategories[category.id] = true
             end
-        else
-            customCategories[toCategoryName] = customCategories[fromCategoryName];
-        end
-        customCategories[fromCategoryName] = nil;
-        -- update categorization
-        for i, v in ipairs(customCategories[toCategoryName]) do
-            categorizedItems[v] = toCategoryName;
-        end
-        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, fromCategoryName, toCategoryName);
-    end
-end
-
-function AddonNS.CustomCategories:DeleteCategory(categoryName)
-    for i, v in ipairs(customCategories[categoryName]) do
-        categorizedItems[v] = nil;
-    end
-    customCategories[categoryName] = nil;
-    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryName);
-end
-
-
-local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCategory, targetItemCategory,
-                         pickedItemButton,
-                         targetItemButton)
-    
-    AddonNS.CustomCategories:AssignToCategory(targetItemCategory, pickedItemID)
-end
-
-
-
-function AddonNS.CustomCategories:AssignToCategory(newCategory, itemID)
-    if (newCategory.protected) then return end;
-    AddonNS.printDebug("AssignToCategory changing category of ", itemID, " to ", newCategory and newCategory.name)
-    local newCategoryName = newCategory and newCategory.name;
-    self:AssignToCategoryByName(newCategoryName, itemID)
-end
-
-function AddonNS.CustomCategories:AssignToCategoryByName(newCategoryName, itemID)
-
-    AddonNS.printDebug(" AssignToCategoryByNamechanging category of ", itemID, " to ", newCategoryName)
-    local previousCategoryName = categorizedItems[itemID];
-    categorizedItems[itemID] = newCategoryName;
-    local i = 1;
-    if (customCategories[previousCategoryName]) then
-        while i <= #customCategories[previousCategoryName] do
-            if customCategories[previousCategoryName][i] == itemID then
-                table.remove(customCategories[previousCategoryName], i);
-                break
-            end
-            i = i + 1;
         end
     end
-    if (newCategoryName) then
-        customCategories[newCategoryName] = customCategories[newCategoryName] or {};
-        table.insert(customCategories[newCategoryName], itemID);
+
+    if #matches > 0 then
+        return matches
     end
+    return nil
+end
+
+AddonNS.Categories:RegisterCategorizer("UserCategories", UserCategorizer)
+AddonNS.UserCategorizer = UserCategorizer
+
+local function fireUpdate()
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, UserCategorizer)
+end
+
+function UserCategories:GetCategories()
+    local categories = {}
+    for category in AddonNS.CategoryStore:All() do
+        if category.categorizer == "user" then
+            categories[category.id] = category
+        end
+    end
+    return categories
+end
+
+function UserCategories:NewCategory(name, opts)
+    local category = AddonNS.CategoryStore:CreateCustom(name, opts or {})
+    fireUpdate()
+    return category
+end
+
+function UserCategories:RenameCategory(categoryOrId, newName)
+    local category = resolveCategoryIdentifier(categoryOrId)
+    if not category then
+        return
+    end
+    local previousName = category:GetName()
+    AddonNS.CategoryStore:Rename(category.id, newName)
+    fireUpdate()
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, category.id, newName, previousName)
+end
+
+function UserCategories:DeleteCategory(categoryOrId)
+    local category = resolveCategoryIdentifier(categoryOrId)
+    if not category then
+        return
+    end
+    AddonNS.CategoryStore:Delete(category.id)
+    fireUpdate()
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, category.id)
+end
+
+function UserCategories:AssignToCategory(categoryOrId, itemID)
+    if not itemID then
+        return
+    end
+    local category = resolveCategoryIdentifier(categoryOrId)
+    if category and category:IsProtected() then
+        return
+    end
+    if category then
+        AddonNS.CategoryStore:AssignItem(itemID, category.id)
+    else
+        AddonNS.CategoryStore:UnassignItem(itemID)
+    end
+    fireUpdate()
+end
+
+function UserCategories:AssignToCategoryByName(name, itemID)
+    local category = AddonNS.Categories:GetCategoryByName(name)
+    if category and category.id == AddonNS.CategoryStore:GetUnassigned().id then
+        category = nil
+    end
+    self:AssignToCategory(category, itemID)
+end
+
+local function itemMoved(eventName, pickedItemID, targetedItemID, pickedCategory, targetCategory)
+    local target = resolveCategoryIdentifier(targetCategory)
+    if not pickedItemID or not target then
+        return
+    end
+    if target:IsProtected() then
+        return
+    end
+    UserCategories:AssignToCategory(target, pickedItemID)
 end
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)

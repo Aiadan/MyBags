@@ -29,16 +29,24 @@ AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED = "MYBAGS_CATEGORIZER_CATEGO
 AddonNS.Const.Events.COLLAPSED_CHANGED = "MYBAGS_COLLAPSED_CHANGED"
 -- DB
 --@debug@
-local globalDbName = "dev_MyBagsDBGlobal"
+local legacyGlobalDbName = "dev_MyBagsDBGlobal"
+local globalDbName = "dev_MyBagsDB"
 --@end-debug@
 --[===[@non-debug@
-local globalDbName = "MyBagsDBGlobal";
+local legacyGlobalDbName = "MyBagsDBGlobal";
+local globalDbName = "MyBagsDB";
 --@end-non-debug@]===]
 
 AddonNS.db = {};
+AddonNS.LegacyDB = nil;
 AddonNS.init = function()
+    AddonNS.LegacyDB = _G[legacyGlobalDbName];
     _G[globalDbName] = _G[globalDbName] or {};
     AddonNS.db = _G[globalDbName];
+    if not AddonNS.CategoryStore then
+        error("CategoryStore missing")
+    end
+    AddonNS.CategoryStore:LoadOrBootstrap(AddonNS.db, AddonNS.LegacyDB);
 end
 
 AddonNS.Events:OnDbLoaded(AddonNS.init)

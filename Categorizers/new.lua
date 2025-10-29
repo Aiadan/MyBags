@@ -5,6 +5,16 @@ local NewItemCategorizer = {};
 AddonNS.Categories:RegisterCategorizer("New", NewItemCategorizer, true, "Right-click to reset new items.");
 
 local newItems = {};
+local newCategoryId = "sys:new"
+local function ensureNewCategory()
+    return AddonNS.CategoryStore:RecordDynamicCategory({
+        id = newCategoryId,
+        name = "|cff9999ffNew",
+        categorizer = "system:new",
+        protected = true,
+        alwaysVisible = true,
+    })
+end
 
 function NewItemCategorizer:Categorize(itemID, itemButton)
     local containerIndex = itemButton:GetBagID();
@@ -14,7 +24,11 @@ function NewItemCategorizer:Categorize(itemID, itemButton)
         newItems[containerIndex] = newItems[containerIndex] or {};
         newItems[containerIndex][slotIndex] = itemID;
     end
-    return newItems[containerIndex] and newItems[containerIndex][slotIndex] == itemID and "|cff9999ff" .. "New" or nil
+    local category = ensureNewCategory()
+    if newItems[containerIndex] and newItems[containerIndex][slotIndex] == itemID then
+        return category
+    end
+    return nil
 end
 
 function NewItemCategorizer:OnRightClick()

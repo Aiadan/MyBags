@@ -11,10 +11,10 @@
 #@end-debug@
 
 #@non-debug@
-# ## SavedVariables: MyBagsDBGlobal
+# ## SavedVariables: MyBagsDB
 #@end-non-debug@
 #@debug@
-## SavedVariables: dev_MyBagsDBGlobal
+## SavedVariables: dev_MyBagsDB
 #@end-debug@
 
 #@debug@
@@ -27,6 +27,7 @@
 #@end-non-debug@
 
 utils/orderedMap.lua
+categoryStore.lua
 init.lua
 collapsed.lua
 main.lua

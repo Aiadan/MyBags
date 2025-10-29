@@ -1,82 +1,72 @@
 local addonName, AddonNS = ...
 
-
 AddonNS.Categories = {};
 
-local UNASSIGNED_CATEGORY = { name = nil, protected = false };
 local categorizers = OrderedMap:new()
-local categories = {};
-function AddonNS.Categories:RegisterCategorizer(name, categorizer, protected, description)
-    categorizers:set(name, { categorizer = categorizer, protected = protected, description = description });
+
+local function resolveCategory(result, output, seen)
+    if not result then
+        return
+    end
+    local category
+    local resultType = type(result)
+    if resultType == "string" then
+        category = AddonNS.CategoryStore:Get(result)
+    elseif resultType == "table" and result.id and (getmetatable(result) or result._record or result._metadata) then
+        category = result
+    elseif resultType == "table" and result[1] then
+        for index = 1, #result do
+            resolveCategory(result[index], output, seen)
+        end
+        return
+    end
+    if not category then
+        return
+    end
+    if seen[category.id] then
+        return
+    end
+    seen[category.id] = true
+    table.insert(output, category)
+end
+
+function AddonNS.Categories:RegisterCategorizer(name, categorizer)
+    categorizers:set(name, categorizer);
 end
 
 function AddonNS.Categories:GetConstantCategories()
-    local constantCategories = {}
-    for categoryName, _ in pairs(AddonNS.CategorShowAlways:GetAlwaysShownCategories()) do
-        local protected = false; -- todo: replace once protection will be configurable
-        if not categories[categoryName] then
-            categories[categoryName] = { name = categoryName, protected = protected };
+    local constant = {}
+    for category in AddonNS.CategoryStore:All() do
+        if category.alwaysVisible then
+            table.insert(constant, category)
         end
-        table.insert(constantCategories, categories[categoryName]);
     end
-    return constantCategories;
+    return constant
 end
 
 function AddonNS.Categories:Categorize(itemID, itemButton)
-    local categoryName;
-    local firstCategory = nil;
-    local matchedCategories = {};
-    for _, categorizerDef in categorizers:iterate() do
-        categoryName = categorizerDef.categorizer:Categorize(itemID, itemButton);
-        if categoryName then
-            if not categories[categoryName] then
-                categories[categoryName] = {
-                    name = categoryName,
-                    protected = categorizerDef.protected,
-                    OnRightClick = categorizerDef.categorizer.OnRightClick,
-                    description = categorizerDef.description
-                };
-            end
-            local categoryObj = categories[categoryName];
-            table.insert(matchedCategories, categoryObj);
-            if not firstCategory then
-                firstCategory = categoryObj;
-            end
-        end;
+    local matches = {}
+    local seen = {}
+    for _, categorizer in categorizers:iterate() do
+        local result = categorizer:Categorize(itemID, itemButton)
+        resolveCategory(result, matches, seen)
     end
     if itemButton then
-        itemButton.ItemCategories = matchedCategories;
+        itemButton.ItemCategories = matches
     end
-    if firstCategory then
-        return firstCategory;
+    if matches[1] then
+        return matches[1]
     end
-    return UNASSIGNED_CATEGORY
+    return AddonNS.CategoryStore:GetUnassigned()
+end
+
+function AddonNS.Categories:GetCategoryById(categoryId)
+    return AddonNS.CategoryStore:Get(categoryId)
 end
 
 function AddonNS.Categories:GetCategoryByName(categoryName)
-    if categoryName == AddonNS.Const.UNASSIGNE_CATEGORY_DB_STORAGE_NAME then return UNASSIGNED_CATEGORY end;
-    return categories[categoryName]
-end
-
-local function categoryRenamed(eventName, fromCategoryName, toCategoryName)
-    AddonNS.printDebug(eventName)
-    if (fromCategoryName == toCategoryName) then
-        return
+    if categoryName == AddonNS.Const.UNASSIGNE_CATEGORY_DB_STORAGE_NAME then
+        return AddonNS.CategoryStore:GetUnassigned()
     end
-    AddonNS.printDebug("received categoryRenamed event", fromCategoryName, toCategoryName)
-    if categories[fromCategoryName] then
-        if (not categories[toCategoryName]) then
-            categories[toCategoryName] = categories[fromCategoryName];
-            categories[fromCategoryName].name = toCategoryName;
-        end
-        categories[fromCategoryName] = nil;
-    end
+    return AddonNS.CategoryStore:GetByName(categoryName)
 end
-
-local function categoryDeleted(eventName, categoryName)
-    categories[categoryName] = nil;
-end
-
-
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, categoryRenamed)

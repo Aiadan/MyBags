@@ -11,8 +11,8 @@ Players currently lose manual item groupings or accumulate broken data whenever 
 ## Progress
  
 - [x] (2025-10-29 16:44Z) Draft ExecPlan capturing current architecture, migration goals, and work breakdown.
-- [ ] Implementation phase (category store, migrations, refactors) pending.
-- [ ] Validation phase (full Lua test suite, manual smoke in-game) pending.
+- [x] (2025-10-29 17:14Z) Implementation complete (categoryStore, runtime modules, drag-and-drop, and GUI refactored to ID-based workflow; harness/tests updated).
+- [ ] Validation phase (automated Lua suite complete; manual in-game smoke pending).
  
 ## Surprises & Discoveries
  

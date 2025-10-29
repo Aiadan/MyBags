@@ -1,35 +1,36 @@
 local addonName, AddonNS = ...
-AddonNS = AddonNS or {} 
 
-local CategorShowAlways = {};
 AddonNS.CategorShowAlways = {};
-local categoriesToAlwaysShow = {};
 
-function AddonNS.CategorShowAlways:OnInitialize()
-    AddonNS.db.categoriesToAlwaysShow = AddonNS.db.categoriesToAlwaysShow or categoriesToAlwaysShow;
-    categoriesToAlwaysShow = AddonNS.db.categoriesToAlwaysShow;
+local function toCategory(categoryOrId)
+    if not categoryOrId then
+        return nil
+    end
+    if type(categoryOrId) == "table" then
+        return categoryOrId
+    end
+    return AddonNS.CategoryStore:Get(categoryOrId)
 end
-AddonNS.Events:OnInitialize(AddonNS.CategorShowAlways.OnInitialize)
 
 function AddonNS.CategorShowAlways:GetAlwaysShownCategories()
-    return categoriesToAlwaysShow -- leaking table, but does it matter?
-end
-function AddonNS.CategorShowAlways:ShouldAlwaysShow(categoryName)
-    return categoriesToAlwaysShow[categoryName];
-end
-
-function AddonNS.CategorShowAlways:SetAlwaysShow(categoryName, show)
-    categoriesToAlwaysShow[categoryName] = show or nil;
-end
-
-local function categoryRenamed(eventName, fromCategoryName, toCategoryName)
-    AddonNS.CategorShowAlways:SetAlwaysShow(toCategoryName,  AddonNS.CategorShowAlways:ShouldAlwaysShow(fromCategoryName));
-    AddonNS.CategorShowAlways:SetAlwaysShow(fromCategoryName, nil);
+    local collection = {}
+    for category in AddonNS.CategoryStore:All() do
+        if category.alwaysVisible then
+            collection[category.id] = true
+        end
+    end
+    return collection
 end
 
-local function categoryDeleted(eventName, categoryName)
-    AddonNS.CategorShowAlways:SetAlwaysShow(categoryName, nil)
+function AddonNS.CategorShowAlways:ShouldAlwaysShow(categoryOrId)
+    local category = toCategory(categoryOrId)
+    return category and category.alwaysVisible or false
 end
 
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, categoryRenamed)
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
+function AddonNS.CategorShowAlways:SetAlwaysShow(categoryOrId, show)
+    local category = toCategory(categoryOrId)
+    if not category then
+        return
+    end
+    AddonNS.CategoryStore:SetAlwaysVisible(category.id, show)
+end

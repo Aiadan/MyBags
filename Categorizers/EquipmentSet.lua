@@ -9,7 +9,11 @@ AddonNS.Categories:RegisterCategorizer("EquipmentSet", EquipmentSet, true);
 local itemSets = {};
 
 function EquipmentSet:Categorize(itemID, itemButton)
-    return itemSets[itemButton:GetBagID()] and itemSets[itemButton:GetBagID()][itemButton:GetID()] or nil;
+    local bagMap = itemSets[itemButton:GetBagID()]
+    if not bagMap then
+        return nil
+    end
+    return bagMap[itemButton:GetID()]
 end
 
 local function setItemCategoryIfEmpty(bag, slot, category)
@@ -18,20 +22,23 @@ local function setItemCategoryIfEmpty(bag, slot, category)
         itemSets[bag][slot] = category;
     end
 end
-local function setItemSetCategory(bag, slot, category)
-    itemSets[bag] = itemSets[bag] or {};
-    itemSets[bag][slot] = category;
+local function ensureEquipmentCategory(equipmentSetID, name, iconFileID)
+    local iconString = "|T" .. iconFileID .. ":16:16:0:2:64:64:4:60:4:60|t "
+    return AddonNS.CategoryStore:RecordDynamicCategory({
+        id = "sys:equip:" .. equipmentSetID,
+        name = iconString .. "|CFFFF2459" .. name,
+        categorizer = "system:equipment",
+        protected = true,
+        alwaysVisible = true,
+    })
 end
-local function cleanItemCategory(bag, slot)
-    itemSets[bag] = itemSets[bag] or {};
-    itemSets[bag][slot] = nil;
-end
-local iconSize = 16;
+
 local function refreshEquipmentSets()
     itemSets = {};
     local equipmentSetIDs = C_EquipmentSet.GetEquipmentSetIDs()
     for _, equipmentSetID in pairs(equipmentSetIDs) do
         local name, iconFileID = C_EquipmentSet.GetEquipmentSetInfo(equipmentSetID)
+        local category = ensureEquipmentCategory(equipmentSetID, name, iconFileID)
 
         local locations = C_EquipmentSet.GetItemLocations(equipmentSetID)
 
@@ -39,8 +46,7 @@ local function refreshEquipmentSets()
             if (location > 1 or location < -1) then
                 local player, bank, bags, voidStorage, slot, bag = EquipmentManager_UnpackLocation(location);
                 if bag then
-                    local iconString = "|T" .. iconFileID .. ":16:16:0:2:64:64:4:60:4:60|t ";
-                    setItemCategoryIfEmpty(bag, slot, iconString .. "|CFFFF2459" .. name)
+                    setItemCategoryIfEmpty(bag, slot, category)
                 end
             end
         end

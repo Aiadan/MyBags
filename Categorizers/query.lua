@@ -1,15 +1,12 @@
 local addonName, AddonNS = ...
-AddonNS = AddonNS or {}
-local QueryCategorizer = {};
-AddonNS.QueryCategories = {}
-local CATEGORIZER_CATEGORIES_UPDATED = AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED;
 
+AddonNS = AddonNS or {}
+AddonNS.QueryCategories = AddonNS.QueryCategories or {}
 
 local ValueType = {
     STRING = 1,
     NUMBER = 2,
     BOOL = 3,
-    -- ITEM_QUALITY = 4,
 }
 
 local function trim(text)
@@ -35,21 +32,28 @@ end
 local function toboolean(text)
     return text == "true" and true or false
 end
+
 local Comparators = {
     [ValueType.STRING] = {
         ["="] = {
             createNew = function(retriver, value)
                 return function(itemInfo)
-                    -- print(retriver, itemInfo, value)
-                    -- print(retriver(itemInfo))
-                    return retriver(itemInfo):match(value);
+                    local candidate = retriver(itemInfo)
+                    if type(candidate) ~= "string" then
+                        return false
+                    end
+                    return candidate:match(value) ~= nil
                 end
             end,
         },
         ["!="] = {
             createNew = function(retriver, value)
                 return function(itemInfo)
-                    return not retriver(itemInfo):match(value);
+                    local candidate = retriver(itemInfo)
+                    if type(candidate) ~= "string" then
+                        return true
+                    end
+                    return candidate:match(value) == nil
                 end
             end,
         },
@@ -57,44 +61,49 @@ local Comparators = {
     [ValueType.NUMBER] = {
         ["="] = {
             createNew = function(retriver, value)
+                local numberValue = tonumber(value)
                 return function(itemInfo)
-                    return retriver(itemInfo) == tonumber(value);
+                    return retriver(itemInfo) == numberValue
                 end
             end,
         },
         ["!="] = {
             createNew = function(retriver, value)
+                local numberValue = tonumber(value)
                 return function(itemInfo)
-                    return retriver(itemInfo) ~= tonumber(value);
+                    return retriver(itemInfo) ~= numberValue
                 end
             end,
         },
         [">"] = {
             createNew = function(retriver, value)
+                local numberValue = tonumber(value)
                 return function(itemInfo)
-                    return retriver(itemInfo) > tonumber(value);
+                    return retriver(itemInfo) > numberValue
                 end
             end,
         },
         [">="] = {
             createNew = function(retriver, value)
+                local numberValue = tonumber(value)
                 return function(itemInfo)
-                    return retriver(itemInfo) >= tonumber(value);
+                    return retriver(itemInfo) >= numberValue
                 end
             end,
         },
-
         ["<"] = {
             createNew = function(retriver, value)
+                local numberValue = tonumber(value)
                 return function(itemInfo)
-                    return retriver(itemInfo) < tonumber(value);
+                    return retriver(itemInfo) < numberValue
                 end
             end,
         },
         ["<="] = {
             createNew = function(retriver, value)
+                local numberValue = tonumber(value)
                 return function(itemInfo)
-                    return retriver(itemInfo) <= tonumber(value);
+                    return retriver(itemInfo) <= numberValue
                 end
             end,
         },
@@ -102,179 +111,129 @@ local Comparators = {
     [ValueType.BOOL] = {
         ["="] = {
             createNew = function(retriver, value)
+                local boolValue = toboolean(value)
                 return function(itemInfo)
-                    return toboolean(value) == retriver(itemInfo);
+                    return boolValue == retriver(itemInfo)
                 end
             end,
         },
         ["!="] = {
             createNew = function(retriver, value)
+                local boolValue = toboolean(value)
                 return function(itemInfo)
-                    return toboolean(value) ~= retriver(itemInfo);
+                    return boolValue ~= retriver(itemInfo)
                 end
             end,
         },
     },
-
 }
 
-
-local Retrivers = {
-    stackCount = {
-        type = ValueType.NUMBER
-    },
-    expansionID = {
-        type = ValueType.NUMBER
-    },
-    quality = {
-        type = ValueType.NUMBER
-    },
-    isReadable = {
-        type = ValueType.BOOL
-    },
-    hasLoot = {
-        type = ValueType.BOOL
-    },
-    hasNoValue = {
-        type = ValueType.BOOL
-    },
-    itemID = {
-        type = ValueType.NUMBER
-    },
-    isBound = {
-        type = ValueType.BOOL
-    },
-    itemName = {
-        type = ValueType.STRING
-    },
-    ilvl = {
-        type = ValueType.NUMBER
-    },
-    itemMinLevel = {
-        type = ValueType.NUMBER
-    },
-    itemType = {
-        type = ValueType.NUMBER
-    },
-    itemSubType = {
-        type = ValueType.NUMBER
-    },
-    inventoryType = {
-        type = ValueType.NUMBER
-    },
-    sellPrice = {
-        type = ValueType.NUMBER
-    },
-    isCraftingReagent = {
-        type = ValueType.BOOL
-    },
-    isQuestItem = {
-        type = ValueType.BOOL
-    },
-    questID = {
-        type = ValueType.NUMBER
-    },
-    isQuestItemActive = {
-        type = ValueType.BOOL
-    },
-    bindType = {
-        type = ValueType.NUMBER
-    },
+local Retrievers = {
+    stackCount = { type = ValueType.NUMBER },
+    expansionID = { type = ValueType.NUMBER },
+    quality = { type = ValueType.NUMBER },
+    isReadable = { type = ValueType.BOOL },
+    hasLoot = { type = ValueType.BOOL },
+    hasNoValue = { type = ValueType.BOOL },
+    itemID = { type = ValueType.NUMBER },
+    isBound = { type = ValueType.BOOL },
+    itemName = { type = ValueType.STRING },
+    ilvl = { type = ValueType.NUMBER },
+    itemMinLevel = { type = ValueType.NUMBER },
+    itemType = { type = ValueType.NUMBER },
+    itemSubType = { type = ValueType.NUMBER },
+    inventoryType = { type = ValueType.NUMBER },
+    sellPrice = { type = ValueType.NUMBER },
+    isCraftingReagent = { type = ValueType.BOOL },
+    isQuestItem = { type = ValueType.BOOL },
+    questID = { type = ValueType.NUMBER },
+    isQuestItemActive = { type = ValueType.BOOL },
+    bindType = { type = ValueType.NUMBER },
 }
 
-local function genericRetriverFunction(name)
+local function genericRetrieverFunction(name)
     return function(itemInfo)
-        -- print("genericRetriverFunction", itemInfo)
-        -- print("genericRetriverFunction2", itemInfo[name])
-        -- print(itemInfo[name])
         return itemInfo[name]
     end
 end
-for key, value in pairs(Retrivers) do
-    if (not value.func) then
-        value.func = genericRetriverFunction(key);
+
+for key, descriptor in pairs(Retrievers) do
+    if not descriptor.func then
+        descriptor.func = genericRetrieverFunction(key)
     end
 end
 
-
-local function GetRetiver(name, comparison, value)
-    local retriver = Retrivers[name];
-    if (not retriver) then
-        -- print("Error GetRetiver:" .. name .. ":");
+local function GetRetriever(name, comparison, value)
+    local descriptor = Retrievers[name]
+    if not descriptor then
+        return function()
+            return false
+        end
     end
-    local func = Retrivers[name].func;
-    local valueType = Retrivers[name].type;
-
-    -- local func = function(itemInfo)
-    -- if not itemInfo.retrived[name] then
-    -- itemInfo.retrived[name] = func(itemInfo);
-    -- end
-    -- return itemInfo.retrived[name];
-    -- end
-    -- print(comparison)
-    return Comparators[valueType][comparison].createNew(func, value);
+    local comparatorFactory = Comparators[descriptor.type] and Comparators[descriptor.type][comparison]
+    if not comparatorFactory then
+        return function()
+            return false
+        end
+    end
+    return comparatorFactory.createNew(descriptor.func, value)
 end
 
-local alwaysFalse = function() end
+local alwaysFalse = function()
+    return false
+end
 local space = ""
-function evaluateLeaf(leafQuery)
-    leafQuery = trim(leafQuery);
-    -- print("evalLeaf:", leafQuery);
+
+local function evaluateLeaf(leafQuery)
+    leafQuery = trim(leafQuery)
     local name, comparison, value = leafQuery:match("^(%S+) (%S+) (%S+)$")
-    if (not name) then
-        -- print("Error evaluateLeaf", leafQuery);
+    if not name then
         return alwaysFalse
-    else
-        return GetRetiver(name, comparison, value);
     end
+    return GetRetriever(name, comparison, value)
 end
 
 local function pumpUp()
     space = space .. "_ "
 end
+
 local function pumpDown()
-    space = space:sub(3);
+    space = space:sub(3)
 end
+
 local function evaluate(query)
-    -- print("eval:", query)
-
-    query = trim(query);
-
-    local andFunctions;
-    local orFunctions = {};
+    query = trim(query)
+    local andFunctions
+    local orFunctions = {}
     local orFunction = function(itemInfo)
-        -- print(space .. "orFunctionsCount", #orFunctions)
-        if (#orFunctions == 0) then return false; end
-
-        for _, v in ipairs(orFunctions) do
-            -- print(space .. "<OR>", v)
+        if (#orFunctions == 0) then
+            return false
+        end
+        for _, func in ipairs(orFunctions) do
             pumpUp()
-            local val = v(itemInfo);
+            local result = func(itemInfo)
             pumpDown()
-            -- print(space .. "</OR>", v, val)
-            if val then
+            if result then
                 return true
             end
         end
         return false
     end
     local function newAndFunction()
-        local localAndFunctions = {};
-        andFunctions = localAndFunctions;
+        local localAndFunctions = {}
+        andFunctions = localAndFunctions
         local andFunction = function(itemInfo)
-            -- print(space .. "andFunctionsCount", #andFunctions)
-            for _, v in ipairs(localAndFunctions) do
-                -- print(space .. "<AND>", v)
+            for _, func in ipairs(localAndFunctions) do
                 pumpUp()
-                local val = v(itemInfo);
+                local result = func(itemInfo)
                 pumpDown()
-                -- print(space .. "</AND>", v, val)
-                if not val then return false end
+                if not result then
+                    return false
+                end
             end
-            if (#localAndFunctions == 0) then return false; end
-            return true;
-        end;
-        table.insert(orFunctions, andFunction);
+            return #localAndFunctions > 0
+        end
+        table.insert(orFunctions, andFunction)
     end
     newAndFunction()
 
@@ -282,234 +241,165 @@ local function evaluate(query)
     local nextOp = OpEnum.AND
 
     while (#query > 0) do
-        query = trim(query);
-        -- print("--", nextOp)
-        tokenString = query:match("^%b()");
-        -- -- print("ts", tokenString)
-        if (tokenString) then
+        query = trim(query)
+        tokenString = query:match("^%b()")
+        if tokenString then
             local subQuery = tokenString:sub(2, -2)
             local func = evaluate(subQuery)
-            local notFunc;
-            if (nextOp) then
+            local notFunc
+            if nextOp then
                 if nextOp == OpEnum.NOT then
-                    notFunc = function(itemInfo) return not func(itemInfo) end
+                    notFunc = function(itemInfo)
+                        return not func(itemInfo)
+                    end
                 end
-                -- print("adding bound", func)
-                table.insert(andFunctions, notFunc or func);
-            else
-                -- print("error ()");
+                table.insert(andFunctions, notFunc or func)
             end
-            nextOp = nil;
+            nextOp = nil
         end
-        if (not tokenString) then
-            tokenString = query:match("^AND ");
-
-            if (tokenString) then
-                if (not nextOp) then
-                    -- print("AND")
-                    nextOp = OpEnum.AND;
-                else
-                    -- print("Error AND")
+        if not tokenString then
+            tokenString = query:match("^AND ")
+            if tokenString then
+                if not nextOp then
+                    nextOp = OpEnum.AND
                 end
             end
         end
-        if (not tokenString) then
-            tokenString = query:match("^OR ");
-            if (tokenString) then
-                if (not nextOp) then
-                    -- print("OR")
-                    nextOp = OpEnum.AND;
+        if not tokenString then
+            tokenString = query:match("^OR ")
+            if tokenString then
+                if not nextOp then
+                    nextOp = OpEnum.AND
                     newAndFunction()
-                else
-                    -- print("Error OR")
                 end
             end
         end
-        if (not tokenString) then
-            tokenString = query:match("^NOT ");
-
-            if (tokenString) then
-                if (nextOp == OpEnum.AND) then
-                    -- print("NOT")
-                    nextOp = OpEnum.NOT;
-                else
-                    -- print("Error NOT")
+        if not tokenString then
+            tokenString = query:match("^NOT ")
+            if tokenString then
+                if nextOp == OpEnum.AND then
+                    nextOp = OpEnum.NOT
                 end
             end
         end
 
-        if (not tokenString) then
+        if not tokenString then
             local andTokenString = query:match("(.-) AND ")
             local orTokenString = query:match("(.-) OR ")
             local notTokenString = query:match("(.-) NOT ")
-            local vanilaTokenString = query:match("(.*)");
-            tokenString = andTokenString;
+            local vanillaTokenString = query:match("(.*)")
+            tokenString = andTokenString
             tokenString = tokenString and orTokenString and #orTokenString < #tokenString and orTokenString or
-                not tokenString and orTokenString or tokenString;
+                (not tokenString and orTokenString or tokenString)
             tokenString = tokenString and notTokenString and #notTokenString < #tokenString and notTokenString or
-                not tokenString and notTokenString or tokenString;
-            tokenString = tokenString and vanilaTokenString and #vanilaTokenString < #tokenString and vanilaTokenString or
-                not tokenString and vanilaTokenString or tokenString;
-
-            query:match("(.*)");
-            if (tokenString) then
+                (not tokenString and notTokenString or tokenString)
+            tokenString = tokenString and vanillaTokenString and #vanillaTokenString < #tokenString and vanillaTokenString or
+                (not tokenString and vanillaTokenString or tokenString)
+            if tokenString then
                 local func = evaluateLeaf(tokenString)
-                local notFunc;
-                if (nextOp) then
+                local notFunc
+                if nextOp then
                     if nextOp == OpEnum.NOT then
-                        notFunc = function(itemInfo) return not func(itemInfo) end
+                        notFunc = function(itemInfo)
+                            return not func(itemInfo)
+                        end
                     end
-                    -- print("adding leaf", func)
-                    table.insert(andFunctions, notFunc or func);
-                else
-                    -- print("error REST", nextOp);
+                    table.insert(andFunctions, notFunc or func)
                 end
-                nextOp = nil;
+                nextOp = nil
             end
         end
-        if (not tokenString) then
-            -- print("Error, uncaught situation: ", query)
-            return;
+        if not tokenString then
+            return alwaysFalse
         end
-        query = trim(query:sub(#tokenString + 1));
-        tokenString = nil;
+        query = trim(query:sub(#tokenString + 1))
+        tokenString = nil
     end
-    return orFunction;
+
+    return orFunction
 end
 
-local queryCategories = {
-}
+local compiledQueries = {}
 
-local queryFunctions = {
-}
-
-local seen = {}
-local function shouldProcess(id)
-    local now = debugprofilestop()
-    local last = seen[id]
-    if last and (now - last) < 1000 then
-        return false
+local function resolveCategory(categoryOrId)
+    if not categoryOrId then
+        return nil
     end
-    -- record this check
-    seen[id] = now
-    return true
+    if type(categoryOrId) == "table" then
+        return categoryOrId
+    end
+    return AddonNS.CategoryStore:Get(categoryOrId) or AddonNS.Categories:GetCategoryByName(categoryOrId)
 end
 
-function QueryCategorizer:Categorize(itemID, itemButton)
-    local itemInfo = C_Container
-        .GetContainerItemInfo(itemButton:GetBagID(), itemButton:GetID())
-
-    local inventoryType = C_Item
-        .GetItemInventoryTypeByID(itemID); -- https://warcraft.wiki.gg/wiki/API_C_Item.GetItemInventoryType
-
-    local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent =
-        C_Item.GetItemInfo(itemInfo.hyperlink)
-
-    -- shouldprocess here is a function to prevent situation which happens with mythic keystone where it goes into a loop as even though the function below finishes the one above is not able to read that info and hence going back to the loop.
-    if (not itemName and shouldProcess(itemID)) then
-        local item = Item:CreateFromItemID(itemID)
-        AddonNS.printDebug("SCHEDULING refresh when item loads", itemInfo.itemName);
-        item:ContinueOnItemLoad(function()
-            AddonNS.printDebug("Item loaded");
-            AddonNS.Events:TriggerCustomEvent(CATEGORIZER_CATEGORIES_UPDATED, QueryCategorizer);
-        end)
+local function storeCompiledQuery(categoryId, queryString)
+    if not queryString or #trim(queryString) == 0 then
+        compiledQueries[categoryId] = nil
         return
     end
-    local questInfo = C_Container
-        .GetContainerItemQuestInfo(itemButton:GetBagID(), itemButton:GetID());
-    local isQuestItem = questInfo
-        .isQuestItem;
-    local questID = questInfo
-        .questID;
-    local isActive = questInfo
-        .isActive;
-
-    local allItemInfo = {
-        stackCount = itemInfo.stackCount,
-        quality = itemInfo.quality,
-        isReadable = itemInfo.isReadable,
-        hasLoot = itemInfo.hasLoot,
-        hasNoValue = itemInfo.hasNoValue,
-        itemID = itemInfo.itemID,
-        isBound = itemInfo.isBound,
-        itemName = itemInfo.itemName,
-        ilvl = itemLevel,
-        itemMinLevel = itemMinLevel,
-        itemType = classID,
-        itemSubType = subclassID,
-        inventoryType = inventoryType,
-        sellPrice = sellPrice,
-        isCraftingReagent = isCraftingReagent,
-        isQuestItem = isQuestItem,
-        questID = questID,
-        isQuestItemActive = isActive,
-        bindType = bindType,
-        expansionID = expansionID,
-    }
-
-    for categoryName, func in pairs(queryFunctions) do
-        if (func(allItemInfo)) then
-            return categoryName
-        end
-    end
+    compiledQueries[categoryId] = evaluate(prepare(queryString))
 end
 
-function AddonNS.QueryCategories:GetQuery(categoryName)
-    return queryCategories[categoryName] or "";
+function AddonNS.QueryCategories:GetQuery(categoryOrId)
+    local category = resolveCategory(categoryOrId)
+    if not category then
+        return ""
+    end
+    return category.query or ""
+end
+
+function AddonNS.QueryCategories:SetQuery(categoryOrId, query)
+    local category = resolveCategory(categoryOrId)
+    if not category then
+        return
+    end
+    AddonNS.CategoryStore:SetQuery(category.id, query)
+    storeCompiledQuery(category.id, query)
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, AddonNS.UserCategorizer)
+end
+
+function AddonNS.QueryCategories:DeleteQuery(categoryOrId)
+    local category = resolveCategory(categoryOrId)
+    if not category then
+        return
+    end
+    AddonNS.CategoryStore:SetQuery(category.id, nil)
+    compiledQueries[category.id] = nil
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, AddonNS.UserCategorizer)
 end
 
 function AddonNS.QueryCategories:GetCategories()
-    local categories = {};
-    for i, _ in pairs(queryCategories) do
-        categories[i] = true;
+    local categories = {}
+    for category in AddonNS.CategoryStore:All() do
+        if category.query then
+            categories[category.id] = true
+        end
     end
-    return categories;
+    return categories
 end
 
-function AddonNS.QueryCategories:SetQuery(categoryName, query)
-    if #trim(query) == 0 then
-        queryCategories[categoryName] = nil;
-        queryFunctions[categoryName] = nil
-    else
-        queryCategories[categoryName] = query;
-        queryFunctions[categoryName] = evaluate(prepare(query));
+function AddonNS.QueryCategories:GetCompiled(categoryOrId)
+    local category = resolveCategory(categoryOrId)
+    if not category then
+        return nil
     end
+    return compiledQueries[category.id]
 end
 
-function AddonNS.QueryCategories:DeleteQuery(categoryName)
-    queryCategories[categoryName] = nil;
-    queryFunctions[categoryName] = nil
-end
+AddonNS.Events:OnInitialize(function()
+    for category in AddonNS.CategoryStore:All() do
+        if category.query then
+            storeCompiledQuery(category.id, category.query)
+        end
+    end
+end)
 
-function AddonNS.QueryCategories:RenameQuery(categoryName, newCategoryName)
-    queryCategories[newCategoryName] = queryCategories[categoryName];
-    queryFunctions[newCategoryName] = queryFunctions[categoryName];
-    self:DeleteQuery(categoryName);
-end
-
-function AddonNS.QueryCategories:OnInitialize()
-    AddonNS.db.queryCategories = AddonNS.db.queryCategories or queryCategories;
-    queryCategories = AddonNS.db.queryCategories;
-
-    for key, value in pairs(queryCategories) do
-        queryFunctions[key] = evaluate(prepare(value));
+local function categoryDeleted(eventName, category)
+    local resolved = resolveCategory(category)
+    if resolved then
+        compiledQueries[resolved.id] = nil
     end
 end
 
-AddonNS.Events:OnInitialize(AddonNS.QueryCategories.OnInitialize)
-
-AddonNS.Categories:RegisterCategorizer("Query", QueryCategorizer, false);
-
-local function categoryRenamed(eventName, fromCategoryName, toCategoryName)
-    AddonNS.printDebug("query:", eventName)
-    AddonNS.QueryCategories:RenameQuery(fromCategoryName, toCategoryName)
-end
-
-local function categoryDeleted(eventName, categoryName)
-    AddonNS.printDebug("query:", eventName)
-    AddonNS.QueryCategories:DeleteQuery(categoryName)
-end
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, categoryRenamed)
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
 
 AddonNS._Test = AddonNS._Test or {}

@@ -172,8 +172,9 @@ local function setup_container_api(ctx)
     _G.C_Container = ctx._C_Container
 end
 
-local function reset_globals(ctx, savedFixture)
-    _G.dev_MyBagsDBGlobal = deep_copy(savedFixture)
+local function reset_globals(ctx, savedFixture, legacyFixture)
+    _G.dev_MyBagsDB = deep_copy(savedFixture) or {}
+    _G.dev_MyBagsDBGlobal = deep_copy(legacyFixture)
     _G.LibStub = make_libstub(ctx)
 end
 
@@ -186,6 +187,7 @@ local function load_addon(ctx)
         load_chunk(repo_path(rel))(addonName, AddonNS)
     end
 
+    exec("categoryStore.lua")
     exec("init.lua")
     AddonNS.itemButtonPlaceholder = {}
 
@@ -206,7 +208,7 @@ end
 function Harness.new(opts)
     opts = opts or {}
     local ctx = setmetatable({ options = opts }, Harness)
-    reset_globals(ctx, opts.saved)
+    reset_globals(ctx, opts.saved, opts.legacy)
     load_addon(ctx)
     ctx:_run_lifecycle()
     return ctx
@@ -246,7 +248,7 @@ function Harness:set_container_item(bag, slot, itemID)
 end
 
 function Harness:snapshot()
-    return deep_copy(_G.dev_MyBagsDBGlobal or {})
+    return deep_copy(_G.dev_MyBagsDB or {})
 end
 
 function Harness:snapshot_subset(keys)
