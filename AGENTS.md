@@ -94,3 +94,5 @@ This policy also applies to generic or reusable components such as utility funct
 ## ExecPlans
 
 When writing complex features or significant refactors, use an ExecPlan (as described in .agent/PLANS.md) from design to implementation.
+
+You must not read any files from .agent/archive/ directory.
