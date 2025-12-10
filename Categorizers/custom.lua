@@ -5,6 +5,7 @@ local UserCategories = {}
 AddonNS.CustomCategories = UserCategories
 
 local seen = {}
+local initialized = false
 
 local function shouldProcess(id)
     local now = debugprofilestop()
@@ -118,6 +119,30 @@ local function fireUpdate()
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, UserCategorizer)
 end
 
+local function attachHooks(category)
+    if not category or category.categorizer ~= "user" then
+        return
+    end
+    category:SetOnItemAssigned(function(selfCategory, itemId)
+        AddonNS.CategoryStore:AssignItem(itemId, selfCategory.id)
+        fireUpdate()
+    end)
+    category:SetOnItemUnassigned(function(_, itemId)
+        AddonNS.CategoryStore:UnassignItem(itemId)
+        fireUpdate()
+    end)
+end
+
+local function ensureHooks()
+    if initialized then
+        return
+    end
+    initialized = true
+    for category in AddonNS.CategoryStore:All() do
+        attachHooks(category)
+    end
+end
+
 function UserCategories:GetCategories()
     local categories = {}
     for category in AddonNS.CategoryStore:All() do
@@ -130,6 +155,7 @@ end
 
 function UserCategories:NewCategory(name, opts)
     local category = AddonNS.CategoryStore:CreateCustom(name, opts or {})
+    attachHooks(category)
     fireUpdate()
     return category
 end
@@ -179,15 +205,4 @@ function UserCategories:AssignToCategoryByName(name, itemID)
     self:AssignToCategory(category, itemID)
 end
 
-local function itemMoved(eventName, pickedItemID, targetedItemID, pickedCategory, targetCategory)
-    local target = resolveCategoryIdentifier(targetCategory)
-    if not pickedItemID or not target then
-        return
-    end
-    if target:IsProtected() then
-        return
-    end
-    UserCategories:AssignToCategory(target, pickedItemID)
-end
-
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)
+ensureHooks()

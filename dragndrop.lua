@@ -15,10 +15,6 @@ local recentAt = 0
 local TTL = 0.10 -- 100 ms
 local cachedInfoType, cachedItemID, cachedItemLink;
 
-local function getCategoryId(category)
-    return category and category.id or nil
-end
-
 local function getCachedCursorInfo()
     local now = GetTime();
     if (now - recentAt > TTL) then
@@ -26,6 +22,38 @@ local function getCachedCursorInfo()
         recentAt = now;
     end
     return cachedInfoType, cachedItemID, cachedItemLink;
+end
+
+local function resolveCategory(category)
+    if not category then
+        return nil
+    end
+    if type(category) == "table" then
+        return category
+    end
+    return AddonNS.CategoryStore:Get(category)
+end
+
+local function getCategoryId(category)
+    return category and category.id or nil
+end
+
+local function canTriggerItemMove(sourceCategory, targetCategory)
+    if targetCategory and targetCategory:IsProtected() then
+        return false
+    end
+    return true
+end
+
+local function triggerItemMoved(itemID, targetedItemID, sourceCategory, targetCategory, pickedItemButton, targetItemButton)
+    local source = resolveCategory(sourceCategory)
+    local target = resolveCategory(targetCategory)
+    if not canTriggerItemMove(source, target) then
+        return
+    end
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemID, targetedItemID, source, target,
+        pickedItemButton,
+        targetItemButton);
 end
 
 function AddonNS.DragAndDrop.cleanUp()
@@ -140,8 +168,7 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
                 C_Container.PickupContainerItem(self:GetBagID(), self:GetID()) -- [faster movement feature]
             end
         end
-        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemID, targetedItemID,
-            getCategoryId(pickedItemCategory), getCategoryId(targetItemCategory), pickedItemButton, self);
+        triggerItemMoved(itemID, targetedItemID, pickedItemCategory, targetItemCategory, pickedItemButton, self);
     elseif pickedItemCategory then -- category frame
         AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED,
             getCategoryId(pickedItemCategory), getCategoryId(targetItemCategory));
@@ -199,8 +226,7 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
         if not pickedItemButton and AddonNS.emptyItemButton then
             ContainerFrameItemButton_OnClick(AddonNS.emptyItemButton, "LeftButton")
         end
-        AddonNS.CustomCategories:AssignToCategory(self.ItemCategory, itemID)
-        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)
+        triggerItemMoved(itemID, nil, pickedItemCategory, targetItemCategory, pickedItemButton, nil);
         ClearCursor();
         AddonNS.QueueContainerUpdateItemLayout();
     elseif pickedItemCategory and (pickedItemCategory ~= targetItemCategory) then -- category frame
@@ -266,8 +292,7 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self)
                 ContainerFrameItemButton_OnClick(AddonNS.emptyItemButton, "LeftButton")
             end
             local targetCategory = AddonNS.Categories:GetLastCategoryInColumn(columnNo);
-            AddonNS.CustomCategories:AssignToCategory(targetCategory, itemID)
-            AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)
+            triggerItemMoved(itemID, nil, pickedItemCategory, targetCategory, pickedItemButton, nil);
             ClearCursor();
             AddonNS.QueueContainerUpdateItemLayout();
         elseif pickedItemCategory then -- category frame
@@ -296,14 +321,9 @@ function AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetItemCategoryNa
     if (pickedItemButton) then -- button
         local infoType, itemID, itemLink = getCachedCursorInfo()
         if infoType == "item" and itemID == pickedItemID then
-            local category = AddonNS.CategoryStore:Get(targetItemCategoryName) or
-                AddonNS.Categories:GetCategoryByName(targetItemCategoryName);
-            AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, pickedItemID, pickedItemButton)
-            if category then
-                AddonNS.CustomCategories:AssignToCategory(category, itemID)
-            else
-                AddonNS.CustomCategories:AssignToCategoryByName(targetItemCategoryName, itemID)
-            end
+            local category = AddonNS.Categories:GetCategoryByName(targetItemCategoryName) or
+                AddonNS.CategoryStore:Get(targetItemCategoryName);
+            triggerItemMoved(itemID, nil, pickedItemCategory, category, pickedItemButton, nil);
             ClearCursor();
             AddonNS.QueueContainerUpdateItemLayout();
         end

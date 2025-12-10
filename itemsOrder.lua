@@ -105,9 +105,19 @@ end
 local function itemMoved(eventName, pickedItemID, targetedItemID, pickedCategoryId, targetCategoryId,
                          pickedItemButton,
                          targetItemButton)
-    local pickedCategory = pickedCategoryId and AddonNS.CategoryStore:Get(pickedCategoryId)
-    local targetCategory = targetCategoryId and AddonNS.CategoryStore:Get(targetCategoryId)
-    local sameCategory = pickedCategoryId == targetCategoryId
+    local function resolveCategory(categoryOrId)
+        if not categoryOrId then
+            return nil
+        end
+        if type(categoryOrId) == "table" then
+            return categoryOrId
+        end
+        return AddonNS.CategoryStore:Get(categoryOrId)
+    end
+
+    local pickedCategory = resolveCategory(pickedCategoryId)
+    local targetCategory = resolveCategory(targetCategoryId)
+    local sameCategory = pickedCategory and targetCategory and pickedCategory.id == targetCategory.id
     local targetProtected = targetCategory and targetCategory:IsProtected() or false
     local pickedProtected = pickedCategory and pickedCategory:IsProtected() or false
     if sameCategory or (not targetProtected and not pickedProtected) then

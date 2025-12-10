@@ -6,6 +6,24 @@ AddonNS.Categories:RegisterCategorizer("New", NewItemCategorizer, true, "Right-c
 
 local newItems = {};
 local newCategoryId = "sys:new"
+
+local function resetItem(bagID, slotIndex)
+    C_NewItems.RemoveNewItem(bagID, slotIndex)
+    newItems[bagID] = newItems[bagID] or {};
+    newItems[bagID][slotIndex] = nil
+end
+
+local function resetFromContext(context)
+    if not context then
+        return
+    end
+    local sourceButton = context.pickedItemButton or context.targetItemButton
+    if not sourceButton then
+        return
+    end
+    resetItem(sourceButton:GetBagID(), sourceButton:GetID())
+end
+
 local function ensureNewCategory()
     return AddonNS.CategoryStore:RecordDynamicCategory({
         id = newCategoryId,
@@ -13,6 +31,9 @@ local function ensureNewCategory()
         categorizer = "system:new",
         protected = true,
         alwaysVisible = true,
+        OnItemUnassigned = function(_, _, _, context)
+            resetFromContext(context)
+        end,
     })
 end
 
@@ -50,31 +71,3 @@ function NewItemCategorizer:CheckNewItems(bagID)
 end
 
 AddonNS.Events:RegisterEvent("BAG_UPDATE", NewItemCategorizer.CheckNewItems);
-
-local function resetItem(bagID, slotIndex)
-    C_NewItems.RemoveNewItem(bagID, slotIndex)
-    newItems[bagID] = newItems[bagID] or {};
-    newItems[bagID][slotIndex] = nil
-end
-
-local function itemCategoryChanged(eventName, pickedItemID, pickedItemButton)
-    if (pickedItemButton) then
-        local bagID = pickedItemButton:GetBagID();
-        local slotIndex = pickedItemButton:GetID()
-        AddonNS.printDebug("NewItemCategorizer itemCategoryChanged", bagID, slotIndex)
-        resetItem(bagID, slotIndex)
-    end
-end
-
-local function itemMoved(eventName, pickedItemID, targetedItemID, pickedItemCategory, targetItemCategory,
-                         pickedItemButton,
-                         targetItemButton)
-    if (pickedItemButton) then
-        local bagID = pickedItemButton:GetBagID();
-        local slotIndex = pickedItemButton:GetID()
-        AddonNS.printDebug("NewItemCategorizer item moved", bagID, slotIndex)
-        resetItem(bagID, slotIndex)
-    end
-end
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, itemMoved)
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_CATEGORY_CHANGED, itemCategoryChanged)

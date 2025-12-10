@@ -81,7 +81,30 @@ function CategoryMethods:IsDynamic()
     return rawget(self, "_record") == nil
 end
 
+function CategoryMethods:SetOnItemAssigned(handler)
+    local store = rawget(self, "_store")
+    if not store then
+        return
+    end
+    store:_setHook(self.id, "OnItemAssigned", handler)
+end
+
+function CategoryMethods:SetOnItemUnassigned(handler)
+    local store = rawget(self, "_store")
+    if not store then
+        return
+    end
+    store:_setHook(self.id, "OnItemUnassigned", handler)
+end
+
 CategoryMeta.__index = function(self, key)
+    local store = rawget(self, "_store")
+    if store then
+        local hook = store:_getHook(rawget(self, "id"), key)
+        if hook then
+            return hook
+        end
+    end
     local method = CategoryMethods[key]
     if method then
         return method
@@ -106,8 +129,33 @@ function CategoryStore:new()
         _assignments = {},
         _dynamicCategories = {},
         _systemCategories = {},
+        _hooks = {},
     }, CategoryStore)
     return instance
+end
+
+function CategoryStore:_setHook(categoryId, name, handler)
+    if not categoryId or not name then
+        return
+    end
+    self._hooks = self._hooks or {}
+    self._hooks[categoryId] = self._hooks[categoryId] or {}
+    self._hooks[categoryId][name] = handler
+end
+
+function CategoryStore:_getHook(categoryId, name)
+    local hooks = self._hooks and self._hooks[categoryId]
+    if hooks then
+        return hooks[name]
+    end
+    return nil
+end
+
+function CategoryStore:_clearHooks(categoryId)
+    if not categoryId or not self._hooks then
+        return
+    end
+    self._hooks[categoryId] = nil
 end
 
 function CategoryStore:LoadOrBootstrap(db, legacyDb)
@@ -232,6 +280,7 @@ function CategoryStore:_hydrate()
     self._categoriesByName = {}
     self._assignments = {}
     self._dynamicCategories = self._dynamicCategories or {}
+    self._hooks = self._hooks or {}
     for id, record in pairs(self.db.categories) do
         local category = wrap_category(self, record, nil)
         self._categoriesById[id] = category
@@ -257,6 +306,9 @@ function CategoryStore:_ensureSystemCategories()
             protected = false,
         })
     end
+    self:_setHook(self._systemCategories.unassigned.id, "OnItemAssigned", function(_, itemId)
+        self:AssignItem(itemId, nil)
+    end)
     if not self._systemCategories.newItems then
         self._systemCategories.newItems = wrap_category(self, nil, {
             id = SYSTEM_IDS.NEW_ITEMS,
@@ -507,6 +559,7 @@ function CategoryStore:Delete(id)
     end
     self._categoriesById[id] = nil
     self.db.categories[id] = nil
+    self:_clearHooks(id)
 end
 
 function CategoryStore:SetCollapsed(id, collapsed)
@@ -544,9 +597,21 @@ function CategoryStore:RecordDynamicCategory(payload)
         for key, value in pairs(payload) do
             metadata[key] = value
         end
+        if payload.OnItemAssigned then
+            self:_setHook(id, "OnItemAssigned", payload.OnItemAssigned)
+        end
+        if payload.OnItemUnassigned then
+            self:_setHook(id, "OnItemUnassigned", payload.OnItemUnassigned)
+        end
         return existing
     end
     local category = wrap_category(self, nil, payload)
+    if payload.OnItemAssigned then
+        self:_setHook(id, "OnItemAssigned", payload.OnItemAssigned)
+    end
+    if payload.OnItemUnassigned then
+        self:_setHook(id, "OnItemUnassigned", payload.OnItemUnassigned)
+    end
     self._dynamicCategories[id] = category
     return category
 end
