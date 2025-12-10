@@ -30,7 +30,9 @@ MyBags is pure Lua and requires no build step. Run tests with the system `lua` i
 - Unit: `lua tests/Categorizers/query_test.lua`
 - Integration (persistence: migration, layout, assignment, sentinel): `lua tests/integration/persistence/savedvariable_test.lua`
 
- 
+## Fallbacks
+
+Avoid implementing fallback logic. Always assume the code operates as intended. Including fallback mechanisms can mask underlying issues, making future debugging more difficult.
 
 ## Code style guidelines
 
