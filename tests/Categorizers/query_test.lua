@@ -21,7 +21,7 @@ local addonEnv = {
   printDebug = function() end,
 }
 
-local queryChunk = assert(loadfile("Categorizers/query.lua"))
+local queryChunk = assert(loadfile("Categorizers/custom/query.lua"))
 queryChunk("MyBags", addonEnv)
 
 local Query = addonEnv._Test.Query

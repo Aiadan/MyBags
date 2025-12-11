@@ -42,6 +42,7 @@ Avoid implementing fallback logic. Always assume the code operates as intended. 
 - Use the `AddonNS` namespace consistently; expose functionality via `AddonNS` tables.
 - Favour descriptive local function names; keep closures near their use.
 - Call `AddonNS.QueueContainerUpdateItemLayout()` sparingly and only when state changes.
+- When a concept is modeled as an object (e.g., categories), pass and store that object consistently rather than accepting mixed types such as ids-or-objects. Avoid helper patterns like `resolveXIdentifier` that take multiple shapes; enforce a single shape at boundaries and coerce inputs before they reach shared modules.
 
 ## AI Agent Code Organization Policy
 
@@ -51,7 +52,7 @@ This policy also applies to generic or reusable components such as utility funct
 
 ## Testing instructions
 
-- Location: place automated tests under `tests/`, mirroring the source tree (e.g., `Categorizers/query.lua` → `tests/Categorizers/query_test.lua`).
+- Location: place automated tests under `tests/`, mirroring the source tree (e.g., `Categorizers/custom/query.lua` → `tests/Categorizers/query_test.lua`).
 - Quality: avoid tests that only verify a method was called; prefer behaviour and state assertions.
 - Scope: include unit tests for categorizer/query logic and integration tests for SavedVariables lifecycle. Update integration when persistence paths change.
 - Run: execute the full suite before shipping substantial changes.

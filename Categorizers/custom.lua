@@ -138,17 +138,18 @@ local function ensureHooks()
         return
     end
     initialized = true
-    for category in AddonNS.CategoryStore:All() do
-        attachHooks(category)
+    local userCategories = AddonNS.CategoryStore:GetByCategorizer("user")
+    for index = 1, #userCategories do
+        attachHooks(userCategories[index])
     end
 end
 
 function UserCategories:GetCategories()
     local categories = {}
-    for category in AddonNS.CategoryStore:All() do
-        if category.categorizer == "user" then
-            categories[category.id] = category
-        end
+    local userCategories = AddonNS.CategoryStore:GetByCategorizer("user")
+    for index = 1, #userCategories do
+        local category = userCategories[index]
+        categories[category.id] = category
     end
     return categories
 end

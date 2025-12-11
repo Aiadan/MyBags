@@ -343,6 +343,20 @@ function CategoryStore:GetByName(name)
     return self._categoriesByName[name]
 end
 
+function CategoryStore:GetByCategorizer(categorizer)
+    local categories = {}
+    if not categorizer then
+        return categories
+    end
+    for _, category in pairs(self._categoriesById) do
+        local record = rawget(category, "_record")
+        if record and record.categorizer == categorizer then
+            table.insert(categories, category)
+        end
+    end
+    return categories
+end
+
 function CategoryStore:All(opts)
     opts = opts or {}
     local includeDynamic = opts.includeDynamic or false

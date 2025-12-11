@@ -42,5 +42,5 @@ categoriesColumnAssignment.lua
 Categorizers/new.lua
 Categorizers/EquipmentSet.lua
 Categorizers/custom.lua
-Categorizers/query.lua
+Categorizers/custom/query.lua
 Categorizers/showAlways.lua

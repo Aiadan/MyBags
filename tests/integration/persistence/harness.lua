@@ -200,7 +200,7 @@ local function load_addon(ctx)
     exec("itemsOrder.lua")
     exec("categoriesColumnAssignment.lua")
     exec("Categorizers/custom.lua")
-    exec("Categorizers/query.lua")
+    exec("Categorizers/custom/query.lua")
 
     ctx.AddonNS = AddonNS
 end
