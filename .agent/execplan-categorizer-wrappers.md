@@ -113,13 +113,12 @@ Raw category (owned by categorizer):
     GetName() -> string (non-nil)
     IsProtected() -> bool
     IsAlwaysVisible() -> bool (default false)
-    OnItemAssigned(itemId, sourceRawCategory, context) [optional; no-op if missing]
-    OnItemUnassigned(itemId, targetRawCategory, context) [optional; no-op if missing]
+    OnItemAssigned(itemId, context) [optional; no-op if missing]
+    OnItemUnassigned(itemId, context) [optional; no-op if missing]
     (Any other fields/methods, like query or stored assignments, remain private to the categorizer.)
 
 Wrapper category (store-provided):
     GetId() -> string (namespaced id `<categorizerId>-<rawId>` or `<categorizerId>-singleton`)
     GetName(), IsProtected(), IsAlwaysVisible() -> delegated to raw with defaults
-    OnItemAssigned(itemId, sourceWrapper, context) -> forwards to raw hook if present
-    OnItemUnassigned(itemId, targetWrapper, context) -> forwards to raw hook if present
-    IsDynamic() -> optional compatibility helper; raw need not implement.
+    OnItemAssigned(itemId, context) -> forwards to raw hook if present
+    OnItemUnassigned(itemId, context) -> forwards to raw hook if present
