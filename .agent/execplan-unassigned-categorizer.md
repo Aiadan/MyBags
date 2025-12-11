@@ -40,7 +40,7 @@ We need Unassigned to be a first-class categorizer so it participates in wrapper
 
 Define a dedicated Unassigned categorizer module under Categorizers/ (e.g., Categorizers/unassigned.lua) that exposes ListCategories (returns a single raw category), GetAlwaysVisibleCategories (returns that raw category so the drop target exists even when empty), and Categorize (always returns the raw category so it is the last match). Give the raw category a stable id that aligns with the existing UNASSIGNED constant and IsProtected() returns false; provide no-op OnItemAssigned/OnItemUnassigned hooks for interface completeness. Register it via Categories:RegisterCategorizer after all other categorizers, and update !dev_MyBags.toc to load it last so ordering stays intact.
 
-Adjust categoryStore.lua to drop the hard-coded _unassigned stub in favor of a real wrapper. Special-case wrapper creation so the Unassigned wrapper keeps the legacy id ("unassigned") for layout/collapsed compatibility even though it is namespaced internally; ensure GetUnassigned returns the real wrapper from the store, with a defensive fallback only if the categorizer is missing. Add a small migration in LoadOrBootstrap to normalize any stored layout/collapsed entries that reference either the legacy id or a namespaced form back to the canonical unassigned id.
+Adjust categoryStore.lua to drop the hard-coded _unassigned stub in favor of a real wrapper. Special-case wrapper creation so the Unassigned wrapper keeps the legacy id ("unassigned") for layout/collapsed compatibility even though it is namespaced internally; expose an accessor that returns this real wrapper (no fallback stubs—assume the categorizer is registered). If later all callers are updated to pull directly from the categorizer, this accessor can be removed. Add a small migration in LoadOrBootstrap to normalize any stored layout/collapsed entries that reference either the legacy id or a namespaced form back to the canonical unassigned id.
 
 Update categories.lua to rely on the registered Unassigned categorizer instead of manually injecting a stub. Keep ItemCategories ordering deterministic: other categorizers return first matches, and Unassigned should show up last. Ensure GetCategoryByName still resolves the stored constant to the canonical Unassigned wrapper.
 
@@ -87,3 +87,6 @@ Raw category shape:
     OnItemAssigned(itemId, context) / OnItemUnassigned(itemId, context) -> no-op
 
 Note any future deviations in the Decision Log and update Progress as milestones are completed.
+
+Revision note (2025-12-11 21:15Z): Removed suggestion of a defensive fallback for the Unassigned wrapper; implementation must assume the categorizer is registered and avoid fallbacks.
+Revision note (2025-12-11 21:14Z): Clarified that any GetUnassigned accessor must return the real Unassigned wrapper (no stubs), and can be removed entirely if all callers consume the registered categorizer directly.
