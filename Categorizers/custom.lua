@@ -226,6 +226,26 @@ local function fireUpdate()
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, CustomCategorizer)
 end
 
+AddonNS.CategorShowAlways = {}
+
+function AddonNS.CategorShowAlways:ShouldAlwaysShow(categoryOrId)
+    local rawId = resolve_raw_id(categoryOrId)
+    if not rawId then
+        return false
+    end
+    local db = get_db()
+    local entry = db.categories[rawId]
+    return entry and entry.alwaysVisible or false
+end
+
+function AddonNS.CategorShowAlways:SetAlwaysShow(categoryOrId, show)
+    local rawId = resolve_raw_id(categoryOrId)
+    if not rawId then
+        return
+    end
+    CustomCategories:SetAlwaysVisible(rawId, show)
+end
+
 function CustomCategories:GetCategories()
     local map = {}
     for _, raw in ipairs(all_raw()) do

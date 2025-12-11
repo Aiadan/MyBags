@@ -27,10 +27,19 @@ local function wrap_category(store, categorizerId, rawCategory)
         rawId = SINGLETON_SUFFIX
     end
     local wrapperId = categorizerId .. "-" .. rawId
+    local rawKey = categorizerId .. "::" .. rawId
+    local existing = store._wrappersByRaw[rawKey]
+    if existing then
+        -- Update mutable fields in place to reuse the same wrapper object.
+        existing._raw = rawCategory
+        existing.name = rawCategory:GetName()
+        return existing
+    end
     local wrapper = {
         _raw = rawCategory,
         _categorizerId = categorizerId,
         id = wrapperId,
+        name = rawCategory:GetName(),
     }
     function wrapper:GetId()
         return self.id
@@ -54,6 +63,7 @@ local function wrap_category(store, categorizerId, rawCategory)
             self._raw:OnItemUnassigned(itemId, context)
         end
     end
+    store._wrappersByRaw[rawKey] = wrapper
     return wrapper
 end
 
@@ -62,6 +72,7 @@ function CategoryStore:new()
         db = nil,
         _wrappersById = {},
         _wrappersByName = {},
+        _wrappersByRaw = {},
         _wrappersByCategorizer = {},
         _unassigned = {
             id = UNASSIGNED_ID,
@@ -82,14 +93,187 @@ local function ensure_db(self)
     end
 end
 
-function CategoryStore:LoadOrBootstrap(db)
+function CategoryStore:LoadOrBootstrap(db, legacyDb)
     self.db = db or {}
     self.db.categorizers = self.db.categorizers or {}
     self.db.itemOrder = self.db.itemOrder or {}
     self.db.layout = self.db.layout or {}
     self.db.layout.columns = self.db.layout.columns or { {}, {}, {} }
     self.db.layout.collapsed = self.db.layout.collapsed or {}
+    self:_migrateFromLegacy(legacyDb)
+    self:_migrateFromOldDb()
     return self
+end
+
+local function normalize_legacy_array(source)
+    local out = {}
+    for _, v in ipairs(source or {}) do
+        table.insert(out, v)
+    end
+    return out
+end
+
+function CategoryStore:_migrateFromLegacy(legacyDb)
+    if not legacyDb then
+        return
+    end
+    -- Only migrate if we do not already have categorizers.
+    if self.db.categorizers and next(self.db.categorizers) then
+        return
+    end
+
+    self.db.categorizers = self.db.categorizers or {}
+    local custom = {
+        id = "cus",
+        name = "Custom",
+        categories = {},
+        nextId = 0,
+    }
+    local nameToId = {}
+
+    local function reserveId(name)
+        custom.nextId = custom.nextId + 1
+        local rawId = tostring(custom.nextId)
+        nameToId[name] = rawId
+        custom.categories[rawId] = {
+            name = name,
+            protected = false,
+            items = {},
+        }
+        return rawId
+    end
+
+    local legacyCustom = legacyDb.customCategories or {}
+    for name, items in pairs(legacyCustom) do
+        local rawId = reserveId(name)
+        custom.categories[rawId].items = normalize_legacy_array(items)
+    end
+
+    local legacyQueries = legacyDb.queryCategories or {}
+    for name, query in pairs(legacyQueries) do
+        local rawId = nameToId[name] or reserveId(name)
+        custom.categories[rawId].query = query
+    end
+
+    local legacyAlways = legacyDb.categoriesToAlwaysShow or {}
+    for name, flag in pairs(legacyAlways) do
+        if flag then
+            local rawId = nameToId[name] or reserveId(name)
+            custom.categories[rawId].alwaysVisible = true
+        end
+    end
+
+    self.db.categorizers.cus = custom
+
+    -- Layout: map legacy column names to namespaced ids; keep stale if missing.
+    local legacyColumns = legacyDb.categoriesColumnAssignments or {}
+    self.db.layout.columns = self.db.layout.columns or { {}, {}, {} }
+    for columnIndex = 1, 3 do
+        self.db.layout.columns[columnIndex] = {}
+        local sourceColumn = legacyColumns[columnIndex] or {}
+        for _, name in ipairs(sourceColumn) do
+            local rawId = nameToId[name]
+            if rawId then
+                table.insert(self.db.layout.columns[columnIndex], custom.id .. "-" .. rawId)
+            else
+                table.insert(self.db.layout.columns[columnIndex], name)
+            end
+        end
+    end
+
+    -- Collapsed: accept legacy flags, map to namespaced ids when known.
+    local legacyCollapsed = legacyDb.collapsedCategories or {}
+    self.db.layout.collapsed = self.db.layout.collapsed or {}
+    for name, flag in pairs(legacyCollapsed) do
+        if flag then
+            local rawId = nameToId[name]
+            if rawId then
+                self.db.layout.collapsed[custom.id .. "-" .. rawId] = true
+            end
+        end
+    end
+
+    -- Item order is copied across directly.
+    self.db.itemOrder = normalize_legacy_array(legacyDb.itemOrder or {})
+end
+
+local function strip_cat_prefix(id)
+    if not id then
+        return nil
+    end
+    local raw = tostring(id)
+    raw = raw:gsub("^cat%-", "")
+    return raw
+end
+
+function CategoryStore:_migrateFromOldDb()
+    if self.db.categorizers and next(self.db.categorizers) then
+        return
+    end
+    if not self.db.categories then
+        return
+    end
+
+    self.db.categorizers = self.db.categorizers or {}
+    local custom = {
+        id = "cus",
+        name = "Custom",
+        categories = {},
+        nextId = 0,
+    }
+
+    local function reserve(rawId, name)
+        local numeric = tonumber(rawId)
+        if numeric and numeric > custom.nextId then
+            custom.nextId = numeric
+        end
+        custom.categories[rawId] = custom.categories[rawId] or {
+            name = name,
+            protected = false,
+            items = {},
+        }
+    end
+
+    for id, record in pairs(self.db.categories) do
+        local rawId = strip_cat_prefix(record.id or id)
+        reserve(rawId, record.name)
+        local entry = custom.categories[rawId]
+        entry.protected = record.protected or false
+        entry.items = normalize_legacy_array(record.items)
+        entry.query = record.query
+        entry.alwaysVisible = record.alwaysVisible
+    end
+
+    -- Layout conversion.
+    local legacyColumns = self.db.layout and self.db.layout.columns or { {}, {}, {} }
+    self.db.layout.columns = { {}, {}, {} }
+    for columnIndex = 1, 3 do
+        for _, legacyId in ipairs(legacyColumns[columnIndex] or {}) do
+            local rawId = strip_cat_prefix(legacyId)
+            if rawId then
+                table.insert(self.db.layout.columns[columnIndex], custom.id .. "-" .. rawId)
+            else
+                table.insert(self.db.layout.columns[columnIndex], legacyId)
+            end
+        end
+    end
+
+    -- Collapsed conversion.
+    local legacyCollapsed = self.db.layout and self.db.layout.collapsed or {}
+    self.db.layout.collapsed = self.db.layout.collapsed or {}
+    for legacyId, flag in pairs(legacyCollapsed) do
+        if flag then
+            local rawId = strip_cat_prefix(legacyId)
+            if rawId then
+                self.db.layout.collapsed[custom.id .. "-" .. rawId] = true
+            end
+        end
+    end
+
+    -- Item order preserved as-is.
+    self.db.itemOrder = normalize_legacy_array(self.db.itemOrder or {})
+
+    self.db.categorizers.cus = custom
 end
 
 function CategoryStore:GetCategorizerDb(categorizerId)
@@ -104,6 +288,7 @@ end
 function CategoryStore:ResetWrappers()
     self._wrappersById = {}
     self._wrappersByName = {}
+    self._wrappersByRaw = {}
     self._wrappersByCategorizer = {}
 end
 
@@ -116,6 +301,10 @@ function CategoryStore:RefreshCategorizer(categorizerId, rawCategories)
             local name = wrapper:GetName()
             if name and self._wrappersByName[name] then
                 self._wrappersByName[name][wrapper.id] = nil
+            end
+            local rawId = wrapper:GetId():match("^[^%-]+%-(.+)$")
+            if rawId then
+                self._wrappersByRaw[wrapper._categorizerId .. "::" .. rawId] = nil
             end
         end
     end

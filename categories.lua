@@ -45,9 +45,20 @@ local function refresh_categorizer(record)
     return list
 end
 
+local function ensure_wrapped(record)
+    if not record then
+        return
+    end
+    local existing = AddonNS.CategoryStore:GetByCategorizer(record.id)
+    if not existing or #existing == 0 then
+        refresh_categorizer(record)
+    end
+end
+
 function AddonNS.Categories:GetConstantCategories()
     local constant = {}
     for _, record in categorizers:iterate() do
+        ensure_wrapped(record)
         if record.categorizer.GetAlwaysVisibleCategories then
             local rawList = record.categorizer:GetAlwaysVisibleCategories() or {}
             for index = 1, #rawList do
@@ -65,7 +76,7 @@ function AddonNS.Categories:Categorize(itemID, itemButton)
     local matches = {}
     local seen = {}
     for _, record in categorizers:iterate() do
-        refresh_categorizer(record)
+        ensure_wrapped(record)
         local result = record.categorizer:Categorize(itemID, itemButton)
         wrap_raw_result(record.id, result, matches, seen)
     end
@@ -77,6 +88,21 @@ function AddonNS.Categories:Categorize(itemID, itemButton)
     end
     return AddonNS.CategoryStore:GetUnassigned()
 end
+
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, function(_, categorizerRef)
+    for _, record in categorizers:iterate() do
+        if record.categorizer == categorizerRef then
+            refresh_categorizer(record)
+            break
+        end
+    end
+end)
+
+AddonNS.Events:OnInitialize(function()
+    for _, record in categorizers:iterate() do
+        refresh_categorizer(record)
+    end
+end)
 
 function AddonNS.Categories:GetCategoryById(categoryId)
     return AddonNS.CategoryStore:Get(categoryId)

@@ -89,7 +89,8 @@ local function ItemsMoved(previousItemID, pickedItemID, changedCategory)
 
     AddonNS.printDebug("ItemsMoved2", prevNo, pickedNo)
     if not prevNo or not pickedNo then
-        print("ERROR, moving items that are not ordered. Contact dev how did this happen.")
+        -- Missing from order map; ignore to avoid breaking reassignment.
+        return
     end
 
     if changedCategory then
@@ -117,7 +118,7 @@ local function itemMoved(eventName, pickedItemID, targetedItemID, pickedCategory
 
     local pickedCategory = resolveCategory(pickedCategoryId)
     local targetCategory = resolveCategory(targetCategoryId)
-    local sameCategory = pickedCategory and targetCategory and pickedCategory.id == targetCategory.id
+    local sameCategory = pickedCategory and targetCategory and pickedCategory:GetId() == targetCategory:GetId()
     local targetProtected = targetCategory and targetCategory:IsProtected() or false
     local pickedProtected = pickedCategory and pickedCategory:IsProtected() or false
     if sameCategory or (not targetProtected and not pickedProtected) then

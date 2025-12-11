@@ -10,7 +10,7 @@ local addonEnv = {
   },
   Events = {
     RegisterCustomEvent = function() end,
-    OnInitialize = function(fn) fn() end,
+    OnInitialize = function(_, fn) fn() end,
   },
   printDebug = function() end,
 }

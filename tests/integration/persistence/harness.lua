@@ -194,7 +194,6 @@ local function load_addon(ctx)
     setup_container_api(ctx)
 
     exec("collapsed.lua")
-    exec("utils/showAlways.lua")
     dofile(repo_path("utils/orderedMap.lua"))
     exec("categories.lua")
     exec("itemsOrder.lua")
