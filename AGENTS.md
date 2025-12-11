@@ -32,7 +32,7 @@ MyBags is pure Lua and requires no build step. Run tests with the system `lua` i
 
 ## Fallbacks
 
-Avoid implementing fallback logic. Always assume the code operates as intended. Including fallback mechanisms can mask underlying issues, making future debugging more difficult.
+Avoid implementing fallback logic. Always assume the code operates as intended. Including fallback mechanisms can mask underlying issues, making future debugging more difficult. Do not add defensive code paths for missing registrations or unset globals—treat absence of expected setup as a bug to surface, not something to paper over.
 
 ## Code style guidelines
 
