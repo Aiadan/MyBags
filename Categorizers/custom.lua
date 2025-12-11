@@ -39,9 +39,6 @@ local function new_raw(id, data)
     function raw:IsProtected()
         return data.protected == true
     end
-    function raw:IsAlwaysVisible()
-        return data.alwaysVisible == true
-    end
     function raw:OnItemAssigned(itemId, context)
         if not itemId then
             return

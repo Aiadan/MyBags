@@ -57,14 +57,16 @@ end
 
 function AddonNS.Categories:GetConstantCategories()
     local constant = {}
+    local seen = {}
     for _, record in categorizers:iterate() do
         ensure_wrapped(record)
         if record.categorizer.GetAlwaysVisibleCategories then
             local rawList = record.categorizer:GetAlwaysVisibleCategories() or {}
             for index = 1, #rawList do
                 local wrapper = AddonNS.CategoryStore:GetWrapperForRaw(record.id, rawList[index])
-                if wrapper and wrapper:IsAlwaysVisible() then
+                if wrapper and not seen[wrapper:GetId()] then
                     table.insert(constant, wrapper)
+                    seen[wrapper:GetId()] = true
                 end
             end
         end

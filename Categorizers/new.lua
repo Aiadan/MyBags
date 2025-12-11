@@ -9,7 +9,6 @@ local rawNew = {
     GetId = function() return "" end,
     GetName = function() return "|cff9999ffNew" end,
     IsProtected = function() return true end,
-    IsAlwaysVisible = function() return true end,
     OnItemUnassigned = function(_, context)
         if not context then
             return
@@ -35,7 +34,7 @@ function NewItemCategorizer:ListCategories()
 end
 
 function NewItemCategorizer:GetAlwaysVisibleCategories()
-    return { rawNew }
+    return { }
 end
 
 function NewItemCategorizer:Categorize(itemID, itemButton)

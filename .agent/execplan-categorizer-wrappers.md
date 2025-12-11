@@ -37,7 +37,7 @@ Store now wraps per-categorizer raw categories with namespaced IDs (`<categorize
 
 Current: `CategoryStore` loads all categories from `db.categories` with a single schema, assigns IDs, and `CategoryStore:All()` returns every category. Categorizers (custom, equipment set, new, show always, query) rely on this central store for data like `alwaysVisible`, queries, and assignments. Layout/collapsed use store IDs and expect categories to exist.
 
-Target: Each categorizer owns its data under `db.categorizers[<id>]` (e.g., `custom`), with raw categories containing `id`, `name`, `protected`, `query`, `items`, etc. The store wraps raw categories with namespaced IDs `<categorizerId>-<rawId>` (empty raw id => per-categorizer singleton) and exposes wrapper objects with defaults (e.g., `alwaysVisible` defaults false). The store queries each categorizer for its raw categories and always-visible set; categorizers do not register explicitly. Layout/collapsed/order keep using wrapper IDs; missing wrappers are skipped at runtime but persisted.
+Target: Each categorizer owns its data under `db.categorizers[<id>]` (e.g., `custom`), with raw categories containing `id`, `name`, `protected`, `query`, `items`, etc. The store wraps raw categories with namespaced IDs `<categorizerId>-<rawId>` (empty raw id => per-categorizer singleton) and exposes wrapper objects with defaults. The store queries each categorizer for its raw categories and always-visible set; categorizers do not register explicitly. Layout/collapsed/order keep using wrapper IDs; missing wrappers are skipped at runtime but persisted.
 
 Target storage shape (example):
 
@@ -66,7 +66,7 @@ Target storage shape (example):
 
 ## Plan of Work
 
-1) Define raw/wrapper interface: raw implements `GetId()` (raw id, empty allowed for singleton), `GetName()` (non-nil string), `IsProtected()` (bool), `IsAlwaysVisible()` (bool, default false), optional hooks `OnItemAssigned/Unassigned`. No query or stored assignment lists leave the categorizer. Wrapper exposes namespaced `GetId()` (`<categorizerId>-<rawId>` or `<categorizerId>-singleton`), delegates name/protected/alwaysVisible and hooks with safe defaults; no `GetItems`/assignments/query.
+1) Define raw/wrapper interface: raw implements `GetId()` (raw id, empty allowed for singleton), `GetName()` (non-nil string), `IsProtected()` (bool), optional hooks `OnItemAssigned/Unassigned`. No query or stored assignment lists leave the categorizer. Wrapper exposes namespaced `GetId()` (`<categorizerId>-<rawId>` or `<categorizerId>-singleton`), delegates name/protected and hooks with safe defaults; always-visible is determined only by `GetAlwaysVisibleCategories()`.
 2) Store changes (categoryStore.lua): replace `db.categories`/sequences with `db.categorizers`; add wrapper cache keyed by `<categorizerId>-<rawId>`; lazily wrap raw categories supplied by categorizers; tolerate missing wrappers in layout/collapsed/order (skip at runtime, leave persisted). Keep layout/collapse/itemOrder at root; accept stale IDs. No version field; future migrations use a new SavedVariable name if needed.
 3) Categorizers: add `ListCategories()` and `GetAlwaysVisibleCategories()` (default empty) and keep query/assignments private. Custom stores its data under `db.categorizers.custom`; equipment set/new and others use their own slots. Remove cross-categorizer scans.
 4) Categories module: replace `CategoryStore:All()` reliance by aggregating categorizer `GetAlwaysVisibleCategories()` and wrapping them; keep categorizer isolation. Move `showAlways` helper out of `Categorizers/` (e.g., into utils or a dedicated helper namespace) so categorizers remain only the actual category providers.
@@ -105,7 +105,7 @@ Planned APIs (adjust as needed during implementation):
     CategoryStore:GetWrapper(categorizerId, rawCategory) -> wrapperCategory
     CategoryStore:WrapAllFromCategorizer(categorizerId) -> {wrapper...}
 
-Wrapper ID format: `<categorizerId>-<rawId>`; if `rawId` is empty, use `<categorizerId>-singleton`. Hooks and flags are forwarded with defaults (`alwaysVisible` false). Stale layout IDs are tolerated. 
+Wrapper ID format: `<categorizerId>-<rawId>`; if `rawId` is empty, use `<categorizerId>-singleton`. Hooks are forwarded with safe defaults. Stale layout IDs are tolerated. 
 
 Method contracts for clarity:
 
@@ -113,13 +113,12 @@ Raw category (owned by categorizer):
     GetId() -> string (raw id; empty allowed for singleton)
     GetName() -> string (non-nil)
     IsProtected() -> bool
-    IsAlwaysVisible() -> bool (default false)
     OnItemAssigned(itemId, context) [optional; no-op if missing]
     OnItemUnassigned(itemId, context) [optional; no-op if missing]
     (Any other fields/methods, like query or stored assignments, remain private to the categorizer.)
 
 Wrapper category (store-provided):
     GetId() -> string (namespaced id `<categorizerId>-<rawId>` or `<categorizerId>-singleton`)
-    GetName(), IsProtected(), IsAlwaysVisible() -> delegated to raw with defaults
+    GetName(), IsProtected() -> delegated to raw with defaults
     OnItemAssigned(itemId, context) -> forwards to raw hook if present
     OnItemUnassigned(itemId, context) -> forwards to raw hook if present

@@ -13,7 +13,6 @@ local SINGLETON_SUFFIX = "singleton"
 local function default_raw_methods(raw)
     -- Provide safe defaults for optional raw methods.
     raw.IsProtected = raw.IsProtected or function() return false end
-    raw.IsAlwaysVisible = raw.IsAlwaysVisible or function() return false end
     return raw
 end
 
@@ -49,9 +48,6 @@ local function wrap_category(store, categorizerId, rawCategory)
     end
     function wrapper:IsProtected()
         return self._raw:IsProtected()
-    end
-    function wrapper:IsAlwaysVisible()
-        return self._raw:IsAlwaysVisible()
     end
     function wrapper:OnItemAssigned(itemId, context)
         if self._raw.OnItemAssigned then

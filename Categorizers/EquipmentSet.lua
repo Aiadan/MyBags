@@ -21,9 +21,6 @@ local function new_raw(equipmentSetID, name, iconFileID)
     function raw:IsProtected()
         return true
     end
-    function raw:IsAlwaysVisible()
-        return true
-    end
     return raw
 end
 
@@ -66,7 +63,7 @@ function EquipmentSet:ListCategories()
 end
 
 function EquipmentSet:GetAlwaysVisibleCategories()
-    return self:ListCategories()
+    return {}
 end
 
 function EquipmentSet:Categorize(itemID, itemButton)

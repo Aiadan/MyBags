@@ -27,7 +27,6 @@ local function makeRaw(id, name)
   function raw:GetId() return id end
   function raw:GetName() return name end
   function raw:IsProtected() return false end
-  function raw:IsAlwaysVisible() return false end
   return raw
 end
 
@@ -68,7 +67,6 @@ local catA = {
   GetId = function() return "hook:a" end,
   GetName = function() return "A" end,
   IsProtected = function() return false end,
-  IsAlwaysVisible = function() return false end,
   OnItemUnassigned = function(_, itemId, context)
     unassigned = unassigned + 1
   end,
@@ -77,7 +75,6 @@ local catB = {
   GetId = function() return "hook:b" end,
   GetName = function() return "B" end,
   IsProtected = function() return false end,
-  IsAlwaysVisible = function() return false end,
   OnItemAssigned = function(selfCategory)
     assigned = assigned + 10
     targetSeen = selfCategory
@@ -95,7 +92,6 @@ local protectedTrigger = {
   GetId = function() return "hook:protected" end,
   GetName = function() return "P" end,
   IsProtected = function() return true end,
-  IsAlwaysVisible = function() return false end,
 }
 addonEnv.CategoryStore:GetWrapperForRaw("hook", protectedTrigger)
 
