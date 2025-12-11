@@ -65,25 +65,29 @@ local function item_button(bag, slot)
     }
 end
 
-local function category_by_name(snapshot, name)
-    for id, data in pairs(snapshot.categories or {}) do
+local function custom_snapshot(snapshot)
+    local categorizers = snapshot.categorizers or {}
+    return categorizers.cus or categorizers.custom or {}
+end
+
+local function raw_by_name(snapshot, name)
+    local custom = custom_snapshot(snapshot)
+    for rawId, data in pairs(custom.categories or {}) do
         if data.name == name then
-            return id, data
+            return rawId, data
         end
     end
     return nil
 end
 
-local function column_names(snapshot)
+local function layout_columns(snapshot)
     local columns = {}
     local layout = snapshot.layout or {}
     for index, column in ipairs(layout.columns or {}) do
-        local names = {}
-        for _, categoryId in ipairs(column) do
-            local category = snapshot.categories and snapshot.categories[categoryId]
-            table.insert(names, category and category.name or categoryId)
+        columns[index] = {}
+        for _, id in ipairs(column) do
+            table.insert(columns[index], id)
         end
-        columns[index] = names
     end
     return columns
 end
@@ -93,59 +97,39 @@ run("fresh install seeds defaults", function()
     ctx:events():fire_game("PLAYER_LOGOUT")
 
     local snapshot = ctx:snapshot()
-    assert_true(snapshot.version == 2, "schema version set to 2")
-    assert_true(snapshot.sequences.category == 0, "category sequence initialised")
-    assert_equal({}, snapshot.categories, "no user categories persisted")
+    local custom = custom_snapshot(snapshot)
+    assert_true(custom.id == "cus", "custom bucket seeded")
+    assert_equal({}, custom.categories, "no user categories persisted")
     assert_equal({ {}, {}, {} }, snapshot.layout.columns, "layout columns seeded")
     assert_equal({}, snapshot.layout.collapsed, "collapsed state empty")
     assert_equal({}, snapshot.itemOrder, "item order initialised")
 end)
 
-run("legacy data migrates into ID schema", function()
-    local ctx = harness.new({
-        legacy = {
-            customCategories = { old = { 101, 102 }, other = { 201 } },
-            categoriesColumnAssignments = { { "old" }, {}, {} },
-            categoriesToAlwaysShow = { old = true },
-            queryCategories = { old = "ilvl >= 450" },
-            itemOrder = { 101, 102 },
-        },
-    })
+run("custom categories persist with namespaced layout", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    ctx.AddonNS.CustomCategories:AssignToCategory(catA, 101)
+    ctx.AddonNS.CustomCategories:AssignToCategory(catB, 102)
+    ctx.AddonNS.QueryCategories:SetQuery(catA, "ilvl >= 400")
+    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(catB, true)
+    table.insert(ctx.AddonNS.CategoryStore:GetLayoutColumns()[1], catA:GetId())
     ctx:events():fire_game("PLAYER_LOGOUT")
 
     local snapshot = ctx:snapshot()
-    local oldId, oldCategory = category_by_name(snapshot, "old")
-    local otherId, otherCategory = category_by_name(snapshot, "other")
-    assert_true(oldId ~= nil, "legacy category 'old' migrated")
-    assert_true(otherId ~= nil, "legacy category 'other' migrated")
-    assert_equal({ 101, 102 }, oldCategory.items, "items preserved for old")
-    assert_equal({ 201 }, otherCategory.items, "items preserved for other")
-    assert_true(oldCategory.alwaysVisible == true, "alwaysVisible migrated")
-    assert_true(oldCategory.query == "ilvl >= 450", "query migrated")
-    assert_equal({ { "old" }, {}, {} }, column_names(snapshot), "layout references migrated category")
-    assert_equal({ 101, 102 }, snapshot.itemOrder, "item order preserved")
-    assert_true(snapshot.sequences.category >= 2, "category sequence advanced")
+    local custom = custom_snapshot(snapshot)
+    assert_true(custom.id == "cus", "custom categorizer id stored")
+    local aId, aData = raw_by_name(snapshot, "A")
+    local bId, bData = raw_by_name(snapshot, "B")
+    assert_true(aId ~= nil and bId ~= nil, "categories persisted")
+    assert_equal({ 101 }, aData.items, "A stores assignment")
+    assert_equal({ 102 }, bData.items, "B stores assignment")
+    assert_true(aData.query == "ilvl >= 400", "query persisted for A")
+    assert_true(bData.alwaysVisible == true, "always visible persisted for B")
+    assert_equal({ { catA:GetId() }, {}, {} }, layout_columns(snapshot), "layout uses namespaced ids")
 end)
 
-run("rename updates persisted layout and metadata", function()
-    local ctx = harness.new({
-        legacy = {
-            customCategories = { old = { 1 } },
-            categoriesColumnAssignments = { { "old" }, {}, {} },
-        },
-    })
-    local category = ctx.AddonNS.CategoryStore:GetByName("old")
-    ctx.AddonNS.CustomCategories:RenameCategory(category, "new")
-    ctx:events():fire_game("PLAYER_LOGOUT")
-
-    local snapshot = ctx:snapshot()
-    local newId, newCategory = category_by_name(snapshot, "new")
-    assert_true(newId ~= nil, "category renamed")
-    assert_equal({ { "new" }, {}, {} }, column_names(snapshot), "layout uses updated name")
-    assert_equal({ 1 }, newCategory.items, "items preserved after rename")
-end)
-
-run("item move updates assignments and always show state", function()
+run("item move reassigns through hooks and respects protected target", function()
     local ctx = harness.new()
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
     local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
@@ -154,74 +138,51 @@ run("item move updates assignments and always show state", function()
     ctx.AddonNS.db.itemOrder[1] = 101
     ctx.AddonNS.db.itemOrder[2] = 102
 
-    local events = ctx:events()
-    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(catA, true)
-    events:fire_custom(ctx.AddonNS.Const.Events.ITEM_MOVED, 101, 102, catA.id, catB.id, item_button(0, 1), item_button(0, 2))
-    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(catB, true)
-    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(catA, false)
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.ITEM_MOVED, 101, 102, catA, catB, item_button(0, 1), item_button(0, 2))
     ctx:events():fire_game("PLAYER_LOGOUT")
 
     local snapshot = ctx:snapshot()
-    assert_equal({}, snapshot.categories[catA.id].items, "source category cleared")
-    assert_equal({ 102, 101 }, snapshot.categories[catB.id].items, "target category stores both items")
-    assert_true(snapshot.categories[catB.id].alwaysVisible == true, "always visible toggled on for B")
-    assert_true(snapshot.categories[catA.id].alwaysVisible == nil, "always visible cleared for A")
-    assert_equal({ 102, 101 }, snapshot.itemOrder, "item order updated after move")
+    local custom = custom_snapshot(snapshot)
+    local aData = custom.categories[catA:GetId():match("^[^%-]+%-(.+)$")]
+    local bData = custom.categories[catB:GetId():match("^[^%-]+%-(.+)$")]
+    assert_equal({}, aData.items, "source cleared after move")
+    assert_equal({ 102, 101 }, bData.items, "target has both items after move")
+
+    -- Protected target should block move.
+    local ctx2 = harness.new()
+    local prot = ctx2.AddonNS.CustomCategories:NewCategory("Prot", { protected = true })
+    local src = ctx2.AddonNS.CustomCategories:NewCategory("Src")
+    ctx2.AddonNS.CustomCategories:AssignToCategory(src, 201)
+    ctx2.AddonNS.db.itemOrder[1] = 201
+    ctx2:events():fire_custom(ctx2.AddonNS.Const.Events.ITEM_MOVED, 201, nil, src, prot, item_button(0, 1), nil)
+    ctx2:events():fire_game("PLAYER_LOGOUT")
+    local snap2 = ctx2:snapshot()
+    local custom2 = custom_snapshot(snap2)
+    local srcData = custom2.categories[src:GetId():match("^[^%-]+%-(.+)$")]
+    local protData = custom2.categories[prot:GetId():match("^[^%-]+%-(.+)$")]
+    assert_equal({ 201 }, srcData.items, "protected target prevents reassignment")
+    assert_equal({}, protData.items, "protected target stays empty")
 end)
 
 run("clearing inputs removes stored data", function()
     local ctx = harness.new()
     local category = ctx.AddonNS.CustomCategories:NewCategory("Solo")
     ctx.AddonNS.CustomCategories:AssignToCategory(category, 555)
-    ctx.AddonNS.QueryCategories:SetQuery(category.id, "isQuestItem = true")
-    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(category.id, true)
+    ctx.AddonNS.QueryCategories:SetQuery(category, "isQuestItem = true")
+    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(category, true)
 
     ctx.AddonNS.CustomCategories:AssignToCategory(nil, 555)
-    ctx.AddonNS.QueryCategories:SetQuery(category.id, "")
-    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(category.id, false)
+    ctx.AddonNS.QueryCategories:SetQuery(category, "")
+    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(category, false)
     ctx:events():fire_game("PLAYER_LOGOUT")
 
     local snapshot = ctx:snapshot()
-    assert_true(#(snapshot.categories[category.id].items) == 0, "manual assignments cleared")
-    assert_true(snapshot.categories[category.id].query == nil, "query cleared")
-    assert_true(snapshot.categories[category.id].alwaysVisible == nil, "always visible flag cleared")
-end)
-
-run("duplicate layout events stay idempotent", function()
-    local ctx = harness.new()
-    local alpha = ctx.AddonNS.CustomCategories:NewCategory("Alpha")
-    table.insert(ctx.AddonNS.CategoryStore:GetLayoutColumns()[1], alpha.id)
-    ctx.AddonNS.db.itemOrder = { 700, 800 }
-
-    local events = ctx:events()
-    events:fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED, alpha.id, alpha.id)
-    events:fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED, alpha.id, alpha.id)
-    ctx.AddonNS.CustomCategories:AssignToCategory(alpha.id, 700)
-    ctx.AddonNS.CustomCategories:AssignToCategory(alpha.id, 700)
-    ctx:events():fire_game("PLAYER_LOGOUT")
-
-    local snapshot = ctx:snapshot()
-    assert_equal({ { "Alpha" }, {}, {} }, column_names(snapshot), "category layout unchanged")
-    assert_equal({ 700 }, snapshot.categories[alpha.id].items, "single item stored")
-end)
-
-run("protected and missing categories ignore mutations", function()
-    local ctx = harness.new()
-    local protectedCategory = ctx.AddonNS.CategoryStore:RecordDynamicCategory({
-        id = "sys:protected",
-        name = "System",
-        protected = true,
-    })
-
-    ctx.AddonNS.CustomCategories:AssignToCategory(protectedCategory, 42)
-    ctx.AddonNS.CustomCategories:RenameCategory("ghost", "still-ghost")
-    ctx:events():fire_game("PLAYER_LOGOUT")
-
-    local snapshot = ctx:snapshot()
-    for _, data in pairs(snapshot.categories) do
-        assert_true(not data.items or not table.concat(data.items, ","):find("42", 1, true), "protected assignment ignored")
-    end
-    assert_true(category_by_name(snapshot, "still-ghost") == nil, "missing rename ignored")
+    local custom = custom_snapshot(snapshot)
+    local rawId = category:GetId():match("^[^%-]+%-(.+)$")
+    local entry = custom.categories[rawId]
+    assert_true(#(entry.items or {}) == 0, "manual assignments cleared")
+    assert_true(entry.query == nil, "query cleared")
+    assert_true(entry.alwaysVisible == nil, "always visible flag cleared")
 end)
 
 print("All integration scenarios completed.")

@@ -6,7 +6,7 @@ local function toCategory(categoryOrId)
     if not categoryOrId then
         return nil
     end
-    if type(categoryOrId) == "table" then
+    if type(categoryOrId) == "table" and categoryOrId.GetId then
         return categoryOrId
     end
     return AddonNS.CategoryStore:Get(categoryOrId)
@@ -14,9 +14,13 @@ end
 
 function AddonNS.CategorShowAlways:GetAlwaysShownCategories()
     local collection = {}
-    for category in AddonNS.CategoryStore:All() do
-        if category.alwaysVisible then
-            collection[category.id] = true
+    local customWrappers = {}
+    if AddonNS.CategoryStore.GetByCategorizer then
+        customWrappers = AddonNS.CategoryStore:GetByCategorizer("cus") or {}
+    end
+    for _, category in ipairs(customWrappers) do
+        if category:IsAlwaysVisible() then
+            collection[category:GetId()] = true
         end
     end
     return collection
@@ -24,7 +28,7 @@ end
 
 function AddonNS.CategorShowAlways:ShouldAlwaysShow(categoryOrId)
     local category = toCategory(categoryOrId)
-    return category and category.alwaysVisible or false
+    return category and category:IsAlwaysVisible() or false
 end
 
 function AddonNS.CategorShowAlways:SetAlwaysShow(categoryOrId, show)
@@ -32,5 +36,10 @@ function AddonNS.CategorShowAlways:SetAlwaysShow(categoryOrId, show)
     if not category then
         return
     end
-    AddonNS.CategoryStore:SetAlwaysVisible(category.id, show)
+    local id = category:GetId()
+    local rawId = id:match("^[^%-]+%-(.+)$") or id
+    local categorizerId = id:match("^([^%-]+)-")
+    if categorizerId == "cus" then
+        AddonNS.CustomCategories:SetAlwaysVisible(rawId, show)
+    end
 end

@@ -3,85 +3,101 @@ local addonEnv = {
     Events = {
       CUSTOM_CATEGORY_DELETED = "CUSTOM_CATEGORY_DELETED",
       CUSTOM_CATEGORY_RENAMED = "CUSTOM_CATEGORY_RENAMED",
+      ITEM_MOVED = "ITEM_MOVED",
     },
     NUM_COLUMNS = 3,
     UNASSIGNE_CATEGORY_DB_STORAGE_NAME = "UNASSIGNED",
   },
   Events = {
     RegisterCustomEvent = function() end,
-  },
-  CategorShowAlways = {
-    GetAlwaysShownCategories = function() return {} end,
+    OnInitialize = function(fn) fn() end,
   },
   printDebug = function() end,
 }
 dofile("utils/orderedMap.lua")
 local storeChunk = assert(loadfile("categoryStore.lua"))
 storeChunk("MyBags", addonEnv)
-addonEnv.CategoryStore:LoadOrBootstrap({}, nil)
+addonEnv.CategoryStore:LoadOrBootstrap({})
 
 local categoriesChunk = assert(loadfile("categories.lua"))
 categoriesChunk("MyBags", addonEnv)
 
-local function makeCategorizer(id, name)
+local function makeRaw(id, name)
+  local raw = {}
+  function raw:GetId() return id end
+  function raw:GetName() return name end
+  function raw:IsProtected() return false end
+  function raw:IsAlwaysVisible() return false end
+  return raw
+end
+
+local cat1Raw = makeRaw("cat1", "cat1")
+local cat2Raw = makeRaw("cat2", "cat2")
+
+local function makeCategorizer(raw)
   return {
+    ListCategories = function() return { raw } end,
+    GetAlwaysVisibleCategories = function() return {} end,
     Categorize = function(self, itemID)
       if itemID == 1 then
-        return addonEnv.CategoryStore:RecordDynamicCategory({
-          id = id,
-          name = name,
-          protected = false,
-        })
+        return raw
       end
+      return nil
     end,
   }
 end
 
-addonEnv.Categories:RegisterCategorizer("cat1", makeCategorizer("cat1", "cat1"))
-addonEnv.Categories:RegisterCategorizer("cat2", makeCategorizer("cat2", "cat2"))
+addonEnv.Categories:RegisterCategorizer("cat1", makeCategorizer(cat1Raw), "cat1")
+addonEnv.Categories:RegisterCategorizer("cat2", makeCategorizer(cat2Raw), "cat2")
 
 local itemButton = {}
+function itemButton:GetBagID() return 0 end
+function itemButton:GetID() return 1 end
+
 local category = addonEnv.Categories:Categorize(1, itemButton)
 
-assert(category.name == "cat1", "returns first matching category")
+assert(category:GetName() == "cat1", "returns first matching category")
 assert(#itemButton.ItemCategories == 2, "stores all matching categories")
-assert(itemButton.ItemCategories[1].name == "cat1", "first category is first in list")
-assert(itemButton.ItemCategories[2].name == "cat2", "second category is second in list")
+assert(itemButton.ItemCategories[1]:GetName() == "cat1", "first category is first in list")
+assert(itemButton.ItemCategories[2]:GetName() == "cat2", "second category is second in list")
 
 local assigned = 0
 local unassigned = 0
 local targetSeen = nil
-local unassignedTarget = nil
-local catA = addonEnv.CategoryStore:RecordDynamicCategory({
-  id = "hook:a",
-  name = "A",
-  OnItemUnassigned = function(selfCategory, itemId, targetCategory, context)
+local catA = {
+  GetId = function() return "hook:a" end,
+  GetName = function() return "A" end,
+  IsProtected = function() return false end,
+  IsAlwaysVisible = function() return false end,
+  OnItemUnassigned = function(_, itemId, context)
     unassigned = unassigned + 1
-    unassignedTarget = targetCategory
   end,
-})
-local catB = addonEnv.CategoryStore:RecordDynamicCategory({
-  id = "hook:b",
-  name = "B",
+}
+local catB = {
+  GetId = function() return "hook:b" end,
+  GetName = function() return "B" end,
+  IsProtected = function() return false end,
+  IsAlwaysVisible = function() return false end,
   OnItemAssigned = function(selfCategory)
     assigned = assigned + 10
     targetSeen = selfCategory
   end,
-})
+}
+addonEnv.CategoryStore:GetWrapperForRaw("hook", catA)
+addonEnv.CategoryStore:GetWrapperForRaw("hook", catB)
 
 addonEnv.Categories:HandleItemReassignment("EVT", 777, nil, catA, catB, { GetBagID = function() return 0 end, GetID = function() return 1 end })
 assert(assigned == 10, "assignment hook fires for the target category")
 assert(unassigned == 1, "unassign hook fires for source category")
-assert(targetSeen == catB and unassignedTarget == catB, "source and target categories are passed through")
+assert(targetSeen == catB, "target category is passed through")
 
-local protectedTrigger = addonEnv.CategoryStore:RecordDynamicCategory({
-  id = "hook:protected",
-  name = "P",
-  protected = true,
-  OnItemAssigned = function()
-    error("protected categories should not receive assignment callbacks")
-  end,
-})
+local protectedTrigger = {
+  GetId = function() return "hook:protected" end,
+  GetName = function() return "P" end,
+  IsProtected = function() return true end,
+  IsAlwaysVisible = function() return false end,
+}
+addonEnv.CategoryStore:GetWrapperForRaw("hook", protectedTrigger)
 
 addonEnv.Categories:HandleItemReassignment("EVT", 888, nil, catA, protectedTrigger)
 assert(assigned == 10, "protected target blocks further callbacks")

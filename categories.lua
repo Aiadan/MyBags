@@ -1,54 +1,61 @@
 local addonName, AddonNS = ...
 
-AddonNS.Categories = {};
+AddonNS.Categories = {}
 
 local categorizers = OrderedMap:new()
 
-local function resolveCategoryIdentifier(categoryOrId)
-    if not categoryOrId then
-        return nil
-    end
-    if type(categoryOrId) == "table" then
-        return categoryOrId
-    end
-    return AddonNS.CategoryStore:Get(categoryOrId)
-end
-
-local function resolveCategory(result, output, seen)
+local function wrap_raw_result(categorizerId, result, output, seen)
     if not result then
         return
     end
-    local category
-    local resultType = type(result)
-    if resultType == "string" then
-        category = AddonNS.CategoryStore:Get(result)
-    elseif resultType == "table" and result.id and (getmetatable(result) or result._record or result._metadata) then
-        category = result
-    elseif resultType == "table" and result[1] then
-        for index = 1, #result do
-            resolveCategory(result[index], output, seen)
+    if type(result) == "table" and result[1] then
+        for i = 1, #result do
+            wrap_raw_result(categorizerId, result[i], output, seen)
         end
         return
     end
-    if not category then
+    if type(result) ~= "table" or not result.GetId then
         return
     end
-    if seen[category.id] then
+    local wrapper = AddonNS.CategoryStore:GetWrapperForRaw(categorizerId, result)
+    if not wrapper then
         return
     end
-    seen[category.id] = true
-    table.insert(output, category)
+    if seen[wrapper:GetId()] then
+        return
+    end
+    seen[wrapper:GetId()] = true
+    table.insert(output, wrapper)
 end
 
-function AddonNS.Categories:RegisterCategorizer(name, categorizer)
-    categorizers:set(name, categorizer);
+function AddonNS.Categories:RegisterCategorizer(name, categorizer, categorizerId)
+    local id = categorizerId or name
+    categorizers:set(id, { id = id, categorizer = categorizer, name = name })
+end
+
+local function refresh_categorizer(record)
+    if not record then
+        return {}
+    end
+    local list = {}
+    if record.categorizer.ListCategories then
+        local rawList = record.categorizer:ListCategories()
+        list = AddonNS.CategoryStore:RefreshCategorizer(record.id, rawList or {})
+    end
+    return list
 end
 
 function AddonNS.Categories:GetConstantCategories()
     local constant = {}
-    for category in AddonNS.CategoryStore:All() do
-        if category.alwaysVisible then
-            table.insert(constant, category)
+    for _, record in categorizers:iterate() do
+        if record.categorizer.GetAlwaysVisibleCategories then
+            local rawList = record.categorizer:GetAlwaysVisibleCategories() or {}
+            for index = 1, #rawList do
+                local wrapper = AddonNS.CategoryStore:GetWrapperForRaw(record.id, rawList[index])
+                if wrapper and wrapper:IsAlwaysVisible() then
+                    table.insert(constant, wrapper)
+                end
+            end
         end
     end
     return constant
@@ -57,9 +64,10 @@ end
 function AddonNS.Categories:Categorize(itemID, itemButton)
     local matches = {}
     local seen = {}
-    for _, categorizer in categorizers:iterate() do
-        local result = categorizer:Categorize(itemID, itemButton)
-        resolveCategory(result, matches, seen)
+    for _, record in categorizers:iterate() do
+        refresh_categorizer(record)
+        local result = record.categorizer:Categorize(itemID, itemButton)
+        wrap_raw_result(record.id, result, matches, seen)
     end
     if itemButton then
         itemButton.ItemCategories = matches
@@ -86,12 +94,11 @@ function AddonNS.Categories:HandleItemReassignment(eventName, itemId, targetedIt
     if not itemId then
         return
     end
-    local source = resolveCategoryIdentifier(sourceCategory)
-    local target = resolveCategoryIdentifier(targetCategory) or AddonNS.CategoryStore:GetUnassigned()
-    if target and target:IsProtected() then
+    local target = targetCategory or AddonNS.CategoryStore:GetUnassigned()
+    if target and target.IsProtected and target:IsProtected() then
         return
     end
-    if source and target and source.id == target.id then
+    if sourceCategory and target and sourceCategory:GetId() == target:GetId() then
         return
     end
     local context = {
@@ -99,15 +106,14 @@ function AddonNS.Categories:HandleItemReassignment(eventName, itemId, targetedIt
         targetItemButton = targetButton,
         targetedItemId = targetedItemId,
     }
-    if source and source.OnItemUnassigned then
-        source:OnItemUnassigned(itemId, target, context)
+    if sourceCategory and sourceCategory.OnItemUnassigned then
+        sourceCategory:OnItemUnassigned(itemId, context)
     end
     if target and target.OnItemAssigned then
-        target:OnItemAssigned(itemId, source, context)
+        target:OnItemAssigned(itemId, context)
     end
 end
 
-AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED,
-    function(...)
-        AddonNS.Categories:HandleItemReassignment(...)
-    end)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, function(...)
+    AddonNS.Categories:HandleItemReassignment(...)
+end)

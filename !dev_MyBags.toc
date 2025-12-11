@@ -43,4 +43,4 @@ Categorizers/new.lua
 Categorizers/EquipmentSet.lua
 Categorizers/custom.lua
 Categorizers/custom/query.lua
-Categorizers/showAlways.lua
+utils/showAlways.lua

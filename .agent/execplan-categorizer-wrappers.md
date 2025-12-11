@@ -9,12 +9,13 @@ Move category ownership and persistence into each categorizer while the store pr
 ## Progress
 
 - [x] (2025-12-11 00:00Z) Drafted plan for per-categorizer raw categories, store wrappers, and namespaced storage.
-- [ ] Implement store wrapper layer and new storage schema.
-- [ ] Refactor categorizers to supply raw lists and always-visible sets; relocate `showAlways` helper out of Categorizers and update layout/collapse resolution and tests.
+- [x] (2025-12-11 19:21Z) Implemented namespaced wrapper store (`db.categorizers`), refactored categorizers/new storage schema, moved showAlways helper.
+- [x] (2025-12-11 19:21Z) Updated tests/harness/TOC for new schema; full Lua suite passing.
 
 ## Surprises & Discoveries
 
-- None yet; log with evidence as work progresses.
+- ItemsOrder requires `itemOrder` to contain moved item IDs before ITEM_MOVED fires; otherwise it errors. Tests now seed `itemOrder` prior to move events.
+- showAlways helper needed explicit categorizer ID guard (`cus`) for setting alwaysVisible flags; otherwise flags stayed false.
 
 ## Decision Log
 
@@ -30,7 +31,7 @@ Move category ownership and persistence into each categorizer while the store pr
 
 ## Outcomes & Retrospective
 
-Pending; fill in after milestones.
+Store now wraps per-categorizer raw categories with namespaced IDs (`<categorizer>-<rawId>`), persistence lives under `db.categorizers`, and layout/collapsed tolerate stale IDs. Categorizers expose `ListCategories`/`GetAlwaysVisibleCategories`, queries stay private to custom, and showAlways helper moved out of Categorizers. Tests (unit, categorizer query, integration persistence) pass under the new schema.
 
 ## Context and Orientation
 

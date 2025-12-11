@@ -321,82 +321,88 @@ end
 
 local compiledQueries = {}
 
-local function resolveCategory(categoryOrId)
+local function resolveRawId(categoryOrId)
     if not categoryOrId then
         return nil
     end
-    if type(categoryOrId) == "table" then
-        return categoryOrId
+    if type(categoryOrId) == "table" and categoryOrId.GetId then
+        local id = categoryOrId:GetId()
+        local raw = id:match("^[^%-]+%-(.+)$")
+        return raw or id
     end
-    return AddonNS.CategoryStore:Get(categoryOrId) or AddonNS.Categories:GetCategoryByName(categoryOrId)
+    return categoryOrId
 end
 
-local function storeCompiledQuery(categoryId, queryString)
-    if not queryString or #trim(queryString) == 0 then
-        compiledQueries[categoryId] = nil
+local function storeCompiledQuery(rawId, queryString)
+    if not rawId or not queryString or #trim(queryString) == 0 then
+        if rawId then
+            compiledQueries[rawId] = nil
+        end
         return
     end
-    compiledQueries[categoryId] = evaluate(prepare(queryString))
+    compiledQueries[rawId] = evaluate(prepare(queryString))
 end
 
 function AddonNS.QueryCategories:GetQuery(categoryOrId)
-    local category = resolveCategory(categoryOrId)
-    if not category then
+    local rawId = resolveRawId(categoryOrId)
+    if not rawId then
         return ""
     end
-    return category.query or ""
+    return AddonNS.CustomCategories:GetQuery(rawId)
 end
 
 function AddonNS.QueryCategories:SetQuery(categoryOrId, query)
-    local category = resolveCategory(categoryOrId)
-    if not category then
+    local rawId = resolveRawId(categoryOrId)
+    if not rawId then
         return
     end
-    AddonNS.CategoryStore:SetQuery(category.id, query)
-    storeCompiledQuery(category.id, query)
+    AddonNS.CustomCategories:SetQuery(rawId, query)
+    storeCompiledQuery(rawId, query)
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, AddonNS.UserCategorizer)
 end
 
 function AddonNS.QueryCategories:DeleteQuery(categoryOrId)
-    local category = resolveCategory(categoryOrId)
-    if not category then
+    local rawId = resolveRawId(categoryOrId)
+    if not rawId then
         return
     end
-    AddonNS.CategoryStore:SetQuery(category.id, nil)
-    compiledQueries[category.id] = nil
+    AddonNS.CustomCategories:SetQuery(rawId, nil)
+    compiledQueries[rawId] = nil
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, AddonNS.UserCategorizer)
 end
 
 function AddonNS.QueryCategories:GetCategories()
     local categories = {}
-    for category in AddonNS.CategoryStore:All() do
-        if category.query then
-            categories[category.id] = true
+    local db = AddonNS.CategoryStore:GetCategorizerDb("cus")
+    for rawId, data in pairs(db.categories) do
+        if data.query then
+            categories[rawId] = true
         end
     end
     return categories
 end
 
 function AddonNS.QueryCategories:GetCompiled(categoryOrId)
-    local category = resolveCategory(categoryOrId)
-    if not category then
+    local rawId = resolveRawId(categoryOrId)
+    if not rawId then
         return nil
     end
-    return compiledQueries[category.id]
+    return compiledQueries[rawId]
 end
 
 AddonNS.Events:OnInitialize(function()
-    for category in AddonNS.CategoryStore:All() do
-        if category.query then
-            storeCompiledQuery(category.id, category.query)
+    local db = AddonNS.CategoryStore:GetCategorizerDb("cus")
+    for rawId, data in pairs(db.categories) do
+        if data.query then
+            storeCompiledQuery(rawId, data.query)
         end
     end
 end)
 
 local function categoryDeleted(eventName, category)
-    local resolved = resolveCategory(category)
-    if resolved then
-        compiledQueries[resolved.id] = nil
+    local rawId = resolveRawId(category)
+    if rawId then
+        compiledQueries[rawId] = nil
     end
 end
 

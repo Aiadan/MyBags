@@ -1,53 +1,53 @@
 local addonName, AddonNS = ...
 
-local NewItemCategorizer = {};
+local NewItemCategorizer = {}
+local CATEGORIZER_ID = "new"
 
-AddonNS.Categories:RegisterCategorizer("New", NewItemCategorizer, true, "Right-click to reset new items.");
+local newItems = {}
 
-local newItems = {};
-local newCategoryId = "sys:new"
+local rawNew = {
+    GetId = function() return "" end,
+    GetName = function() return "|cff9999ffNew" end,
+    IsProtected = function() return true end,
+    IsAlwaysVisible = function() return true end,
+    OnItemUnassigned = function(_, context)
+        if not context then
+            return
+        end
+        local sourceButton = context.pickedItemButton or context.targetItemButton
+        if not sourceButton then
+            return
+        end
+        local bagID = sourceButton:GetBagID()
+        local slotIndex = sourceButton:GetID()
+        C_NewItems.RemoveNewItem(bagID, slotIndex)
+        newItems[bagID] = newItems[bagID] or {}
+        newItems[bagID][slotIndex] = nil
+    end,
+}
 
-local function resetItem(bagID, slotIndex)
-    C_NewItems.RemoveNewItem(bagID, slotIndex)
-    newItems[bagID] = newItems[bagID] or {};
-    newItems[bagID][slotIndex] = nil
+local function category()
+    return rawNew
 end
 
-local function resetFromContext(context)
-    if not context then
-        return
-    end
-    local sourceButton = context.pickedItemButton or context.targetItemButton
-    if not sourceButton then
-        return
-    end
-    resetItem(sourceButton:GetBagID(), sourceButton:GetID())
+function NewItemCategorizer:ListCategories()
+    return { rawNew }
 end
 
-local function ensureNewCategory()
-    return AddonNS.CategoryStore:RecordDynamicCategory({
-        id = newCategoryId,
-        name = "|cff9999ffNew",
-        categorizer = "system:new",
-        protected = true,
-        alwaysVisible = true,
-        OnItemUnassigned = function(_, _, _, context)
-            resetFromContext(context)
-        end,
-    })
+function NewItemCategorizer:GetAlwaysVisibleCategories()
+    return { rawNew }
 end
 
 function NewItemCategorizer:Categorize(itemID, itemButton)
-    local containerIndex = itemButton:GetBagID();
-    local slotIndex = itemButton:GetID();
-    local isNew = C_NewItems.IsNewItem(containerIndex, slotIndex);
-    if (isNew) then
-        newItems[containerIndex] = newItems[containerIndex] or {};
-        newItems[containerIndex][slotIndex] = itemID;
+    local containerIndex = itemButton:GetBagID()
+    local slotIndex = itemButton:GetID()
+    local isNew = C_NewItems.IsNewItem(containerIndex, slotIndex)
+    if isNew then
+        newItems[containerIndex] = newItems[containerIndex] or {}
+        newItems[containerIndex][slotIndex] = itemID
     end
-    local category = ensureNewCategory()
     if newItems[containerIndex] and newItems[containerIndex][slotIndex] == itemID then
-        return category
+        return category()
     end
     return nil
 end
@@ -55,19 +55,21 @@ end
 function NewItemCategorizer:OnRightClick()
     AddonNS.printDebug("Clearing NEW")
     C_NewItems.ClearAll()
-    newItems = {};
-    return true;
+    newItems = {}
+    return true
 end
 
 function NewItemCategorizer:CheckNewItems(bagID)
     AddonNS.printDebug("NewItemCategorizer CheckNewItems BAG_UPDATE", bagID)
-    newItems[bagID] = newItems[bagID] or {};
+    newItems[bagID] = newItems[bagID] or {}
     for slotIndex, expectedItemID in pairs(newItems[bagID]) do
-        local itemLocation = ItemLocation:CreateFromBagAndSlot(bagID, slotIndex);
+        local itemLocation = ItemLocation:CreateFromBagAndSlot(bagID, slotIndex)
         if (not itemLocation:IsValid() or expectedItemID ~= C_Item.GetItemID(itemLocation)) then
-            newItems[bagID][slotIndex] = nil;
+            newItems[bagID][slotIndex] = nil
         end
     end
 end
 
-AddonNS.Events:RegisterEvent("BAG_UPDATE", NewItemCategorizer.CheckNewItems);
+AddonNS.Categories:RegisterCategorizer("New", NewItemCategorizer, CATEGORIZER_ID)
+
+AddonNS.Events:RegisterEvent("BAG_UPDATE", NewItemCategorizer.CheckNewItems)
