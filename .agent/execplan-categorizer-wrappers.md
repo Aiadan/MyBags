@@ -10,7 +10,7 @@ Move category ownership and persistence into each categorizer while the store pr
 
 - [x] (2025-12-11 00:00Z) Drafted plan for per-categorizer raw categories, store wrappers, and namespaced storage.
 - [ ] Implement store wrapper layer and new storage schema.
-- [ ] Refactor categorizers to supply raw lists and always-visible sets; update layout/collapse resolution and tests.
+- [ ] Refactor categorizers to supply raw lists and always-visible sets; relocate `showAlways` helper out of Categorizers and update layout/collapse resolution and tests.
 
 ## Surprises & Discoveries
 
@@ -68,7 +68,7 @@ Target storage shape (example):
 1) Define raw/wrapper interface: raw implements `GetId()` (raw id, empty allowed for singleton), `GetName()` (non-nil string), `IsProtected()` (bool), `IsAlwaysVisible()` (bool, default false), optional hooks `OnItemAssigned/Unassigned`. No query or stored assignment lists leave the categorizer. Wrapper exposes namespaced `GetId()` (`<categorizerId>-<rawId>` or `<categorizerId>-singleton`), delegates name/protected/alwaysVisible and hooks with safe defaults; no `GetItems`/assignments/query.
 2) Store changes (categoryStore.lua): replace `db.categories`/sequences with `db.categorizers`; add wrapper cache keyed by `<categorizerId>-<rawId>`; lazily wrap raw categories supplied by categorizers; tolerate missing wrappers in layout/collapsed/order (skip at runtime, leave persisted). Keep layout/collapse/itemOrder at root; accept stale IDs. No version field; future migrations use a new SavedVariable name if needed.
 3) Categorizers: add `ListCategories()` and `GetAlwaysVisibleCategories()` (default empty) and keep query/assignments private. Custom stores its data under `db.categorizers.custom`; equipment set/new and others use their own slots. Remove cross-categorizer scans.
-4) Categories module: replace `CategoryStore:All()` reliance by aggregating categorizer `GetAlwaysVisibleCategories()` and wrapping them; keep categorizer isolation.
+4) Categories module: replace `CategoryStore:All()` reliance by aggregating categorizer `GetAlwaysVisibleCategories()` and wrapping them; keep categorizer isolation. Move `showAlways` helper out of `Categorizers/` (e.g., into utils or a dedicated helper namespace) so categorizers remain only the actual category providers.
 5) Migration/seeding: load from `db.categorizers` when present; for legacy globals, seed into the new per-categorizer buckets (e.g., custom ⇒ `custom`, equipment sets ⇒ `eq`, new ⇒ `new`), without needing to preserve old version/sequences.
 6) Tests: update expectations for the new storage shape and wrapper IDs; add coverage for namespaced IDs, singleton raw ids, missing-wrapper tolerance in layout, and always-visible aggregation. Run the full Lua suite.
 
