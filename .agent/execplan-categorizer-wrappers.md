@@ -21,6 +21,12 @@ Move category ownership and persistence into each categorizer while the store pr
 - Decision: Allow layout/collapse to retain stale category IDs; runtime skips missing categories and cleanup will be a separate ticket.
   Rationale: Simplifies rollout and avoids destructive pruning; stale entries are harmless.
   Date/Author: 2025-12-11 / Codex
+- Decision: Query and stored assignment lists remain private to their owning categorizer; the wrapper contract excludes them to avoid cross-categorizer leakage.
+  Rationale: Keeps categorizer isolation and prevents custom logic from affecting others.
+  Date/Author: 2025-12-11 / Codex
+- Decision: No central version/sequences for this schema; if migration is needed later, use a new SavedVariables name.
+  Rationale: Avoids premature versioning and keeps rollback simple.
+  Date/Author: 2025-12-11 / Codex
 
 ## Outcomes & Retrospective
 
@@ -59,12 +65,12 @@ Target storage shape (example):
 
 ## Plan of Work
 
-1) Define raw category interface and wrapper contract: raw includes `id` (may be empty for singleton), `name`, `protected`, optional `query`, `items`, optional hooks `OnItemAssigned/Unassigned`, optional `alwaysVisible`. Wrapper exposes store ID `<catId>-<rawId>`, forwards hooks, and defaults `alwaysVisible` to false.
-2) Store changes (categoryStore.lua): add a wrapper registry keyed by `<categorizerId>-<rawId>`, helper to obtain/refresh wrappers from raw categories supplied by categorizers, and tolerate missing wrappers when resolving layout/collapsed/order. Remove dependence on central `db.categories`; introduce `db.categorizers` with the schema described. Keep layout/collapse/itemOrder in root and allow stale IDs.
-3) Categorizers: add `ListCategories()` and `GetAlwaysVisibleCategories()` (default empty) to each categorizer (custom, equipment set, new, showAlways/query helpers). Custom stores its data under `db.categorizers.custom`; others store in their own slots. No cross-categorizer scans.
-4) Categories module: adjust `GetConstantCategories`/show-always aggregation to ask each categorizer for always-visible raw categories, then wrap via the store.
-5) Migration: replace old `db.categories`/version/sequences with new `db.categorizers` layout; no need to migrate released data. Seed data from legacy globals if present, mapping to categorizer IDs (e.g., custom => `custom`, equipment sets => `equipment-set`, new => `new`).
-6) Tests: update/query tests to use new paths; add coverage for wrapper ID generation, missing/raw categories in layout, always-visible aggregation, and singleton categories (empty raw id). Ensure integration tests pass with the new schema.
+1) Define raw/wrapper interface: raw implements `GetId()` (raw id, empty allowed for singleton), `GetName()` (non-nil string), `IsProtected()` (bool), `IsAlwaysVisible()` (bool, default false), optional hooks `OnItemAssigned/Unassigned`. No query or stored assignment lists leave the categorizer. Wrapper exposes namespaced `GetId()` (`<categorizerId>-<rawId>` or `<categorizerId>-singleton`), delegates name/protected/alwaysVisible and hooks with safe defaults; no `GetItems`/assignments/query.
+2) Store changes (categoryStore.lua): replace `db.categories`/sequences with `db.categorizers`; add wrapper cache keyed by `<categorizerId>-<rawId>`; lazily wrap raw categories supplied by categorizers; tolerate missing wrappers in layout/collapsed/order (skip at runtime, leave persisted). Keep layout/collapse/itemOrder at root; accept stale IDs. No version field; future migrations use a new SavedVariable name if needed.
+3) Categorizers: add `ListCategories()` and `GetAlwaysVisibleCategories()` (default empty) and keep query/assignments private. Custom stores its data under `db.categorizers.custom`; equipment set/new and others use their own slots. Remove cross-categorizer scans.
+4) Categories module: replace `CategoryStore:All()` reliance by aggregating categorizer `GetAlwaysVisibleCategories()` and wrapping them; keep categorizer isolation.
+5) Migration/seeding: load from `db.categorizers` when present; for legacy globals, seed into the new per-categorizer buckets (e.g., custom ⇒ `custom`, equipment sets ⇒ `eq`, new ⇒ `new`), without needing to preserve old version/sequences.
+6) Tests: update expectations for the new storage shape and wrapper IDs; add coverage for namespaced IDs, singleton raw ids, missing-wrapper tolerance in layout, and always-visible aggregation. Run the full Lua suite.
 
 ## Concrete Steps
 
@@ -99,3 +105,21 @@ Planned APIs (adjust as needed during implementation):
     CategoryStore:WrapAllFromCategorizer(categorizerId) -> {wrapper...}
 
 Wrapper ID format: `<categorizerId>-<rawId>`; if `rawId` is empty, use `<categorizerId>-singleton`. Hooks and flags are forwarded with defaults (`alwaysVisible` false). Stale layout IDs are tolerated. 
+
+Method contracts for clarity:
+
+Raw category (owned by categorizer):
+    GetId() -> string (raw id; empty allowed for singleton)
+    GetName() -> string (non-nil)
+    IsProtected() -> bool
+    IsAlwaysVisible() -> bool (default false)
+    OnItemAssigned(itemId, sourceRawCategory, context) [optional; no-op if missing]
+    OnItemUnassigned(itemId, targetRawCategory, context) [optional; no-op if missing]
+    (Any other fields/methods, like query or stored assignments, remain private to the categorizer.)
+
+Wrapper category (store-provided):
+    GetId() -> string (namespaced id `<categorizerId>-<rawId>` or `<categorizerId>-singleton`)
+    GetName(), IsProtected(), IsAlwaysVisible() -> delegated to raw with defaults
+    OnItemAssigned(itemId, sourceWrapper, context) -> forwards to raw hook if present
+    OnItemUnassigned(itemId, targetWrapper, context) -> forwards to raw hook if present
+    IsDynamic() -> optional compatibility helper; raw need not implement.
