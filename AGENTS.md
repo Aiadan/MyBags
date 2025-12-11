@@ -37,6 +37,7 @@ Avoid implementing fallback logic. Always assume the code operates as intended. 
 ## Code style guidelines
 
 - Pure Lua; stick to ASCII unless a file already uses special glyphs (e.g., colour codes).
+- Naming: methods/functions are lowerCamelCase; objects are UpperCamelCase; constant values are UPPER_SNAKE_CASE.
 - Prefer simple, explicit helpers; do not wrap primitives like `foo = foo or default` unless it clearly improves clarity.
 - Guard new data structures against nil; lazily initialize tables.
 - Use the `AddonNS` namespace consistently; expose functionality via `AddonNS` tables.
