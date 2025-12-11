@@ -122,6 +122,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
 * display empty space if available to show how many items we can still add ~as well as allow for stack splits~.
 * add ability to disable category so it will stop catching items, but will exist. Items assigned by category will no longer be caught by this category. If they are moved to another category from unassigned, they will get removed from this category.
+* BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
 
 * create some nice default categories based on what I end up with as my query categories in TWW
 * add colours to categories

@@ -51,6 +51,10 @@ local function refreshEquipmentSets()
         end
     end
     AddonNS.CategoryStore:RefreshCategorizer(CATEGORIZER_ID, EquipmentSet:ListCategories())
+end
+
+local function refreshEquipmentSetsAndNotify()
+    refreshEquipmentSets()
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, EquipmentSet)
 end
 
@@ -78,4 +82,4 @@ AddonNS.Categories:RegisterCategorizer("EquipmentSet", EquipmentSet, CATEGORIZER
 
 refreshEquipmentSets()
 AddonNS.Events:RegisterEvent("BAG_UPDATE_DELAYED", refreshEquipmentSets)
-AddonNS.Events:RegisterEvent("EQUIPMENT_SETS_CHANGED", refreshEquipmentSets)
+AddonNS.Events:RegisterEvent("EQUIPMENT_SETS_CHANGED", refreshEquipmentSetsAndNotify)
