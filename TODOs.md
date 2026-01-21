@@ -160,7 +160,6 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 * the checks in drag and drop using pickedItemButton could be replaced with  C_Cursor.GetCursorItem() .
 
-
 ## Recently added ideas for reactoring witth ai
 
 Unassigned should be a separate categorizer initialized at the end of all the others.
@@ -175,7 +174,7 @@ each categorizer should store a list of categories which could be retrieved when
 
 categories store should not be responsible for storing in saved variable data purely related to custom categories currently called UserCategories. That information should be stored and managed fully within UserCategories.
 
-custom.lua should interact directly with query.lua . The entire logic that there is a query handling should be hidden behind custom categorizer. Because of that also the CategoryStory should not be aware that there can be a query or list of items associated with a given category. 
+custom.lua should interact directly with query.lua . The entire logic that there is a query handling should be hidden behind custom categorizer. Because of that also the CategoryStory should not be aware that there can be a query or list of items associated with a given category.
 
 We are making hard separation between custom, user manager categories, and dynamic ones.
 

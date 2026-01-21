@@ -48,6 +48,8 @@ end
 
 addonEnv.Categories:RegisterCategorizer("cat1", makeCategorizer(cat1Raw), "cat1")
 addonEnv.Categories:RegisterCategorizer("cat2", makeCategorizer(cat2Raw), "cat2")
+local unassignedChunk = assert(loadfile("Categorizers/unassigned.lua"))
+unassignedChunk("MyBags", addonEnv)
 
 local itemButton = {}
 function itemButton:GetBagID() return 0 end
@@ -56,9 +58,10 @@ function itemButton:GetID() return 1 end
 local category = addonEnv.Categories:Categorize(1, itemButton)
 
 assert(category:GetName() == "cat1", "returns first matching category")
-assert(#itemButton.ItemCategories == 2, "stores all matching categories")
+assert(#itemButton.ItemCategories == 3, "stores all matching categories including unassigned")
 assert(itemButton.ItemCategories[1]:GetName() == "cat1", "first category is first in list")
 assert(itemButton.ItemCategories[2]:GetName() == "cat2", "second category is second in list")
+assert(itemButton.ItemCategories[3]:GetName() == "Unassigned", "unassigned is last catch-all")
 
 local assigned = 0
 local unassigned = 0

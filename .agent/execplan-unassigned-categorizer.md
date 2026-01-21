@@ -9,21 +9,26 @@ Unassigned items should behave like a normal category so players always have a s
 ## Progress
 
 - [x] (2025-12-11 20:58Z) Drafted initial ExecPlan for converting Unassigned into a dedicated catch-all categorizer.
-- [ ] Implement Unassigned categorizer module, store wiring, and categorizer registration order.
-- [ ] Update categorization flow, persistence handling, and UI expectations to use the new categorizer.
-- [ ] Add/adjust automated tests and validate the suite.
+- [x] (2025-12-11 21:40Z) Added Unassigned categorizer module, store wiring (real wrapper, normalization), and load order updates.
+- [x] (2025-12-11 21:46Z) Updated categorization flow/persistence hooks to use the real Unassigned wrapper and normalize stored layout ids.
+- [x] (2025-12-11 21:46Z) Added unassigned categorizer coverage to tests and ran full Lua test suite.
 
 ## Surprises & Discoveries
 
-- None yet.
+- None encountered; test suite passed after wiring unassigned categorizer.
 
 ## Decision Log
 
-- None yet.
+- Decision: Use categorizer id "unassigned" with wrapper id forced to legacy "unassigned" and error if the categorizer is missing, avoiding any fallback stubs.
+  Rationale: Preserves layout compatibility while surfacing misconfiguration instead of masking it.
+  Date/Author: 2025-12-11 / Codex
+- Decision: Normalize any stored layout/collapsed ids ending in "-unassigned" back to the canonical "unassigned" during LoadOrBootstrap.
+  Rationale: Keeps persistence compatible with prior stub id and avoids duplicate entries after migration.
+  Date/Author: 2025-12-11 / Codex
 
 ## Outcomes & Retrospective
 
-- Pending implementation.
+- Unassigned is now a real categorizer loaded last, with layout persistence normalized to the canonical id and CategoryStore returning the real wrapper. Tests updated to expect Unassigned as the last matched category, and the full Lua suite passes. No surprises observed.
 
 ## Context and Orientation
 

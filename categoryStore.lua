@@ -10,6 +10,19 @@ CategoryStore.__index = CategoryStore
 local UNASSIGNED_ID = "unassigned"
 local SINGLETON_SUFFIX = "singleton"
 
+local function compute_wrapper_ids(categorizerId, rawId)
+    if categorizerId == UNASSIGNED_ID then
+        return UNASSIGNED_ID, UNASSIGNED_ID .. "::" .. (rawId or "")
+    end
+    local normalizedRaw = rawId
+    if normalizedRaw == "" then
+        normalizedRaw = SINGLETON_SUFFIX
+    end
+    local wrapperId = categorizerId .. "-" .. normalizedRaw
+    local rawKey = categorizerId .. "::" .. normalizedRaw
+    return wrapperId, rawKey
+end
+
 local function default_raw_methods(raw)
     -- Provide safe defaults for optional raw methods.
     raw.IsProtected = raw.IsProtected or function() return false end
@@ -22,11 +35,7 @@ local function wrap_category(store, categorizerId, rawCategory)
     end
     default_raw_methods(rawCategory)
     local rawId = rawCategory:GetId() or ""
-    if rawId == "" then
-        rawId = SINGLETON_SUFFIX
-    end
-    local wrapperId = categorizerId .. "-" .. rawId
-    local rawKey = categorizerId .. "::" .. rawId
+    local wrapperId, rawKey = compute_wrapper_ids(categorizerId, rawId)
     local existing = store._wrappersByRaw[rawKey]
     if existing then
         -- Update mutable fields in place to reuse the same wrapper object.
@@ -37,6 +46,7 @@ local function wrap_category(store, categorizerId, rawCategory)
     local wrapper = {
         _raw = rawCategory,
         _categorizerId = categorizerId,
+        _rawKey = rawKey,
         id = wrapperId,
         name = rawCategory:GetName(),
     }
@@ -60,6 +70,9 @@ local function wrap_category(store, categorizerId, rawCategory)
         end
     end
     store._wrappersByRaw[rawKey] = wrapper
+    if wrapperId == UNASSIGNED_ID then
+        store._unassigned = wrapper
+    end
     return wrapper
 end
 
@@ -70,15 +83,7 @@ function CategoryStore:new()
         _wrappersByName = {},
         _wrappersByRaw = {},
         _wrappersByCategorizer = {},
-        _unassigned = {
-            id = UNASSIGNED_ID,
-            GetId = function(self) return self.id end,
-            GetName = function() return nil end,
-            IsProtected = function() return false end,
-            IsAlwaysVisible = function() return false end,
-            OnItemAssigned = function() end,
-            OnItemUnassigned = function() end,
-        },
+        _unassigned = nil,
     }, CategoryStore)
     return instance
 end
@@ -98,6 +103,7 @@ function CategoryStore:LoadOrBootstrap(db, legacyDb)
     self.db.layout.collapsed = self.db.layout.collapsed or {}
     self:_migrateFromLegacy(legacyDb)
     self:_migrateFromOldDb()
+    self:_normalizeUnassignedLayout()
     return self
 end
 
@@ -272,6 +278,50 @@ function CategoryStore:_migrateFromOldDb()
     self.db.categorizers.cus = custom
 end
 
+local function normalize_unassigned_id(id)
+    if not id then
+        return nil
+    end
+    if id == UNASSIGNED_ID then
+        return UNASSIGNED_ID
+    end
+    if id:match("^[^%-]+%-unassigned$") then
+        return UNASSIGNED_ID
+    end
+    return id
+end
+
+function CategoryStore:_normalizeUnassignedLayout()
+    self.db.layout = self.db.layout or {}
+    self.db.layout.columns = self.db.layout.columns or { {}, {}, {} }
+    for columnIndex = 1, #self.db.layout.columns do
+        local column = self.db.layout.columns[columnIndex]
+        local seen = {}
+        for idx = #column, 1, -1 do
+            local normalized = normalize_unassigned_id(column[idx])
+            column[idx] = normalized
+            if normalized == UNASSIGNED_ID then
+                if seen[UNASSIGNED_ID] then
+                    table.remove(column, idx)
+                else
+                    seen[UNASSIGNED_ID] = true
+                end
+            end
+        end
+    end
+    local collapsed = self.db.layout.collapsed or {}
+    local normalizedCollapsed = {}
+    for id, flag in pairs(collapsed) do
+        if flag then
+            local normalized = normalize_unassigned_id(id)
+            if normalized then
+                normalizedCollapsed[normalized] = true
+            end
+        end
+    end
+    self.db.layout.collapsed = normalizedCollapsed
+end
+
 function CategoryStore:GetCategorizerDb(categorizerId)
     ensure_db(self)
     self.db.categorizers[categorizerId] = self.db.categorizers[categorizerId] or { id = categorizerId, categories = {} }
@@ -286,6 +336,7 @@ function CategoryStore:ResetWrappers()
     self._wrappersByName = {}
     self._wrappersByRaw = {}
     self._wrappersByCategorizer = {}
+    self._unassigned = nil
 end
 
 function CategoryStore:RefreshCategorizer(categorizerId, rawCategories)
@@ -298,11 +349,20 @@ function CategoryStore:RefreshCategorizer(categorizerId, rawCategories)
             if name and self._wrappersByName[name] then
                 self._wrappersByName[name][wrapper.id] = nil
             end
-            local rawId = wrapper:GetId():match("^[^%-]+%-(.+)$")
-            if rawId then
-                self._wrappersByRaw[wrapper._categorizerId .. "::" .. rawId] = nil
+            local rawKey = wrapper._rawKey
+            if not rawKey then
+                local rawId = wrapper:GetId():match("^[^%-]+%-(.+)$")
+                if rawId then
+                    rawKey = wrapper._categorizerId .. "::" .. rawId
+                end
+            end
+            if rawKey then
+                self._wrappersByRaw[rawKey] = nil
             end
         end
+    end
+    if categorizerId == UNASSIGNED_ID then
+        self._unassigned = nil
     end
     local list = {}
     rawCategories = rawCategories or {}
@@ -324,13 +384,10 @@ end
 
 function CategoryStore:GetWrapperForRaw(categorizerId, rawCategory)
     local rawId = rawCategory and rawCategory.GetId and rawCategory:GetId()
-    if rawId == "" then
-        rawId = SINGLETON_SUFFIX
-    end
     if not rawId then
         return nil
     end
-    local wrapperId = categorizerId .. "-" .. rawId
+    local wrapperId, rawKey = compute_wrapper_ids(categorizerId, rawId)
     local existing = self._wrappersById[wrapperId]
     if existing then
         return existing
@@ -407,6 +464,9 @@ function CategoryStore:IsCollapsed(id)
 end
 
 function CategoryStore:GetUnassigned()
+    if not self._unassigned then
+        error("Unassigned categorizer not registered")
+    end
     return self._unassigned
 end
 

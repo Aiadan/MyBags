@@ -200,6 +200,7 @@ local function load_addon(ctx)
     exec("categoriesColumnAssignment.lua")
     exec("Categorizers/custom.lua")
     exec("Categorizers/custom/query.lua")
+    exec("Categorizers/unassigned.lua")
 
     ctx.AddonNS = AddonNS
 end
