@@ -1,4 +1,4 @@
-## Interface: 110205
+## Interface: 110205, 120000
 ## Version: @project-version@
 ## DefaultState: Enabled
 ### AddonCompartmentFunc: MyTestsAddon_MinimapOnClick

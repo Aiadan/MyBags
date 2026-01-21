@@ -43,7 +43,9 @@ local function refreshEquipmentSets()
         local locations = C_EquipmentSet.GetItemLocations(equipmentSetID)
         for inventorySlotID, location in ipairs(locations) do
             if (location > 1 or location < -1) then
-                local player, bank, bags, voidStorage, slot, bag = EquipmentManager_UnpackLocation(location)
+				local locationData = EquipmentManager_GetLocationData(location);
+				local bag = locationData.bag;
+				local slot = locationData.slot;
                 if bag then
                     setItemCategoryIfEmpty(bag, slot, raw)
                 end
