@@ -196,8 +196,9 @@ function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)
         if button == "LeftButton" then
             toggleCollapsed(self.ItemCategory);
         elseif button == "RightButton" then
-            if (self.OnRightClick) then
-                refreshView = self:OnRightClick(container);
+            local category = self.ItemCategory
+            if category and category.OnRightClick then
+                refreshView = category:OnRightClick(container)
             end
         end
 

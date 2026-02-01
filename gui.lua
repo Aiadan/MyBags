@@ -183,7 +183,6 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         f:SetWidth(categoryGUIInfo.width)
         -- fs.fs:SetWidth(categoryGUIInfo.width)
         f:SetHeight(categoryGUIInfo.height)
-        f.OnRightClick = categoryGUIInfo.category.OnRightClick;
         local label = categoryGUIInfo.category.name or "Unassigned"
         if isCollapsed(categoryGUIInfo.category) then
             label = label .. " (" .. categoryGUIInfo.itemsCount .. ") |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a"

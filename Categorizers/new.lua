@@ -9,6 +9,9 @@ local rawNew = {
     GetId = function() return "" end,
     GetName = function() return "|cff9999ffNew" end,
     IsProtected = function() return true end,
+    OnRightClick = function()
+        return NewItemCategorizer:OnRightClick()
+    end,
     OnItemUnassigned = function(_, context)
         if not context then
             return
