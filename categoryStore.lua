@@ -59,6 +59,11 @@ local function wrap_category(store, categorizerId, rawCategory)
     function wrapper:IsProtected()
         return self._raw:IsProtected()
     end
+    function wrapper:OnRightClick(...)
+        if self._raw.OnRightClick then
+            return self._raw:OnRightClick(...)
+        end
+    end
     function wrapper:OnItemAssigned(itemId, context)
         if self._raw.OnItemAssigned then
             self._raw:OnItemAssigned(itemId, context)

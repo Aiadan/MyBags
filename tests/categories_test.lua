@@ -66,12 +66,17 @@ assert(itemButton.ItemCategories[3]:GetName() == "Unassigned", "unassigned is la
 local assigned = 0
 local unassigned = 0
 local targetSeen = nil
+local rightClicks = 0
 local catA = {
   GetId = function() return "hook:a" end,
   GetName = function() return "A" end,
   IsProtected = function() return false end,
   OnItemUnassigned = function(_, itemId, context)
     unassigned = unassigned + 1
+  end,
+  OnRightClick = function()
+    rightClicks = rightClicks + 1
+    return true
   end,
 }
 local catB = {
@@ -85,11 +90,13 @@ local catB = {
 }
 addonEnv.CategoryStore:GetWrapperForRaw("hook", catA)
 addonEnv.CategoryStore:GetWrapperForRaw("hook", catB)
+local wrappedA = addonEnv.CategoryStore:GetWrapperForRaw("hook", catA)
 
 addonEnv.Categories:HandleItemReassignment("EVT", 777, nil, catA, catB, { GetBagID = function() return 0 end, GetID = function() return 1 end })
 assert(assigned == 10, "assignment hook fires for the target category")
 assert(unassigned == 1, "unassign hook fires for source category")
 assert(targetSeen == catB, "target category is passed through")
+assert(wrappedA:OnRightClick() == true and rightClicks == 1, "right-click passes through to raw category")
 
 local protectedTrigger = {
   GetId = function() return "hook:protected" end,
