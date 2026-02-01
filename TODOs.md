@@ -108,6 +108,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
   * there is a lot of bad code, broken domains. Especially in the place of:
     * custom categories and categories,
     * which code [class/domain] should trigger visual updates as it is a random to an extent at this point
+* addon freezes when opening bags or changing categories - not something that was there before. As codex now modifies this addon most likely he did introduce some inefficiencies which i did not notice. One of the possible reasons is described below with all categories always checked for every item [althoguth 150 x even 200 is not that much].
+* the way ai changed the addon to show categories associated with each item, is that without shift it shows a list of categories. This is problematic as it
+  1. is pointless most of the time
+  2. calculates all categories instead of matching first during recalculation which takes a lot of time
 * remove the movement of categories to separate columns when overflow happens - it did not work, and now with proper scaling it is no longer an issue - the bag will just get smaller. Remove other tickets.
 * [!!!] position of the window should be changed to top if we are to be filtering.
 * [!!!] ~✅ [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
