@@ -80,6 +80,13 @@ local function updateItemSlots(self, ...)
 end;
 hooksecurefunc(ContainerFrameCombinedBags, "UpdateItemSlots", updateItemSlots)
 
+-- Workaround: forcing OpenAllBags before the default bank open flow resolves the observed bank taint path.
+local oldBankFrame_Open = BankFrame_Open
+function BankFrame_Open()
+    OpenAllBags(BankFrame)
+    oldBankFrame_Open()
+end
+
 -- need to overwrite this as it is used during enumeration of items in the bags so otherwise it would not incorporate reagentsContainer
 local function setBagSize(self)
     self.size = 0;

@@ -173,6 +173,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ removed unnecessary `order_map_changed` invalidation in `ItemsOrder:Sort`; order-map rebuild now happens only after real order mutations.
 * ✅ added agent skill `.agent/skills/blizzard-code-explorer` to guide Blizzard UI source lookup (path resolution, targeted `rg` patterns, source-cited output contract).
 * ✅ updated `.agent/skills/blizzard-code-explorer` to default to `/mnt/c/Program Files (x86)/World of Warcraft/_retail_/BlizzardInterfaceCode`.
+* ✅ enabled `BankFrame_Open` override in `ContainerFrameMyBagsMixin.lua` (`OpenAllBags(BankFrame)` before calling original) as the current workaround that resolves the observed bank taint path.
 
 ## Recently added ideas for reactoring witth ai
 
