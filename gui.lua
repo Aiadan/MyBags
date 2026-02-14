@@ -1,6 +1,8 @@
 local addonName, AddonNS = ...
 local isCollapsed = AddonNS.Collapsed.isCollapsed;
 local ITEM_SPACING = AddonNS.Const.ITEM_SPACING;
+local RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX = "|CFFbbbbbb"
+local COLOR_RESET_SUFFIX = "|r"
 
 local GS = LibStub("MyLibrary_GUI");
 local test = {
@@ -49,6 +51,13 @@ local unprotectedCategoryBackdrop = {
 AddonNS.gui = {}
 AddonNS.gui.categoriesFrames = {};
 
+local function isCustomCategory(category)
+    return category:GetId():match("^cus%-") ~= nil
+end
+
+local function shouldUseMutedCustomHeader(category, itemsCount)
+    return isCustomCategory(category) and itemsCount == 0 and not AddonNS.CategorShowAlways:ShouldAlwaysShow(category)
+end
 
 --- draggable frame 
 local draggableFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
@@ -184,6 +193,9 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         -- fs.fs:SetWidth(categoryGUIInfo.width)
         f:SetHeight(categoryGUIInfo.height)
         local label = categoryGUIInfo.category.name or "Unassigned"
+        if shouldUseMutedCustomHeader(categoryGUIInfo.category, categoryGUIInfo.itemsCount) then
+            label = RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX .. label 
+        end
         if isCollapsed(categoryGUIInfo.category) then
             label = label .. " (" .. categoryGUIInfo.itemsCount .. ") |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a"
         end
