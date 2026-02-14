@@ -6,14 +6,263 @@ AddonNS.CustomCategories = CustomCategories
 AddonNS.UserCategorizer = CustomCategorizer
 
 local CATEGORIZER_ID = "cus"
+local STORAGE_KEY = "userCategories"
+local STORAGE_SCHEMA_VERSION = 1
 
 local assignments = {}
 
+local function normalize_array(source)
+    local out = {}
+    for _, value in ipairs(source or {}) do
+        table.insert(out, value)
+    end
+    return out
+end
+
+local function strip_raw_id_prefix(rawOrWrappedId)
+    if not rawOrWrappedId then
+        return nil
+    end
+    local raw = tostring(rawOrWrappedId)
+    raw = raw:gsub("^cat%-", "")
+    raw = raw:gsub("^" .. CATEGORIZER_ID .. "%-", "")
+    return raw
+end
+
+local function make_empty_storage()
+    return {
+        schemaVersion = STORAGE_SCHEMA_VERSION,
+        id = CATEGORIZER_ID,
+        name = "Custom",
+        nextId = 0,
+        categories = {},
+    }
+end
+
+local function normalize_storage(storage)
+    storage = storage or {}
+    storage.schemaVersion = STORAGE_SCHEMA_VERSION
+    storage.id = storage.id or CATEGORIZER_ID
+    storage.name = storage.name or "Custom"
+    storage.categories = storage.categories or {}
+
+    local normalizedCategories = {}
+    local maxNumericId = 0
+    for rawId, data in pairs(storage.categories) do
+        local normalizedRawId = tostring(rawId)
+        local entry = type(data) == "table" and data or {}
+        normalizedCategories[normalizedRawId] = {
+            name = entry.name or "",
+            protected = entry.protected == true or nil,
+            alwaysVisible = entry.alwaysVisible == true or nil,
+            query = (entry.query and entry.query ~= "") and entry.query or nil,
+            items = normalize_array(entry.items),
+        }
+        local numeric = tonumber(normalizedRawId)
+        if numeric and numeric > maxNumericId then
+            maxNumericId = numeric
+        end
+    end
+    storage.categories = normalizedCategories
+    local nextId = tonumber(storage.nextId) or 0
+    storage.nextId = (nextId > maxNumericId) and nextId or maxNumericId
+    return storage
+end
+
+local function index_names(storage)
+    local byName = {}
+    for rawId, data in pairs(storage.categories or {}) do
+        if data.name then
+            byName[data.name] = rawId
+        end
+    end
+    return byName
+end
+
+local function reserve_raw_id(storage, preferredName, nameIndex)
+    storage.nextId = (tonumber(storage.nextId) or 0) + 1
+    local rawId = tostring(storage.nextId)
+    storage.categories[rawId] = storage.categories[rawId] or {
+        name = preferredName or "",
+        items = {},
+    }
+    if preferredName and preferredName ~= "" then
+        nameIndex[preferredName] = rawId
+    end
+    return rawId
+end
+
+local function migrate_from_current_category_store_shape(db, storage)
+    local source = db.categorizers and db.categorizers[CATEGORIZER_ID]
+    if type(source) ~= "table" then
+        return false
+    end
+    storage.id = source.id or storage.id
+    storage.name = source.name or storage.name
+    storage.nextId = tonumber(source.nextId) or 0
+    storage.categories = {}
+    for rawId, data in pairs(source.categories or {}) do
+        storage.categories[tostring(rawId)] = {
+            name = data.name or "",
+            protected = data.protected == true or nil,
+            alwaysVisible = data.alwaysVisible == true or nil,
+            query = (data.query and data.query ~= "") and data.query or nil,
+            items = normalize_array(data.items),
+        }
+    end
+    return true
+end
+
+local function migrate_from_old_db_shape(db, storage)
+    local source = db.categories
+    if type(source) ~= "table" or next(source) == nil then
+        return false
+    end
+    storage.categories = {}
+    for id, record in pairs(source) do
+        local sourceRecord = type(record) == "table" and record or {}
+        local rawId = strip_raw_id_prefix(sourceRecord.id or id)
+        if rawId then
+            storage.categories[rawId] = {
+                name = sourceRecord.name or "",
+                protected = sourceRecord.protected == true or nil,
+                alwaysVisible = sourceRecord.alwaysVisible == true or nil,
+                query = (sourceRecord.query and sourceRecord.query ~= "") and sourceRecord.query or nil,
+                items = normalize_array(sourceRecord.items),
+            }
+        end
+    end
+    return true
+end
+
+local function migrate_from_legacy_global_shape(legacyDb, storage)
+    if type(legacyDb) ~= "table" then
+        return false
+    end
+    local legacyCustom = legacyDb.customCategories
+    local legacyQueries = legacyDb.queryCategories
+    local legacyAlways = legacyDb.categoriesToAlwaysShow
+    if type(legacyCustom) ~= "table" and type(legacyQueries) ~= "table" and type(legacyAlways) ~= "table" then
+        return false
+    end
+
+    storage.categories = {}
+    local nameIndex = index_names(storage)
+
+    local function get_or_create(name)
+        local rawId = nameIndex[name]
+        if rawId and storage.categories[rawId] then
+            return rawId
+        end
+        return reserve_raw_id(storage, name, nameIndex)
+    end
+
+    for name, items in pairs(legacyCustom or {}) do
+        local rawId = get_or_create(name)
+        storage.categories[rawId].items = normalize_array(items)
+    end
+    for name, query in pairs(legacyQueries or {}) do
+        local rawId = get_or_create(name)
+        storage.categories[rawId].query = (query and query ~= "") and query or nil
+    end
+    for name, flag in pairs(legacyAlways or {}) do
+        if flag then
+            local rawId = get_or_create(name)
+            storage.categories[rawId].alwaysVisible = true
+        end
+    end
+    return true
+end
+
+local function normalize_layout_custom_ids(db, storage)
+    local layout = db.layout
+    if type(layout) ~= "table" then
+        return
+    end
+    layout.columns = layout.columns or { {}, {}, {} }
+    layout.collapsed = layout.collapsed or {}
+    local nameIndex = index_names(storage)
+
+    local function resolve_layout_id(id)
+        if type(id) ~= "string" then
+            return id
+        end
+        if id:match("^" .. CATEGORIZER_ID .. "%-") then
+            return id
+        end
+        if id:match("^cat%-") then
+            return CATEGORIZER_ID .. "-" .. id:gsub("^cat%-", "")
+        end
+        local rawId = nameIndex[id]
+        if rawId then
+            return CATEGORIZER_ID .. "-" .. rawId
+        end
+        return id
+    end
+
+    for columnIndex = 1, #layout.columns do
+        local seen = {}
+        local normalizedColumn = {}
+        for _, id in ipairs(layout.columns[columnIndex] or {}) do
+            local normalized = resolve_layout_id(id)
+            local key = type(normalized) == "string" and normalized or tostring(normalized)
+            if not seen[key] then
+                table.insert(normalizedColumn, normalized)
+                seen[key] = true
+            end
+        end
+        layout.columns[columnIndex] = normalizedColumn
+    end
+
+    local normalizedCollapsed = {}
+    for id, flag in pairs(layout.collapsed or {}) do
+        if flag then
+            local normalized = resolve_layout_id(id)
+            normalizedCollapsed[normalized] = true
+        end
+    end
+    layout.collapsed = normalizedCollapsed
+end
+
+local function prune_old_custom_shapes(db)
+    if db.categorizers then
+        db.categorizers[CATEGORIZER_ID] = nil
+    end
+    db.categories = nil
+end
+
+function CustomCategories:LoadOrBootstrap(db, legacyDb)
+    if not db then
+        error("CustomCategories LoadOrBootstrap missing db")
+    end
+    local storage = db[STORAGE_KEY]
+    if type(storage) ~= "table" then
+        storage = make_empty_storage()
+        if not migrate_from_current_category_store_shape(db, storage) then
+            if not migrate_from_old_db_shape(db, storage) then
+                migrate_from_legacy_global_shape(legacyDb, storage)
+            end
+        end
+    end
+    storage = normalize_storage(storage)
+    db[STORAGE_KEY] = storage
+    normalize_layout_custom_ids(db, storage)
+    prune_old_custom_shapes(db)
+end
+
+function CustomCategories:GetStorage()
+    if not AddonNS.db then
+        error("CustomCategories storage requested before DB init")
+    end
+    local storage = AddonNS.db[STORAGE_KEY]
+    if type(storage) ~= "table" then
+        error("CustomCategories storage missing; call LoadOrBootstrap first")
+    end
+    return storage
+end
+
 local function get_db()
-    local db = AddonNS.CategoryStore:GetCategorizerDb(CATEGORIZER_ID)
-    db.name = db.name or "Custom"
-    db.id = db.id or CATEGORIZER_ID
-    return db
+    return CustomCategories:GetStorage()
 end
 
 local function rebuild_assignments()
@@ -130,7 +379,7 @@ local function resolve_raw_id(categoryOrId)
         local found = find_by_name(categoryOrId.name)
         return found and found:GetId() or nil
     end
-    return tostring(categoryOrId)
+    return strip_raw_id_prefix(tostring(categoryOrId))
 end
 
 local function collectItemInfo(itemID, itemButton)

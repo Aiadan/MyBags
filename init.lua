@@ -47,6 +47,10 @@ AddonNS.init = function()
         error("CategoryStore missing")
     end
     AddonNS.CategoryStore:LoadOrBootstrap(AddonNS.db, AddonNS.LegacyDB);
+    if not AddonNS.CustomCategories or not AddonNS.CustomCategories.LoadOrBootstrap then
+        error("CustomCategories missing")
+    end
+    AddonNS.CustomCategories:LoadOrBootstrap(AddonNS.db, AddonNS.LegacyDB)
 end
 
 AddonNS.Events:OnDbLoaded(AddonNS.init)

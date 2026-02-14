@@ -120,167 +120,64 @@ local function normalize_legacy_array(source)
     return out
 end
 
+local function has_layout_or_item_order_data(db)
+    if not db then
+        return false
+    end
+    local layout = db.layout or {}
+    local columns = layout.columns or {}
+    for index = 1, #columns do
+        if #(columns[index] or {}) > 0 then
+            return true
+        end
+    end
+    local collapsed = layout.collapsed or {}
+    for _, flag in pairs(collapsed) do
+        if flag then
+            return true
+        end
+    end
+    return #(db.itemOrder or {}) > 0
+end
+
 function CategoryStore:_migrateFromLegacy(legacyDb)
     if not legacyDb then
         return
     end
-    -- Only migrate if we do not already have categorizers.
-    if self.db.categorizers and next(self.db.categorizers) then
+    -- Shared migration only: keep item order/layout in this module.
+    if has_layout_or_item_order_data(self.db) then
         return
     end
 
-    self.db.categorizers = self.db.categorizers or {}
-    local custom = {
-        id = "cus",
-        name = "Custom",
-        categories = {},
-        nextId = 0,
-    }
-    local nameToId = {}
-
-    local function reserveId(name)
-        custom.nextId = custom.nextId + 1
-        local rawId = tostring(custom.nextId)
-        nameToId[name] = rawId
-        custom.categories[rawId] = {
-            name = name,
-            protected = false,
-            items = {},
-        }
-        return rawId
-    end
-
-    local legacyCustom = legacyDb.customCategories or {}
-    for name, items in pairs(legacyCustom) do
-        local rawId = reserveId(name)
-        custom.categories[rawId].items = normalize_legacy_array(items)
-    end
-
-    local legacyQueries = legacyDb.queryCategories or {}
-    for name, query in pairs(legacyQueries) do
-        local rawId = nameToId[name] or reserveId(name)
-        custom.categories[rawId].query = query
-    end
-
-    local legacyAlways = legacyDb.categoriesToAlwaysShow or {}
-    for name, flag in pairs(legacyAlways) do
-        if flag then
-            local rawId = nameToId[name] or reserveId(name)
-            custom.categories[rawId].alwaysVisible = true
-        end
-    end
-
-    self.db.categorizers.cus = custom
-
-    -- Layout: map legacy column names to namespaced ids; keep stale if missing.
+    -- Layout: preserve legacy layout values as-is. Custom category specific ID/name
+    -- conversion is handled by CustomCategories migration.
     local legacyColumns = legacyDb.categoriesColumnAssignments or {}
     self.db.layout.columns = self.db.layout.columns or { {}, {}, {} }
     for columnIndex = 1, 3 do
         self.db.layout.columns[columnIndex] = {}
         local sourceColumn = legacyColumns[columnIndex] or {}
-        for _, name in ipairs(sourceColumn) do
-            local rawId = nameToId[name]
-            if rawId then
-                table.insert(self.db.layout.columns[columnIndex], custom.id .. "-" .. rawId)
-            else
-                table.insert(self.db.layout.columns[columnIndex], name)
-            end
+        for _, id in ipairs(sourceColumn) do
+            table.insert(self.db.layout.columns[columnIndex], id)
         end
     end
 
-    -- Collapsed: accept legacy flags, map to namespaced ids when known.
+    -- Collapsed: preserve raw legacy keys. Custom conversion is handled elsewhere.
     local legacyCollapsed = legacyDb.collapsedCategories or {}
     self.db.layout.collapsed = self.db.layout.collapsed or {}
-    for name, flag in pairs(legacyCollapsed) do
+    for id, flag in pairs(legacyCollapsed) do
         if flag then
-            local rawId = nameToId[name]
-            if rawId then
-                self.db.layout.collapsed[custom.id .. "-" .. rawId] = true
-            end
+            self.db.layout.collapsed[id] = true
         end
     end
 
-    -- Item order is copied across directly.
+    -- Item order is shared state and stays here.
     self.db.itemOrder = normalize_legacy_array(legacyDb.itemOrder or {})
 end
 
-local function strip_cat_prefix(id)
-    if not id then
-        return nil
-    end
-    local raw = tostring(id)
-    raw = raw:gsub("^cat%-", "")
-    return raw
-end
-
 function CategoryStore:_migrateFromOldDb()
-    if self.db.categorizers and next(self.db.categorizers) then
-        return
-    end
-    if not self.db.categories then
-        return
-    end
-
-    self.db.categorizers = self.db.categorizers or {}
-    local custom = {
-        id = "cus",
-        name = "Custom",
-        categories = {},
-        nextId = 0,
-    }
-
-    local function reserve(rawId, name)
-        local numeric = tonumber(rawId)
-        if numeric and numeric > custom.nextId then
-            custom.nextId = numeric
-        end
-        custom.categories[rawId] = custom.categories[rawId] or {
-            name = name,
-            protected = false,
-            items = {},
-        }
-    end
-
-    for id, record in pairs(self.db.categories) do
-        local rawId = strip_cat_prefix(record.id or id)
-        reserve(rawId, record.name)
-        local entry = custom.categories[rawId]
-        entry.protected = record.protected or false
-        entry.items = normalize_legacy_array(record.items)
-        entry.query = record.query
-        entry.alwaysVisible = record.alwaysVisible
-    end
-
-    -- Layout conversion.
-    local legacyColumns = self.db.layout and self.db.layout.columns or { {}, {}, {} }
-    self.db.layout.columns = { {}, {}, {} }
-    for columnIndex = 1, 3 do
-        for _, legacyId in ipairs(legacyColumns[columnIndex] or {}) do
-            local rawId = strip_cat_prefix(legacyId)
-            if rawId then
-                table.insert(self.db.layout.columns[columnIndex], custom.id .. "-" .. rawId)
-            else
-                table.insert(self.db.layout.columns[columnIndex], legacyId)
-            end
-        end
-    end
-
-    -- Collapsed conversion.
-    local legacyCollapsed = self.db.layout and self.db.layout.collapsed or {}
-    self.db.layout.collapsed = self.db.layout.collapsed or {}
-    for legacyId, flag in pairs(legacyCollapsed) do
-        if flag then
-            local rawId = strip_cat_prefix(legacyId)
-            if rawId then
-                self.db.layout.collapsed[custom.id .. "-" .. rawId] = true
-            end
-        end
-    end
-
-    -- Item order preserved as-is.
+    -- Legacy custom category schema migration is owned by CustomCategories.
+    -- Shared state migration remains in this module.
     self.db.itemOrder = normalize_legacy_array(self.db.itemOrder or {})
-
-    self.db.categorizers.cus = custom
 end
 
 local function normalize_unassigned_id(id)

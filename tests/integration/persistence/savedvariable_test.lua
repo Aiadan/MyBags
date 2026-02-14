@@ -66,8 +66,7 @@ local function item_button(bag, slot)
 end
 
 local function custom_snapshot(snapshot)
-    local categorizers = snapshot.categorizers or {}
-    return categorizers.cus or categorizers.custom or {}
+    return snapshot.userCategories or {}
 end
 
 local function raw_by_name(snapshot, name)
@@ -99,10 +98,13 @@ run("fresh install seeds defaults", function()
     local snapshot = ctx:snapshot()
     local custom = custom_snapshot(snapshot)
     assert_true(custom.id == "cus", "custom bucket seeded")
+    assert_true(custom.schemaVersion == 1, "custom schema version seeded")
     assert_equal({}, custom.categories, "no user categories persisted")
     assert_equal({ {}, {}, {} }, snapshot.layout.columns, "layout columns seeded")
     assert_equal({}, snapshot.layout.collapsed, "collapsed state empty")
     assert_equal({}, snapshot.itemOrder, "item order initialised")
+    assert_true(snapshot.categorizers == nil or snapshot.categorizers.cus == nil, "legacy custom bucket removed")
+    assert_true(snapshot.categories == nil, "old custom categories bucket removed")
 end)
 
 run("custom categories persist with namespaced layout", function()
@@ -127,6 +129,8 @@ run("custom categories persist with namespaced layout", function()
     assert_true(aData.query == "ilvl >= 400", "query persisted for A")
     assert_true(bData.alwaysVisible == true, "always visible persisted for B")
     assert_equal({ { catA:GetId() }, {}, {} }, layout_columns(snapshot), "layout uses namespaced ids")
+    assert_true(snapshot.categorizers == nil or snapshot.categorizers.cus == nil, "old custom bucket not persisted")
+    assert_true(snapshot.categories == nil, "legacy categories not persisted")
 end)
 
 run("item move reassigns through hooks and respects protected target", function()
@@ -197,6 +201,104 @@ run("custom category query updates compiled cache via direct API", function()
 
     ctx.AddonNS.CustomCategories:SetQuery(category, "")
     assert_true(ctx.AddonNS.QueryCategories:GetCompiled(category) == nil, "compiled query removed after clearing")
+end)
+
+run("migrates from db.categorizers.cus to userCategories", function()
+    local ctx = harness.new({
+        saved = {
+            categorizers = {
+                cus = {
+                    id = "cus",
+                    name = "Custom",
+                    nextId = 7,
+                    categories = {
+                        ["5"] = {
+                            name = "MigratedA",
+                            items = { 111 },
+                            query = "ilvl >= 400",
+                            alwaysVisible = true,
+                        },
+                    },
+                },
+            },
+            layout = {
+                columns = { { "cus-5" }, {}, {} },
+                collapsed = { ["cus-5"] = true },
+            },
+            itemOrder = { 111 },
+        },
+    })
+
+    local snapshot = ctx:snapshot()
+    local custom = custom_snapshot(snapshot)
+    assert_true(custom.nextId == 7, "nextId migrated from categorizers.cus")
+    assert_true(custom.categories["5"].name == "MigratedA", "category migrated from categorizers.cus")
+    assert_equal({ 111 }, custom.categories["5"].items, "items migrated from categorizers.cus")
+    assert_true(snapshot.categorizers == nil or snapshot.categorizers.cus == nil, "source custom bucket removed")
+end)
+
+run("migrates from old db.categories and converts cat layout ids", function()
+    local ctx = harness.new({
+        saved = {
+            categories = {
+                ["cat-9"] = {
+                    id = "cat-9",
+                    name = "LegacyCat",
+                    items = { 909 },
+                    query = "itemType = 3",
+                    alwaysVisible = true,
+                },
+            },
+            layout = {
+                columns = { { "cat-9" }, {}, {} },
+                collapsed = { ["cat-9"] = true },
+            },
+        },
+    })
+
+    local snapshot = ctx:snapshot()
+    local custom = custom_snapshot(snapshot)
+    assert_true(custom.categories["9"].name == "LegacyCat", "old db.categories migrated")
+    assert_equal({ 909 }, custom.categories["9"].items, "old db.items migrated")
+    assert_equal({ { "cus-9" }, {}, {} }, layout_columns(snapshot), "cat- layout ids converted to cus-")
+    assert_true(snapshot.layout.collapsed["cus-9"] == true, "collapsed cat- id converted to cus-")
+    assert_true(snapshot.categories == nil, "old categories source removed")
+end)
+
+run("migrates from legacy global and maps layout names", function()
+    local ctx = harness.new({
+        legacy = {
+            customCategories = {
+                LegacyOne = { 1001, 1002 },
+            },
+            queryCategories = {
+                LegacyOne = "ilvl >= 200",
+            },
+            categoriesToAlwaysShow = {
+                LegacyOne = true,
+            },
+            categoriesColumnAssignments = {
+                { "LegacyOne" },
+                {},
+                {},
+            },
+            collapsedCategories = {
+                LegacyOne = true,
+            },
+            itemOrder = { 1001, 1002 },
+        },
+    })
+
+    local snapshot = ctx:snapshot()
+    local custom = custom_snapshot(snapshot)
+    local rawId, data = raw_by_name(snapshot, "LegacyOne")
+    assert_true(rawId ~= nil, "legacy global category migrated")
+    assert_equal({ 1001, 1002 }, data.items, "legacy global items migrated")
+    assert_true(data.query == "ilvl >= 200", "legacy global query migrated")
+    assert_true(data.alwaysVisible == true, "legacy global always visible migrated")
+    assert_equal({ { "cus-" .. rawId }, {}, {} }, layout_columns(snapshot), "legacy layout names converted to cus ids")
+    assert_true(snapshot.layout.collapsed["cus-" .. rawId] == true, "legacy collapsed names converted to cus ids")
+    assert_equal({ 1001, 1002 }, snapshot.itemOrder, "legacy item order migrated")
 end)
 
 print("All integration scenarios completed.")

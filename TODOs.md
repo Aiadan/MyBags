@@ -173,14 +173,12 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ each categorizer should store a list of categories which could be retrieved when needed from categories store
 * ✅ Because of the above categoriesGUI should also by default work mostly with custom categorizer.
 * ✅ custom/query boundary step completed: query orchestration now goes through `CustomCategories` APIs; `Categorizers/custom/query.lua` no longer reads `CategoryStore`; query edit UI also uses `CustomCategories` directly.
+* ✅ categories store is no longer responsible for storing custom category saved-variable data (`items`, `query`, `alwaysVisible`, etc.); custom data is now owned/migrated by `CustomCategories` in `db.userCategories`.
+* ✅ custom.lua now handles persistence/bootstrap for custom category query/items data and migration, so CategoryStore is no longer aware of custom query/items state.
 
 ### TODO
 
 * [PARTIAL] Code overall should try to as much as possible stop using ids or names to retrieve information about a category and try to as much as possible use references to categories.
-* [NOT DONE] categories store should not be responsible for storing in saved variable data purely related to custom categories currently called UserCategories. That information should be stored and managed fully within UserCategories.
-* [PARTIAL] custom.lua should interact directly with query.lua . The entire logic that there is a query handling should be hidden behind custom categorizer. Because of that also the CategoryStory should not be aware that there can be a query or list of items associated with a given category.
-  * ✅ completed: query flow boundary (`custom.lua` <-> `custom/query.lua`) and GUI interactions now go through `CustomCategories`.
-  * ⏳ remaining: fully remove custom query/items knowledge from category store/persistence responsibilities.
 * [PARTIAL] We are making hard separation between custom, user manager categories, and dynamic ones.
 * [NOT DONE] setting on collapsed and column assignment should be stored under another entity "bag", as in the future we will have another for "bank" where what is collapsed or to which column assigned will be stored separately.
 * [NOT DONE] Naming of categories should be as follows: sys:new, sys:cat for system categories like unassigned, new, custom. Equipment should be treated as external hence should be called "ext:equip" . Meaning that addon defined reside within "sys" namespace, then short name of a categorizer ie. "cat" or "new". Within that names space then categorizers can create a categories after ":".
