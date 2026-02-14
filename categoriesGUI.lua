@@ -12,16 +12,25 @@ function AddonNS.createGUI()
     containerFrame:EnableMouse(true)
     containerFrame:Hide();
 
-    local editButton = CreateFrame("Button", nil, container, "UIPanelButtonTemplate")
-
-    editButton:SetPoint("TOPRIGHT", BagItemAutoSortButton, "TOPLEFT", -4, 0);
-
-    editButton:SetSize(60, 23)
-    editButton:SetText("Edit")
-
-    editButton:SetScript("OnClick", function(self, button)
+    local settingsButton = CreateFrame("Button", nil, container, "UIPanelIconDropdownButtonTemplate")
+    settingsButton:SetSize(20, 20)
+    settingsButton:SetPoint("TOPRIGHT", container, "TOPRIGHT", -9, -34)
+    settingsButton:SetScript("OnClick", function(self, button)
         if containerFrame:IsShown() then containerFrame:Hide() else containerFrame:Show() end
     end)
+
+    local function updateTopRightButtons()
+        if container:IsShown() and BagItemAutoSortButton:GetParent() == container then
+            BagItemAutoSortButton:Hide()
+            settingsButton:Show()
+            settingsButton:ClearAllPoints()
+            settingsButton:SetPoint("TOPRIGHT", container, "TOPRIGHT", -9, -38)
+        end
+    end
+
+    container:HookScript("OnShow", updateTopRightButtons)
+    hooksecurefunc(container, "UpdateSearchBox", updateTopRightButtons)
+
     containerFrame.Inset:SetPoint("BOTTOMRIGHT", -6, 106)
     containerFrame.categoriesContainer = CreateFrame("Frame", addonName .. "-reagentsContainer", containerFrame)
     local categoriesContainter = containerFrame.categoriesContainer;

@@ -95,6 +95,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ removed code that caused tainting, now it should hopefully be fine
 * ✅ added workaround for infinite loop caused by bug in how the game loads info about mythic keystones
 * ✅ *improved greatly how you can move items around the backback*
+* ✅ replaced the old text `Edit` button with a cog-style settings button and hid Blizzard `BagItemAutoSortButton` for the combined-bags MyBags container.
 
 ### TODO
 
