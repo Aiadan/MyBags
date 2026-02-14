@@ -64,6 +64,11 @@ local function wrap_category(store, categorizerId, rawCategory)
             return self._raw:OnRightClick(...)
         end
     end
+    function wrapper:OnLeftClickConfigMode(...)
+        if self._raw.OnLeftClickConfigMode then
+            return self._raw:OnLeftClickConfigMode(...)
+        end
+    end
     function wrapper:OnItemAssigned(itemId, context)
         if self._raw.OnItemAssigned then
             self._raw:OnItemAssigned(itemId, context)

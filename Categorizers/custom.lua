@@ -303,6 +303,9 @@ local function new_raw(id, data)
     function raw:IsProtected()
         return data.protected == true
     end
+    function raw:OnLeftClickConfigMode()
+        AddonNS.CategoriesGUI:SelectCategoryById(CATEGORIZER_ID .. "-" .. id)
+    end
     function raw:OnItemAssigned(itemId, context)
         if not itemId then
             return

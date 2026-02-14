@@ -102,6 +102,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ custom categories are now temporarily rendered as always-visible while the categories GUI is open (runtime-only; no SavedVariables change).
 * ✅ introduced explicit bag view mode (`normal` / `categories_config`): while config is open, custom category header left-click selects that category in config GUI, non-custom header left-click is a no-op, and collapse toggling is disabled.
 * ✅ categories config panel can now be hidden without exiting edit mode; selecting a custom category from bag headers reopens the panel automatically and WowList single-select now stays single when selecting by predicate.
+* ✅ config-mode category header left click now uses category-level hook (`OnLeftClickConfigMode`) so categories decide their own edit-mode behavior; custom category implements it to select itself in categories GUI.
+* ✅ AGENTS.md now has strict "Internal contracts" rules (mandatory wrapper interfaces, boundary-only defensive checks, fail-fast internal flows, and a review checklist to block defensive call-site guards).
 * ✅ in-bag category headers now render custom categories in grey when runtime-empty and not marked Always Visible.
 
 ### TODO

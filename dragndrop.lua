@@ -41,10 +41,6 @@ local function getCategoryId(category)
     return category and category.id or nil
 end
 
-local function isCustomCategoryId(categoryId)
-    return type(categoryId) == "string" and categoryId:match("^cus%-") ~= nil
-end
-
 local function canTriggerItemMove(sourceCategory, targetCategory)
     if targetCategory and targetCategory:IsProtected() then
         return false
@@ -202,10 +198,8 @@ function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)
         local refreshView = false
         if button == "LeftButton" then
             if AddonNS.BagViewState:IsCategoriesConfigMode() then
-                local categoryId = getCategoryId(self.ItemCategory)
-                if isCustomCategoryId(categoryId) then
-                    AddonNS.CategoriesGUI:SelectCategoryById(categoryId)
-                end
+                local category = self.ItemCategory
+                category:OnLeftClickConfigMode(container)
                 return
             end
             toggleCollapsed(self.ItemCategory);

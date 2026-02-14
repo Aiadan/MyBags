@@ -51,6 +51,20 @@ Avoid implementing fallback logic. Always assume the code operates as intended. 
 - Prefer fail-fast behavior in internal code paths (clear errors or strict precondition handling) so invalid state is surfaced during development/testing instead of being masked.
 - For internal boolean parameters, do not coerce values (for example `flag == true`) and do not add defensive type-check gates; pass and store booleans directly, and treat non-boolean inputs as upstream bugs to fix at the call site.
 
+## Internal contracts (strict)
+
+- Wrapper/domain interfaces are mandatory contracts. If a wrapper exposes a method (for example category click hooks), internal callers must call it directly and must not guard with `if obj and obj.Method then ...`.
+- Optional behavior must be implemented via no-op methods at construction/wrapping time, not by adding call-site guards.
+- Defensive checks are allowed only at external boundaries (Blizzard API payloads, SavedVariables input, user-entered text). Internal module-to-module/event-to-handler paths must be strict and fail-fast.
+- Do not add silent fallback paths in internal flows. Invalid internal state should be surfaced immediately (error or strict precondition), not swallowed.
+- When introducing or changing an internal interface contract, add/update tests that validate the contract directly (for example: wrapper forwards method and call path works without guards).
+
+### Internal contract review checklist
+
+- No `if x and x.Method then` patterns for internal wrapper/domain calls.
+- No silent `if not x then return end` guards in internal domain flow unless this is an explicit external-boundary sanitization point.
+- Interface changes include test updates that verify strict contract behavior.
+
 ## AI Agent Code Organization Policy
 
 All AI agents must follow the Separation of Concerns principle. Each file, module, or agent must focus on a single, well-defined responsibility. Helper functions that directly support that responsibility are permitted within the same scope. Shared or unrelated logic must be implemented in separate modules and imported where needed. Agents must not duplicate or embed logic outside their defined concern but should rely on clear interfaces or service modules that expose necessary functionality.
