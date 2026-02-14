@@ -106,6 +106,10 @@ This policy also applies to generic or reusable components such as utility funct
 ## Repository rules
 
 - Keep changes minimal and focused. Do not fix unrelated issues.
+- Simplicity is king: prefer the smallest working change over architectural expansion.
+- Avoid introducing new state/metadata/abstractions unless the existing shape cannot support the requirement.
+- Default to surgical diffs: touch as few files/lines as possible and preserve existing flow/structure.
+- If a simpler implementation exists with identical behavior, choose the simpler one.
 
 ## ExecPlans
 

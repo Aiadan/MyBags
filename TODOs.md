@@ -67,6 +67,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅blizzMove addon breakes it seems with this addon - to check whether it breaks only with this addon, or with it disabled as well as it currently does not work properly with other things like talents window so it might just be broken blizzmove.
   * ✅ the way I solved is that it now works with BlizzMove. However I noticed that by default this addon does not remember scaling of the bags, so I might need to implement such functionality in the end. I'd rather make a merge request, unfortunately the licensing is "all rights reseved" in blizz move addon.
 * ✅ add option to mark category as always visible
+* ✅ always-visible empty categories now render as header-only rows (full-width like collapsed headers) without placeholder-item stacking
+* ✅ codified simplicity-first contribution rule in `AGENTS.md` (prefer surgical diffs, avoid unnecessary abstractions/state)
 * [solved - by preventing Blizz UI changing the scale] consider adding option to manage scale (or at least remember between each open), placement of bag as well as prevent it from auto closing.
 * ✅[changed - see sub point] reenable new categorizer to work properly with merchant. Maybe mark those items bought from merchant somehow?
   * ✅ renenble new categorizer and make it so that we will store new items and mark them so for a bit long. Right clicking on the title should remove items from new group.

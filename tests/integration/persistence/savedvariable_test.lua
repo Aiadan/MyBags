@@ -144,6 +144,28 @@ run("custom categories persist with namespaced layout", function()
     assert_true(snapshot.categories == nil, "legacy categories not persisted")
 end)
 
+run("always visible empty category stays empty in arranged output", function()
+    local ctx = harness.new()
+    local always = ctx.AddonNS.CustomCategories:NewCategory("Always")
+    local other = ctx.AddonNS.CustomCategories:NewCategory("Other")
+    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(always, true)
+    local assignments = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [other] = { item_button(0, 1) },
+    })
+
+    local alwaysEntry = nil
+    for _, column in ipairs(assignments) do
+        for _, entry in ipairs(column) do
+            if entry.category:GetId() == always:GetId() then
+                alwaysEntry = entry
+            end
+        end
+    end
+    assert_true(alwaysEntry ~= nil, "always visible category is included in assignments")
+    assert_true(alwaysEntry.itemsCount == 0, "always visible empty category keeps zero item count")
+    assert_equal({}, alwaysEntry.items, "always visible empty category has no placeholder items")
+end)
+
 run("item move reassigns through hooks and respects protected target", function()
     local ctx = harness.new()
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")

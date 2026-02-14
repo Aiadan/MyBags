@@ -143,7 +143,7 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     local ensureConstantsStartedAt = profile and profileNowMs() or nil
     for _, category in ipairs(constantCategories) do
         if not arrangedItems[category] then
-            arrangedItems[category] = { AddonNS.itemButtonPlaceholder }
+            arrangedItems[category] = {}
         end
     end
     if profile then

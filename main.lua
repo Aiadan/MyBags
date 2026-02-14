@@ -193,7 +193,9 @@ local function newIterator(container, index)
             for i, categoryObj in ipairs(categoriesObj) do
                 local categoryItemsCount = categoryObj.itemsCount or #categoryObj.items;
                 local isCategoryCollapsed = isCollapsed(categoryObj.category);
-                local categoryRequiresNewLine = isCategoryCollapsed or categoryObj.category.separateLine;
+                local isCategoryHeaderOnly =categoryObj.itemsCount == 0;
+                local categoryRenderedAsRowHeader = isCategoryCollapsed or isCategoryHeaderOnly;
+                local categoryRequiresNewLine = categoryRenderedAsRowHeader or categoryObj.category.separateLine;
                 local requiredNewLine =
                     categoryRequiresNewLine
                     or #currentRow == 0
@@ -213,9 +215,10 @@ local function newIterator(container, index)
                 local expandCategoryToRightColumnBoundary =
                     (#currentRow + categoryItemsCount < AddonNS.Const.ITEMS_PER_ROW and
                         (
-                            isCategoryCollapsed
+                            categoryRenderedAsRowHeader
                             or (not nextCategoryExists)
                             or isCollapsed(categoriesObj[i + 1].category)
+                            or categoriesObj[i + 1].itemsCount == 0
                             or categoriesObj[i + 1].category.separateLine
                             or #currentRow + categoryItemsCount + #categoriesObj[i + 1].items > AddonNS.Const.ITEMS_PER_ROW
                         )
@@ -229,13 +232,13 @@ local function newIterator(container, index)
                         y = currentRowY - AddonNS.Const.CATEGORY_HEIGHT,
                         width = itemSize *
                             (categoryItemsCount > AddonNS.Const.ITEMS_PER_ROW and AddonNS.Const.ITEMS_PER_ROW or categoryItemsCount + expandCategoryToRightColumnBoundary),
-                        height = AddonNS.Const.CATEGORY_HEIGHT + ((not isCategoryCollapsed and
+                        height = AddonNS.Const.CATEGORY_HEIGHT + ((not categoryRenderedAsRowHeader and
                             math.ceil(categoryItemsCount / AddonNS.Const.ITEMS_PER_ROW) *
                             itemSize) or 0),
                     });
                 rowWithNewCategory = true;
                 local items = categoryObj.items;
-                if (not isCategoryCollapsed) then
+                if (not categoryRenderedAsRowHeader) then
                     for j = #items, 1, -1 do
                         local item = items[j];
                         table.insert(currentRow, item)
