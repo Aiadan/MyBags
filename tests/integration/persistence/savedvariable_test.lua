@@ -115,7 +115,10 @@ run("custom categories persist with namespaced layout", function()
     ctx.AddonNS.CustomCategories:AssignToCategory(catB, 102)
     ctx.AddonNS.QueryCategories:SetQuery(catA, "ilvl >= 400")
     ctx.AddonNS.CategorShowAlways:SetAlwaysShow(catB, true)
-    table.insert(ctx.AddonNS.CategoryStore:GetLayoutColumns()[1], catA:GetId())
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [catA] = {},
+        [catB] = {},
+    })
     ctx:events():fire_game("PLAYER_LOGOUT")
 
     local snapshot = ctx:snapshot()
@@ -128,7 +131,15 @@ run("custom categories persist with namespaced layout", function()
     assert_equal({ 102 }, bData.items, "B stores assignment")
     assert_true(aData.query == "ilvl >= 400", "query persisted for A")
     assert_true(bData.alwaysVisible == true, "always visible persisted for B")
-    assert_equal({ { catA:GetId() }, {}, {} }, layout_columns(snapshot), "layout uses namespaced ids")
+    local foundCatA = false
+    for _, column in ipairs(layout_columns(snapshot)) do
+        for _, id in ipairs(column) do
+            if id == catA:GetId() then
+                foundCatA = true
+            end
+        end
+    end
+    assert_true(foundCatA, "layout uses namespaced ids for custom categories")
     assert_true(snapshot.categorizers == nil or snapshot.categorizers.cus == nil, "old custom bucket not persisted")
     assert_true(snapshot.categories == nil, "legacy categories not persisted")
 end)
@@ -201,6 +212,49 @@ run("custom category query updates compiled cache via direct API", function()
 
     ctx.AddonNS.CustomCategories:SetQuery(category, "")
     assert_true(ctx.AddonNS.QueryCategories:GetCompiled(category) == nil, "compiled query removed after clearing")
+end)
+
+run("category move events use category ids for reorder and column move", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [catA] = {},
+        [catB] = {},
+    })
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catB:GetId(), 1)
+
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED, catA:GetId(), catB:GetId())
+    ctx:events():fire_game("PLAYER_LOGOUT")
+    local columnsAfterReorder = layout_columns(ctx:snapshot())
+    local firstColumn = columnsAfterReorder[1] or {}
+    assert_true(firstColumn[1] == catB:GetId(), "reorder places target category first in column")
+    assert_true(firstColumn[2] == catA:GetId(), "reorder places moved category after target")
+
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catA:GetId(), 2)
+    ctx:events():fire_game("PLAYER_LOGOUT")
+    local columnsAfterMove = layout_columns(ctx:snapshot())
+    local column1 = columnsAfterMove[1] or {}
+    local column2 = columnsAfterMove[2] or {}
+    assert_true(column1[1] == catB:GetId(), "column 1 keeps target category after move")
+    assert_true(column2[#column2] == catA:GetId(), "column 2 receives moved category")
+end)
+
+run("category delete removes layout entry via category id event", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("DeleteMe")
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [catA] = {},
+    })
+
+    ctx.AddonNS.CustomCategories:DeleteCategory(catA)
+    ctx:events():fire_game("PLAYER_LOGOUT")
+    local columns = layout_columns(ctx:snapshot())
+    for _, column in ipairs(columns) do
+        for _, id in ipairs(column or {}) do
+            assert_true(id ~= catA:GetId(), "deleted category removed from all columns")
+        end
+    end
 end)
 
 run("migrates from db.categorizers.cus to userCategories", function()

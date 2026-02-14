@@ -1,6 +1,6 @@
 local addonName, AddonNS = ...
 
-AddonNS.Categories = {}
+AddonNS.Categories = AddonNS.Categories or {}
 
 local categorizers = OrderedMap:new()
 

@@ -1,50 +1,81 @@
 local addonName, AddonNS = ...
 
-local NUM_COLUMNS = AddonNS.Const.NUM_COLUMNS;
-local isCollapsed = AddonNS.Collapsed.isCollapsed;
-local layoutColumns = AddonNS.CategoryStore:GetLayoutColumns();
+-- NOTE: This module intentionally keeps runtime column state as category IDs,
+-- not category wrapper references.
+-- Rationale:
+-- 1) IDs are the persisted shape used by SavedVariables.
+-- 2) IDs do not depend on wrapper lifecycle/refresh timing.
+-- 3) This avoids hidden load-order coupling between wrapper readiness and layout logic.
+-- Convert IDs to category objects only at the rendering/arrangement boundary.
 
-local categoryAssignments;
+AddonNS.Categories = AddonNS.Categories or {}
 
-local function ensureColumns()
-    layoutColumns = AddonNS.CategoryStore:GetLayoutColumns();
-    for index = 1, NUM_COLUMNS do
-        layoutColumns[index] = layoutColumns[index] or {}
+local NUM_COLUMNS = AddonNS.Const.NUM_COLUMNS
+local isCollapsed = AddonNS.Collapsed.isCollapsed
+local runtimeColumns = {}
+local runtimeColumnsLoaded = false
+
+local categoryAssignments
+
+local function ensureRuntimeColumns()
+    if runtimeColumnsLoaded then
+        return
     end
+    local persistedColumns = AddonNS.CategoryStore:GetLayoutColumns()
+    runtimeColumns = {}
+    for index = 1, NUM_COLUMNS do
+        runtimeColumns[index] = {}
+        for _, categoryId in ipairs(persistedColumns[index] or {}) do
+            table.insert(runtimeColumns[index], categoryId)
+        end
+    end
+    runtimeColumnsLoaded = true
 end
 
-local function resolveCategoryId(input)
+local function persistRuntimeColumns()
+    if not runtimeColumnsLoaded then
+        return
+    end
+    local serialized = {}
+    for index = 1, NUM_COLUMNS do
+        serialized[index] = {}
+        for _, categoryId in ipairs(runtimeColumns[index] or {}) do
+            table.insert(serialized[index], categoryId)
+        end
+    end
+    AddonNS.CategoryStore:SetLayoutColumns(serialized)
+end
+
+local function categoryId(input)
     if not input then
         return nil
     end
-    local inputType = type(input)
-    if inputType == "string" then
+    if type(input) == "string" then
         return input
     end
-    if inputType == "table" then
+    if type(input) == "table" then
+        if input.GetId then
+            return input:GetId()
+        end
         if input.id then
             return input.id
-        end
-        if input.name then
-            local category = AddonNS.Categories:GetCategoryByName(input.name)
-            return category and category.id or nil
         end
     end
     return nil
 end
 
 local function addCategoryToColumn(categoryAssignmentsForColumn, category, items)
-    local itemCount = #items;
-    local displayItems = items;
+    local itemCount = #items
+    local displayItems = items
     if isCollapsed(category) then
         displayItems = { AddonNS.itemButtonPlaceholder }
     end
-    AddonNS.ItemsOrder:Sort(displayItems);
-    table.insert(categoryAssignmentsForColumn, { category = category, items = displayItems, itemsCount = itemCount });
+    AddonNS.ItemsOrder:Sort(displayItems)
+    table.insert(categoryAssignmentsForColumn, { category = category, items = displayItems, itemsCount = itemCount })
 end
 
 function AddonNS.Categories:GetLastCategoryInColumn(columnNo)
-    ensureColumns()
+    ensureRuntimeColumns()
     local column = categoryAssignments and categoryAssignments[columnNo]
     if not column or #column == 0 then
         return AddonNS.CategoryStore:GetUnassigned()
@@ -52,19 +83,23 @@ function AddonNS.Categories:GetLastCategoryInColumn(columnNo)
     return column[#column].category
 end
 
-local function appendToLayout(columnIndex, categoryId)
-    ensureColumns()
-    local column = layoutColumns[columnIndex]
-    for _, id in ipairs(column) do
-        if id == categoryId then
+local function appendToLayout(columnIndex, categoryIdValue)
+    ensureRuntimeColumns()
+    local id = categoryId(categoryIdValue)
+    if not id then
+        return
+    end
+    local column = runtimeColumns[columnIndex]
+    for _, existing in ipairs(column) do
+        if existing == id then
             return
         end
     end
-    table.insert(column, categoryId)
+    table.insert(column, id)
 end
 
 function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
-    ensureColumns()
+    ensureRuntimeColumns()
     local constantCategories = AddonNS.Categories:GetConstantCategories()
     for _, category in ipairs(constantCategories) do
         if not arrangedItems[category] then
@@ -77,9 +112,9 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
 
     for columnIndex = 1, NUM_COLUMNS do
         local assignmentsForColumn = categoryAssignments[columnIndex]
-        local ids = layoutColumns[columnIndex]
-        for _, categoryId in ipairs(ids) do
-            local category = AddonNS.CategoryStore:Get(categoryId)
+        local ids = runtimeColumns[columnIndex]
+        for _, id in ipairs(ids) do
+            local category = AddonNS.CategoryStore:Get(id)
             if category and arrangedItems[category] then
                 addCategoryToColumn(assignmentsForColumn, category, arrangedItems[category])
                 known[category] = true
@@ -88,7 +123,7 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     end
 
     local unmatched = {}
-    for category, items in pairs(arrangedItems) do
+    for category in pairs(arrangedItems) do
         if not known[category] then
             table.insert(unmatched, category)
         end
@@ -108,19 +143,23 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     local targetColumn = 1
     for _, category in ipairs(unmatched) do
         addCategoryToColumn(categoryAssignments[targetColumn], category, arrangedItems[category] or {})
-        appendToLayout(targetColumn, category.id)
+        appendToLayout(targetColumn, category:GetId())
         targetColumn = targetColumn % NUM_COLUMNS + 1
     end
 
     return categoryAssignments
 end
 
-local function findCategoryPosition(categoryId)
-    ensureColumns()
+local function findCategoryPosition(categoryIdValue)
+    ensureRuntimeColumns()
+    local id = categoryId(categoryIdValue)
+    if not id then
+        return nil
+    end
     for columnIndex = 1, NUM_COLUMNS do
-        local column = layoutColumns[columnIndex]
+        local column = runtimeColumns[columnIndex]
         for rowIndex = 1, #column do
-            if column[rowIndex] == categoryId then
+            if column[rowIndex] == id then
                 return columnIndex, rowIndex, column
             end
         end
@@ -130,8 +169,8 @@ end
 
 local function categoryMoved(eventName, pickedCategory, targetCategory)
     AddonNS.printDebug(eventName)
-    local pickedCategoryId = resolveCategoryId(pickedCategory)
-    local targetCategoryId = resolveCategoryId(targetCategory)
+    local pickedCategoryId = categoryId(pickedCategory)
+    local targetCategoryId = categoryId(targetCategory)
     if not pickedCategoryId or not targetCategoryId or pickedCategoryId == targetCategoryId then
         return
     end
@@ -143,39 +182,46 @@ local function categoryMoved(eventName, pickedCategory, targetCategory)
     if pickedColumn then
         table.remove(pickedColumnRef, pickedRow)
     end
-    local targetColumnRef = layoutColumns[targetColumn]
-    local placeAbove = 0
+    local targetColumnRef = runtimeColumns[targetColumn]
     if pickedColumn and pickedColumn == targetColumn and pickedRow < targetRow then
-        placeAbove = 1
+        targetRow = targetRow - 1
     end
-    table.insert(targetColumnRef, targetRow + placeAbove, pickedCategoryId)
+    table.insert(targetColumnRef, targetRow + 1, pickedCategoryId)
 end
 
 local function categoryMovedToColumn(eventName, pickedCategory, columnIndex)
     AddonNS.printDebug(eventName)
-    local pickedCategoryId = resolveCategoryId(pickedCategory)
+    local pickedCategoryId = categoryId(pickedCategory)
     if not pickedCategoryId or not columnIndex then
         return
     end
-    ensureColumns()
+    ensureRuntimeColumns()
     local pickedColumn, pickedRow, pickedColumnRef = findCategoryPosition(pickedCategoryId)
     if pickedColumn and pickedColumnRef then
         table.remove(pickedColumnRef, pickedRow)
     end
-    table.insert(layoutColumns[columnIndex], pickedCategoryId)
+    table.insert(runtimeColumns[columnIndex], pickedCategoryId)
 end
 
 local function categoryDeleted(eventName, category)
     AddonNS.printDebug(eventName)
-    local categoryId = resolveCategoryId(category)
-    if not categoryId then
+    local categoryIdValue = categoryId(category)
+    if not categoryIdValue then
         return
     end
-    local columnIndex, rowIndex, column = findCategoryPosition(categoryId)
+    local columnIndex, rowIndex, column = findCategoryPosition(categoryIdValue)
     if columnIndex and column then
         table.remove(column, rowIndex)
     end
 end
+
+AddonNS.Events:OnInitialize(function()
+    ensureRuntimeColumns()
+end)
+
+AddonNS.Events:RegisterEvent("PLAYER_LOGOUT", function()
+    persistRuntimeColumns()
+end)
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED, categoryMoved)

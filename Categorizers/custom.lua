@@ -549,7 +549,7 @@ function CustomCategories:DeleteCategory(categoryOrId)
     local db = get_db()
     db.categories[raw:GetId()] = nil
     fireUpdate()
-    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, raw:GetId())
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, CATEGORIZER_ID .. "-" .. raw:GetId())
 end
 
 function CustomCategories:SetAlwaysVisible(categoryOrId, flag)

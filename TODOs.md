@@ -163,6 +163,9 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 ## Technical focused
 
 * the checks in drag and drop using pickedItemButton could be replaced with  C_Cursor.GetCursorItem() .
+* remove defensive silent-guard anti-patterns (e.g. `if not x then return end` in internal domain flow) and replace with fail-fast preconditions so bugs are surfaced instead of hidden.
+* normalize naming convention across codebase: standalone/local functions to lower camel case (e.g. `doSomething`), and table methods defined with `:` to UpperCamelCase (e.g. `SomeTable:DoSomething()`).
+* ✅ added explicit fail-fast load-order guard in `categoriesColumnAssignment.lua` so it errors clearly if `categories.lua` has not initialized `AddonNS.Categories` yet.
 
 ## Recently added ideas for reactoring witth ai
 
@@ -175,10 +178,15 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ custom/query boundary step completed: query orchestration now goes through `CustomCategories` APIs; `Categorizers/custom/query.lua` no longer reads `CategoryStore`; query edit UI also uses `CustomCategories` directly.
 * ✅ categories store is no longer responsible for storing custom category saved-variable data (`items`, `query`, `alwaysVisible`, etc.); custom data is now owned/migrated by `CustomCategories` in `db.userCategories`.
 * ✅ custom.lua now handles persistence/bootstrap for custom category query/items data and migration, so CategoryStore is no longer aware of custom query/items state.
+* ✅ category move and custom-category GUI drag/drop flows now pass category references (wrappers) end-to-end; internal runtime no longer resolves categories by name in those paths.
 
 ### TODO
 
 * [PARTIAL] Code overall should try to as much as possible stop using ids or names to retrieve information about a category and try to as much as possible use references to categories.
+  * ✅ completed: custom category GUI drag/drop no longer uses `GetCategoryByName` fallback lookup.
+  * ✅ completed: category column assignment now hydrates runtime layout state on load and serializes back on logout.
+  * ✅ decision update: category move/layout event flow uses category ids in `categoriesColumnAssignment.lua` by design (stable persisted shape and lower load-order/wrapper coupling).
+  * ⏳ remaining: continue reducing id-based handling where persistence/UI boundary still legitimately uses ids.
 * [PARTIAL] We are making hard separation between custom, user manager categories, and dynamic ones.
 * [NOT DONE] setting on collapsed and column assignment should be stored under another entity "bag", as in the future we will have another for "bank" where what is collapsed or to which column assigned will be stored separately.
 * [NOT DONE] Naming of categories should be as follows: sys:new, sys:cat for system categories like unassigned, new, custom. Equipment should be treated as external hence should be called "ext:equip" . Meaning that addon defined reside within "sys" namespace, then short name of a categorizer ie. "cat" or "new". Within that names space then categorizers can create a categories after ":".

@@ -37,13 +37,18 @@ Avoid implementing fallback logic. Always assume the code operates as intended. 
 ## Code style guidelines
 
 - Pure Lua; stick to ASCII unless a file already uses special glyphs (e.g., colour codes).
-- Naming: methods/functions are lowerCamelCase; objects are UpperCamelCase; constant values are UPPER_SNAKE_CASE.
+- Naming:
+  - standalone/local functions must use lower camel case (example: `doSomething`).
+  - functions defined on tables via `:` must use UpperCamelCase method names (example: `SomeTable:DoSomething()`).
+  - objects/tables are UpperCamelCase; constant values are UPPER_SNAKE_CASE.
 - Prefer simple, explicit helpers; do not wrap primitives like `foo = foo or default` unless it clearly improves clarity.
 - Guard new data structures against nil; lazily initialize tables.
 - Use the `AddonNS` namespace consistently; expose functionality via `AddonNS` tables.
 - Favour descriptive local function names; keep closures near their use.
 - Call `AddonNS.QueueContainerUpdateItemLayout()` sparingly and only when state changes.
 - When a concept is modeled as an object (e.g., categories), pass and store that object consistently rather than accepting mixed types such as ids-or-objects. Avoid helper patterns like `resolveXIdentifier` that take multiple shapes; enforce a single shape at boundaries and coerce inputs before they reach shared modules.
+- Avoid defensive early-return guards that silently swallow invalid state (for example `if not x then return end` in internal domain paths). This is a known anti-pattern because it hides real bugs and makes behavior non-deterministic at scale.
+- Prefer fail-fast behavior in internal code paths (clear errors or strict precondition handling) so invalid state is surfaced during development/testing instead of being masked.
 
 ## AI Agent Code Organization Policy
 
@@ -61,6 +66,10 @@ This policy also applies to generic or reusable components such as utility funct
 
 ## SavedVariables and storage
 
+- Storage lifecycle in this addon:
+  - SavedVariables are loaded/bootstraped during `OnDbLoaded` (see `init.lua`).
+  - Persisted writes are committed by WoW at logout (`PLAYER_LOGOUT`).
+  - Prefer hydrating runtime structures from DB on load and serializing them back to DB on logout rather than repeatedly reading persisted shapes during runtime.
 - Store only what is necessary. Avoid persisting empty values/strings/tables to reduce load time and memory overhead.
 - Sanitize all input read from SavedVariables; strip empty tables/strings and normalise shapes.
 - Prohibit duplication. Examples of what NOT to do:

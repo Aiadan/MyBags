@@ -35,6 +35,9 @@ local function resolveCategory(category)
 end
 
 local function getCategoryId(category)
+    if type(category) == "table" and category.GetId then
+        return category:GetId()
+    end
     return category and category.id or nil
 end
 
@@ -309,22 +312,21 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self)
     end
 end
 
-function AddonNS.DragAndDrop.customCategoryGUIOnMouseUp(targetItemCategoryName, button)
+function AddonNS.DragAndDrop.customCategoryGUIOnMouseUp(targetCategoryId, button)
     AddonNS.printDebug("customCategoryGUIOnMouseUp", button)
     if button == "LeftButton" then
-        AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetItemCategoryName)
+        AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetCategoryId)
     end
 end
 
-function AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetItemCategoryName)
-    AddonNS.printDebug("customCategoryGUIOnReceiveDrag", pickedItemCategory, targetItemCategoryName)
+function AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetCategoryId)
+    AddonNS.printDebug("customCategoryGUIOnReceiveDrag", pickedItemCategory, targetCategoryId)
 
     if (pickedItemButton) then -- button
         local infoType, itemID, itemLink = getCachedCursorInfo()
         if infoType == "item" and itemID == pickedItemID then
-            local category = AddonNS.Categories:GetCategoryByName(targetItemCategoryName) or
-                AddonNS.CategoryStore:Get(targetItemCategoryName);
-            triggerItemMoved(itemID, nil, pickedItemCategory, category, pickedItemButton, nil);
+            local targetCategory = AddonNS.CategoryStore:Get(targetCategoryId)
+            triggerItemMoved(itemID, nil, pickedItemCategory, targetCategory, pickedItemButton, nil);
             ClearCursor();
             AddonNS.QueueContainerUpdateItemLayout();
         end
