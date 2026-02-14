@@ -258,10 +258,7 @@ local function categoryMoved(eventName, pickedCategory, targetCategory)
         table.remove(pickedColumnRef, pickedRow)
     end
     local targetColumnRef = runtimeColumns[targetColumn]
-    if pickedColumn and pickedColumn == targetColumn and pickedRow < targetRow then
-        targetRow = targetRow - 1
-    end
-    table.insert(targetColumnRef, targetRow + 1, pickedCategoryId)
+    table.insert(targetColumnRef, targetRow, pickedCategoryId)
 end
 
 local function categoryMovedToColumn(eventName, pickedCategory, columnIndex)

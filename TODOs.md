@@ -98,6 +98,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ added workaround for infinite loop caused by bug in how the game loads info about mythic keystones
 * ✅ *improved greatly how you can move items around the backback*
 * ✅ replaced the old text `Edit` button with a cog-style settings button and hid Blizzard `BagItemAutoSortButton` for the combined-bags MyBags container.
+* ✅ fixed category drag reorder regression where dragging a lower category onto an upper one could no-op; reorder now works in both drag directions.
 
 ### TODO
 

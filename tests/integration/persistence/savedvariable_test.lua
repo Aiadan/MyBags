@@ -253,6 +253,13 @@ run("category move events use category ids for reorder and column move", functio
     assert_true(firstColumn[1] == catB:GetId(), "reorder places target category first in column")
     assert_true(firstColumn[2] == catA:GetId(), "reorder places moved category after target")
 
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED, catB:GetId(), catA:GetId())
+    ctx:events():fire_game("PLAYER_LOGOUT")
+    local columnsAfterReverseReorder = layout_columns(ctx:snapshot())
+    local firstColumnAfterReverse = columnsAfterReverseReorder[1] or {}
+    assert_true(firstColumnAfterReverse[1] == catA:GetId(), "reverse reorder moves dragged category before target")
+    assert_true(firstColumnAfterReverse[2] == catB:GetId(), "reverse reorder keeps both categories ordered")
+
     ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catA:GetId(), 2)
     ctx:events():fire_game("PLAYER_LOGOUT")
     local columnsAfterMove = layout_columns(ctx:snapshot())
