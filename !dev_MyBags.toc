@@ -29,6 +29,7 @@
 utils/orderedMap.lua
 categoryStore.lua
 init.lua
+bagViewState.lua
 collapsed.lua
 main.lua
 ContainerFrameMyBagsMixin.lua

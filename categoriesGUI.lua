@@ -3,6 +3,7 @@ local GS = LibStub("MyLibrary_GUI");
 
 --- @type WowList
 local WowList = LibStub("WowList-1.5");
+AddonNS.CategoriesGUI = AddonNS.CategoriesGUI or {}
 
 function AddonNS.createGUI()
     local container = AddonNS.container;
@@ -16,7 +17,13 @@ function AddonNS.createGUI()
     settingsButton:SetSize(20, 20)
     settingsButton:SetPoint("TOPRIGHT", container, "TOPRIGHT", -9, -34)
     settingsButton:SetScript("OnClick", function(self, button)
-        if containerFrame:IsShown() then containerFrame:Hide() else containerFrame:Show() end
+        if AddonNS.BagViewState:IsCategoriesConfigMode() then
+            AddonNS.BagViewState:SetMode("normal")
+            containerFrame:Hide()
+            return
+        end
+        AddonNS.BagViewState:SetMode("categories_config")
+        containerFrame:Show()
     end)
 
     local function updateTopRightButtons()
@@ -90,6 +97,11 @@ function AddonNS.createGUI()
         return AddonNS.CategoryStore:Get(row.id)
     end
 
+    local function selectCategoryById(categoryId)
+        list:SelectRowByPredicate(function(row)
+            return row.id == categoryId
+        end)
+    end
 
     function list:RefreshList()
         list:RemoveAll()
@@ -118,13 +130,11 @@ function AddonNS.createGUI()
     end
 
     containerFrame:SetScript("OnShow", function()
-        AddonNS.CategorShowAlways:SetShowAllCustomInCategoriesGui(true)
         list:RefreshList()
         AddonNS.QueueContainerUpdateItemLayout();
     end)
 
     containerFrame:SetScript("OnHide", function()
-        AddonNS.CategorShowAlways:SetShowAllCustomInCategoriesGui(false)
         AddonNS.QueueContainerUpdateItemLayout();
     end)
 
@@ -297,9 +307,7 @@ function AddonNS.createGUI()
                 local category = AddonNS.CustomCategories:NewCategory(categoryName)
                 list:RefreshList()
                 if category then
-                    list:SelectRowByPredicate(function(row)
-                        return row.id == category.id
-                    end)
+                    selectCategoryById(category.id)
                 end
             else
                 AddonNS.printDebug("Please enter a category name.")
@@ -330,9 +338,7 @@ function AddonNS.createGUI()
                 AddonNS.CustomCategories:RenameCategory(data, categoryName);
                 AddonNS.QueueContainerUpdateItemLayout();
                 list:RefreshList();
-                list:SelectRowByPredicate(function(row)
-                    return row.id == data
-                end)
+                selectCategoryById(data)
             else
                 AddonNS.printDebug("Please enter a category name.")
             end
@@ -376,6 +382,17 @@ function AddonNS.createGUI()
         hideOnEscape = true,
         preferredIndex = 3, -- Avoids some UI taint issues
     }
+
+    function AddonNS.CategoriesGUI:SelectCategoryById(categoryId)
+        if not containerFrame:IsShown() then
+            containerFrame:Show()
+        end
+        selectCategoryById(categoryId)
+    end
+
+    function AddonNS.CategoriesGUI:IsShown()
+        return containerFrame:IsShown()
+    end
 end
 
 AddonNS.createGUI()

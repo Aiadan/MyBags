@@ -100,6 +100,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ replaced the old text `Edit` button with a cog-style settings button and hid Blizzard `BagItemAutoSortButton` for the combined-bags MyBags container.
 * ✅ fixed category drag reorder regression where dragging a lower category onto an upper one could no-op; reorder now works in both drag directions.
 * ✅ custom categories are now temporarily rendered as always-visible while the categories GUI is open (runtime-only; no SavedVariables change).
+* ✅ introduced explicit bag view mode (`normal` / `categories_config`): while config is open, custom category header left-click selects that category in config GUI, non-custom header left-click is a no-op, and collapse toggling is disabled.
+* ✅ categories config panel can now be hidden without exiting edit mode; selecting a custom category from bag headers reopens the panel automatically and WowList single-select now stays single when selecting by predicate.
 * ✅ in-bag category headers now render custom categories in grey when runtime-empty and not marked Always Visible.
 
 ### TODO

@@ -177,7 +177,7 @@ run("always visible empty category stays empty in arranged output", function()
     assert_equal({}, alwaysEntry.items, "always visible empty category has no placeholder items")
 end)
 
-run("categories GUI visibility mode makes all custom categories visible without persisting alwaysVisible", function()
+run("categories config mode makes all custom categories visible without persisting alwaysVisible", function()
     local ctx = harness.new()
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
     local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
@@ -186,12 +186,12 @@ run("categories GUI visibility mode makes all custom categories visible without 
     assert_true(not has_category_entry(before, catA), "custom category A hidden by default when empty")
     assert_true(not has_category_entry(before, catB), "custom category B hidden by default when empty")
 
-    ctx.AddonNS.CategorShowAlways:SetShowAllCustomInCategoriesGui(true)
+    ctx.AddonNS.BagViewState:SetMode("categories_config")
     local during = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
     assert_true(has_category_entry(during, catA), "custom category A visible while categories GUI mode enabled")
     assert_true(has_category_entry(during, catB), "custom category B visible while categories GUI mode enabled")
 
-    ctx.AddonNS.CategorShowAlways:SetShowAllCustomInCategoriesGui(false)
+    ctx.AddonNS.BagViewState:SetMode("normal")
     local after = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
     assert_true(not has_category_entry(after, catA), "custom category A hidden again after categories GUI mode disabled")
     assert_true(not has_category_entry(after, catB), "custom category B hidden again after categories GUI mode disabled")

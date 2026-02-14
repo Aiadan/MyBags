@@ -189,6 +189,7 @@ local function load_addon(ctx)
 
     exec("categoryStore.lua")
     exec("init.lua")
+    exec("bagViewState.lua")
     AddonNS.itemButtonPlaceholder = {}
 
     setup_container_api(ctx)
