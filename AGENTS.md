@@ -49,6 +49,7 @@ Avoid implementing fallback logic. Always assume the code operates as intended. 
 - When a concept is modeled as an object (e.g., categories), pass and store that object consistently rather than accepting mixed types such as ids-or-objects. Avoid helper patterns like `resolveXIdentifier` that take multiple shapes; enforce a single shape at boundaries and coerce inputs before they reach shared modules.
 - Avoid defensive early-return guards that silently swallow invalid state (for example `if not x then return end` in internal domain paths). This is a known anti-pattern because it hides real bugs and makes behavior non-deterministic at scale.
 - Prefer fail-fast behavior in internal code paths (clear errors or strict precondition handling) so invalid state is surfaced during development/testing instead of being masked.
+- For internal boolean parameters, do not coerce values (for example `flag == true`) and do not add defensive type-check gates; pass and store booleans directly, and treat non-boolean inputs as upstream bugs to fix at the call site.
 
 ## AI Agent Code Organization Policy
 

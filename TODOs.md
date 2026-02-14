@@ -99,6 +99,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ *improved greatly how you can move items around the backback*
 * ✅ replaced the old text `Edit` button with a cog-style settings button and hid Blizzard `BagItemAutoSortButton` for the combined-bags MyBags container.
 * ✅ fixed category drag reorder regression where dragging a lower category onto an upper one could no-op; reorder now works in both drag directions.
+* ✅ custom categories are now temporarily rendered as always-visible while the categories GUI is open (runtime-only; no SavedVariables change).
 
 ### TODO
 

@@ -69,6 +69,17 @@ local function custom_snapshot(snapshot)
     return snapshot.userCategories or {}
 end
 
+local function has_category_entry(assignments, category)
+    for _, column in ipairs(assignments or {}) do
+        for _, entry in ipairs(column or {}) do
+            if entry.category:GetId() == category:GetId() then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 local function raw_by_name(snapshot, name)
     local custom = custom_snapshot(snapshot)
     for rawId, data in pairs(custom.categories or {}) do
@@ -164,6 +175,34 @@ run("always visible empty category stays empty in arranged output", function()
     assert_true(alwaysEntry ~= nil, "always visible category is included in assignments")
     assert_true(alwaysEntry.itemsCount == 0, "always visible empty category keeps zero item count")
     assert_equal({}, alwaysEntry.items, "always visible empty category has no placeholder items")
+end)
+
+run("categories GUI visibility mode makes all custom categories visible without persisting alwaysVisible", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+
+    local before = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
+    assert_true(not has_category_entry(before, catA), "custom category A hidden by default when empty")
+    assert_true(not has_category_entry(before, catB), "custom category B hidden by default when empty")
+
+    ctx.AddonNS.CategorShowAlways:SetShowAllCustomInCategoriesGui(true)
+    local during = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
+    assert_true(has_category_entry(during, catA), "custom category A visible while categories GUI mode enabled")
+    assert_true(has_category_entry(during, catB), "custom category B visible while categories GUI mode enabled")
+
+    ctx.AddonNS.CategorShowAlways:SetShowAllCustomInCategoriesGui(false)
+    local after = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
+    assert_true(not has_category_entry(after, catA), "custom category A hidden again after categories GUI mode disabled")
+    assert_true(not has_category_entry(after, catB), "custom category B hidden again after categories GUI mode disabled")
+
+    ctx:events():fire_game("PLAYER_LOGOUT")
+    local snapshot = ctx:snapshot()
+    local custom = custom_snapshot(snapshot)
+    local rawA = catA:GetId():match("^[^%-]+%-(.+)$")
+    local rawB = catB:GetId():match("^[^%-]+%-(.+)$")
+    assert_true(custom.categories[rawA].alwaysVisible ~= true, "A alwaysVisible remains not persisted as enabled")
+    assert_true(custom.categories[rawB].alwaysVisible ~= true, "B alwaysVisible remains not persisted as enabled")
 end)
 
 run("item move reassigns through hooks and respects protected target", function()

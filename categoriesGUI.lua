@@ -118,7 +118,14 @@ function AddonNS.createGUI()
     end
 
     containerFrame:SetScript("OnShow", function()
+        AddonNS.CategorShowAlways:SetShowAllCustomInCategoriesGui(true)
         list:RefreshList()
+        AddonNS.QueueContainerUpdateItemLayout();
+    end)
+
+    containerFrame:SetScript("OnHide", function()
+        AddonNS.CategorShowAlways:SetShowAllCustomInCategoriesGui(false)
+        AddonNS.QueueContainerUpdateItemLayout();
     end)
 
     -- new button

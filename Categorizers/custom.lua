@@ -10,6 +10,7 @@ local STORAGE_KEY = "userCategories"
 local STORAGE_SCHEMA_VERSION = 1
 
 local assignments = {}
+local showAllCustomCategoriesInCategoriesGui = false
 local categorizeProfile = {
     calls = 0,
     totalMs = 0,
@@ -447,7 +448,7 @@ function CustomCategorizer:GetAlwaysVisibleCategories()
     local list = {}
     local db = get_db()
     for rawId, data in pairs(db.categories) do
-        if data.alwaysVisible then
+        if showAllCustomCategoriesInCategoriesGui or data.alwaysVisible then
             table.insert(list, new_raw(rawId, data))
         end
     end
@@ -547,6 +548,13 @@ function AddonNS.CategorShowAlways:SetAlwaysShow(categoryOrId, show)
         return
     end
     CustomCategories:SetAlwaysVisible(rawId, show)
+end
+
+function AddonNS.CategorShowAlways:SetShowAllCustomInCategoriesGui(show)
+    if showAllCustomCategoriesInCategoriesGui ~= show then
+        showAllCustomCategoriesInCategoriesGui = show
+        fireUpdate()
+    end
 end
 
 function CustomCategories:GetCategories()
