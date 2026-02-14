@@ -343,6 +343,14 @@ local function storeCompiledQuery(rawId, queryString)
     compiledQueries[rawId] = evaluate(prepare(queryString))
 end
 
+function AddonNS.QueryCategories:SyncCompiledQuery(categoryOrId, queryString)
+    local rawId = resolveRawId(categoryOrId)
+    if not rawId then
+        return
+    end
+    storeCompiledQuery(rawId, queryString)
+end
+
 function AddonNS.QueryCategories:GetQuery(categoryOrId)
     local rawId = resolveRawId(categoryOrId)
     if not rawId then
@@ -357,8 +365,6 @@ function AddonNS.QueryCategories:SetQuery(categoryOrId, query)
         return
     end
     AddonNS.CustomCategories:SetQuery(rawId, query)
-    storeCompiledQuery(rawId, query)
-    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, AddonNS.UserCategorizer)
 end
 
 function AddonNS.QueryCategories:DeleteQuery(categoryOrId)
@@ -367,17 +373,12 @@ function AddonNS.QueryCategories:DeleteQuery(categoryOrId)
         return
     end
     AddonNS.CustomCategories:SetQuery(rawId, nil)
-    compiledQueries[rawId] = nil
-    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, AddonNS.UserCategorizer)
 end
 
 function AddonNS.QueryCategories:GetCategories()
     local categories = {}
-    local db = AddonNS.CategoryStore:GetCategorizerDb("cus")
-    for rawId, data in pairs(db.categories) do
-        if data.query then
-            categories[rawId] = true
-        end
+    for _, rawId in ipairs(AddonNS.CustomCategories:GetQueryCategoryRawIds()) do
+        categories[rawId] = true
     end
     return categories
 end
@@ -391,10 +392,10 @@ function AddonNS.QueryCategories:GetCompiled(categoryOrId)
 end
 
 AddonNS.Events:OnInitialize(function()
-    local db = AddonNS.CategoryStore:GetCategorizerDb("cus")
-    for rawId, data in pairs(db.categories) do
-        if data.query then
-            storeCompiledQuery(rawId, data.query)
+    for _, rawId in ipairs(AddonNS.CustomCategories:GetQueryCategoryRawIds()) do
+        local query = AddonNS.CustomCategories:GetQuery(rawId)
+        if query ~= "" then
+            storeCompiledQuery(rawId, query)
         end
     end
 end)

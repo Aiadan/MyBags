@@ -12,11 +12,10 @@ local addonEnv = {
   Categories = {
     RegisterCategorizer = function() end,
   },
-  CategoryStore = {
-    All = function()
-      return function() end
-    end,
+  CustomCategories = {
+    GetQuery = function() return "" end,
     SetQuery = function() end,
+    GetQueryCategoryRawIds = function() return {} end,
   },
   printDebug = function() end,
 }

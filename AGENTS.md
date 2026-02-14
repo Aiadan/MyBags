@@ -88,7 +88,10 @@ This policy also applies to generic or reusable components such as utility funct
 ## Planning and documentation
 
 - Store plans/decisions you create under `.agent/` as Markdown files.
-- Modify `TODOs.md` only when resolving an existing item; prefix completed items with a checkmark icon as appropriate.
+- Update `TODOs.md` for every completed code change.
+- Before closing any task, check whether the change maps to an existing `TODOs.md` item:
+  - if it does, update that item's status/details and prefix completed entries with a checkmark icon as appropriate.
+  - if it does not, add a short new entry describing the completed change in the appropriate section.
 - Modify `README.md` only when explicitly asked, or when resolving a `TODOs.md` item that requires it.
 
 ## Repository rules

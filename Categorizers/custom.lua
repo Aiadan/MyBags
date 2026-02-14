@@ -314,12 +314,17 @@ function CustomCategories:SetAlwaysVisible(categoryOrId, flag)
 end
 
 function CustomCategories:SetQuery(rawId, query)
+    local resolvedRawId = resolve_raw_id(rawId)
+    if not resolvedRawId then
+        return
+    end
     local db = get_db()
-    local entry = db.categories[rawId]
+    local entry = db.categories[resolvedRawId]
     if not entry then
         return
     end
     entry.query = (query and query ~= "") and query or nil
+    AddonNS.QueryCategories:SyncCompiledQuery(resolvedRawId, entry.query)
     fireUpdate()
 end
 
@@ -360,11 +365,25 @@ function CustomCategories:AssignToCategoryByName(name, itemID)
 end
 
 function CustomCategories:GetQuery(rawId)
-    local entry = get_db().categories[rawId]
+    local resolvedRawId = resolve_raw_id(rawId)
+    if not resolvedRawId then
+        return ""
+    end
+    local entry = get_db().categories[resolvedRawId]
     if not entry then
         return ""
     end
     return entry.query or ""
+end
+
+function CustomCategories:GetQueryCategoryRawIds()
+    local ids = {}
+    for rawId, data in pairs(get_db().categories) do
+        if data.query and data.query ~= "" then
+            table.insert(ids, rawId)
+        end
+    end
+    return ids
 end
 
 AddonNS.Events:OnInitialize(function()

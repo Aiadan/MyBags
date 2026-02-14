@@ -234,7 +234,7 @@ function AddonNS.createGUI()
     saveQueryButton:SetScript("OnClick", function(self, button)
         local categoryId = getSelectedCategoryId()
         if categoryId then
-            AddonNS.QueryCategories:SetQuery(categoryId, containerFrame.textScrollFrame.EditBox:GetText())
+            AddonNS.CustomCategories:SetQuery(categoryId, containerFrame.textScrollFrame.EditBox:GetText())
             AddonNS.QueueContainerUpdateItemLayout();
         end
     end)
@@ -252,7 +252,7 @@ function AddonNS.createGUI()
             alwaysShowCheckbox:SetChecked(AddonNS.CategorShowAlways:ShouldAlwaysShow(category))
             deleteButton:Enable()
             saveQueryButton:Enable()
-            containerFrame.textScrollFrame.EditBox:SetText(AddonNS.QueryCategories:GetQuery(category))
+            containerFrame.textScrollFrame.EditBox:SetText(AddonNS.CustomCategories:GetQuery(category))
         else
             alwaysShowCheckbox:SetChecked(false)
             alwaysShowCheckbox:Disable()

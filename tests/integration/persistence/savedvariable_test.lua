@@ -185,4 +185,18 @@ run("clearing inputs removes stored data", function()
     assert_true(entry.alwaysVisible == nil, "always visible flag cleared")
 end)
 
+run("custom category query updates compiled cache via direct API", function()
+    local ctx = harness.new()
+    local category = ctx.AddonNS.CustomCategories:NewCategory("Compiled")
+
+    ctx.AddonNS.CustomCategories:SetQuery(category, "ilvl >= 400")
+    local compiled = ctx.AddonNS.QueryCategories:GetCompiled(category)
+    assert_true(type(compiled) == "function", "compiled query exists after direct set")
+    assert_true(compiled({ ilvl = 420 }) == true, "compiled query matches satisfying payload")
+    assert_true(compiled({ ilvl = 399 }) == false, "compiled query rejects non-satisfying payload")
+
+    ctx.AddonNS.CustomCategories:SetQuery(category, "")
+    assert_true(ctx.AddonNS.QueryCategories:GetCompiled(category) == nil, "compiled query removed after clearing")
+end)
+
 print("All integration scenarios completed.")
