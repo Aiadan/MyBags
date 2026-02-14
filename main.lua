@@ -3,6 +3,15 @@ local isCollapsed = AddonNS.Collapsed.isCollapsed;
 
 local ITEM_SPACING = AddonNS.Const.ITEM_SPACING;
 AddonNS.itemButtonPlaceholder = {}
+local refreshProfile = nil
+
+local function profilingEnabled()
+    return AddonNS.Profiling and AddonNS.Profiling.enabled
+end
+
+local function profileNowMs()
+    return debugprofilestop()
+end
 
 local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
@@ -102,7 +111,21 @@ local function newIterator(container, index)
     local arrangedItems = container.MyBags.arrangedItems;
     local positionsInBags = container.MyBags.positionsInBags;
     local index, itemButton = it(container, index);
-    if (index == 1) then AddonNS.emptyItemButton = nil end -- reset itemButom
+    if (index == 1) then
+        AddonNS.emptyItemButton = nil -- reset itemButom
+        if profilingEnabled() then
+            refreshProfile = {
+                startedAt = profileNowMs(),
+                itemsSeen = 0,
+                categorizeMs = 0,
+                arrangeMs = 0,
+                placeMs = 0,
+                totalMs = 0,
+            }
+        else
+            refreshProfile = nil
+        end
+    end
     if (itemButton) then
         -- [[ checking hooks]]
         if (not itemButton.myBagAddonHooked) then
@@ -121,7 +144,13 @@ local function newIterator(container, index)
         local info = C_Container.GetContainerItemInfo(itemButton:GetBagID(), itemButton:GetID());
         itemButton.ItemCategory = nil;
         if (info and not info.isFiltered) then
+            itemButton._myBagsItemId = info.itemID
+            local categorizeStartedAt = refreshProfile and profileNowMs() or nil
             itemButton.ItemCategory = AddonNS.Categories:Categorize(info.itemID, itemButton);
+            if refreshProfile then
+                refreshProfile.itemsSeen = refreshProfile.itemsSeen + 1
+                refreshProfile.categorizeMs = refreshProfile.categorizeMs + (profileNowMs() - categorizeStartedAt)
+            end
             arrangedItems[itemButton.ItemCategory] = arrangedItems[itemButton.ItemCategory] or
                 {}
 
@@ -229,13 +258,30 @@ local function newIterator(container, index)
 
         -- Calculate positions for each column
         local categoryAssignments = {}
+        local arrangeStartedAt = refreshProfile and profileNowMs() or nil
         categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems) -- todo: this object is quite weird. Why is it a local global used among two functions :/
+        if refreshProfile then
+            refreshProfile.arrangeMs = refreshProfile.arrangeMs + (profileNowMs() - arrangeStartedAt)
+        end
 
 
         local columnSize = itemSize * AddonNS.Const.ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING;
+        local placeStartedAt = refreshProfile and profileNowMs() or nil
         for colIndex, categoryObjs in ipairs(categoryAssignments) do
             local columnStartX = (colIndex - 1) * columnSize
             placeItemsInGrid(categoryObjs, columnStartX)
+        end
+        if refreshProfile then
+            refreshProfile.placeMs = refreshProfile.placeMs + (profileNowMs() - placeStartedAt)
+            refreshProfile.totalMs = profileNowMs() - refreshProfile.startedAt
+            AddonNS.printDebug(
+                "PROFILE bag refresh",
+                "items=" .. refreshProfile.itemsSeen,
+                string.format("categorize=%.2fms", refreshProfile.categorizeMs),
+                string.format("arrange=%.2fms", refreshProfile.arrangeMs),
+                string.format("place=%.2fms", refreshProfile.placeMs),
+                string.format("total=%.2fms", refreshProfile.totalMs)
+            )
         end
     end
     return index, itemButton;

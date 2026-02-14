@@ -17,6 +17,14 @@ local runtimeColumnsLoaded = false
 
 local categoryAssignments
 
+local function profilingEnabled()
+    return AddonNS.Profiling and AddonNS.Profiling.enabled
+end
+
+local function profileNowMs()
+    return debugprofilestop()
+end
+
 local function ensureRuntimeColumns()
     if runtimeColumnsLoaded then
         return
@@ -64,14 +72,24 @@ local function categoryId(input)
     return nil
 end
 
-local function addCategoryToColumn(categoryAssignmentsForColumn, category, items)
+local function addCategoryToColumn(categoryAssignmentsForColumn, category, items, profile)
+    local startedAt = profile and profileNowMs() or nil
     local itemCount = #items
     local displayItems = items
     if isCollapsed(category) then
         displayItems = { AddonNS.itemButtonPlaceholder }
     end
+    local sortStartedAt = profile and profileNowMs() or nil
     AddonNS.ItemsOrder:Sort(displayItems)
+    if profile then
+        profile.sortMs = profile.sortMs + (profileNowMs() - sortStartedAt)
+    end
     table.insert(categoryAssignmentsForColumn, { category = category, items = displayItems, itemsCount = itemCount })
+    if profile then
+        profile.addCategoryCalls = profile.addCategoryCalls + 1
+        profile.addCategoryMs = profile.addCategoryMs + (profileNowMs() - startedAt)
+        profile.itemsTotal = profile.itemsTotal + itemCount
+    end
 end
 
 function AddonNS.Categories:GetLastCategoryInColumn(columnNo)
@@ -99,35 +117,70 @@ local function appendToLayout(columnIndex, categoryIdValue)
 end
 
 function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
+    local profile = nil
+    if profilingEnabled() then
+        profile = {
+            startedAt = profileNowMs(),
+            constantsMs = 0,
+            ensureConstantsMs = 0,
+            layoutMatchMs = 0,
+            unmatchedBuildMs = 0,
+            unmatchedSortMs = 0,
+            unmatchedInsertMs = 0,
+            sortMs = 0,
+            addCategoryMs = 0,
+            addCategoryCalls = 0,
+            itemsTotal = 0,
+        }
+    end
+
     ensureRuntimeColumns()
+    local constantsStartedAt = profile and profileNowMs() or nil
     local constantCategories = AddonNS.Categories:GetConstantCategories()
+    if profile then
+        profile.constantsMs = profileNowMs() - constantsStartedAt
+    end
+    local ensureConstantsStartedAt = profile and profileNowMs() or nil
     for _, category in ipairs(constantCategories) do
         if not arrangedItems[category] then
             arrangedItems[category] = { AddonNS.itemButtonPlaceholder }
         end
     end
+    if profile then
+        profile.ensureConstantsMs = profileNowMs() - ensureConstantsStartedAt
+    end
 
     categoryAssignments = { {}, {}, {} }
     local known = {}
 
+    local layoutMatchStartedAt = profile and profileNowMs() or nil
     for columnIndex = 1, NUM_COLUMNS do
         local assignmentsForColumn = categoryAssignments[columnIndex]
         local ids = runtimeColumns[columnIndex]
         for _, id in ipairs(ids) do
             local category = AddonNS.CategoryStore:Get(id)
             if category and arrangedItems[category] then
-                addCategoryToColumn(assignmentsForColumn, category, arrangedItems[category])
+                addCategoryToColumn(assignmentsForColumn, category, arrangedItems[category], profile)
                 known[category] = true
             end
         end
     end
+    if profile then
+        profile.layoutMatchMs = profileNowMs() - layoutMatchStartedAt
+    end
 
     local unmatched = {}
+    local unmatchedBuildStartedAt = profile and profileNowMs() or nil
     for category in pairs(arrangedItems) do
         if not known[category] then
             table.insert(unmatched, category)
         end
     end
+    if profile then
+        profile.unmatchedBuildMs = profileNowMs() - unmatchedBuildStartedAt
+    end
+
+    local unmatchedSortStartedAt = profile and profileNowMs() or nil
     table.sort(unmatched, function(left, right)
         local leftName = left:GetName()
         local rightName = right:GetName()
@@ -139,12 +192,34 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         end
         return leftName < rightName
     end)
+    if profile then
+        profile.unmatchedSortMs = profileNowMs() - unmatchedSortStartedAt
+    end
 
     local targetColumn = 1
+    local unmatchedInsertStartedAt = profile and profileNowMs() or nil
     for _, category in ipairs(unmatched) do
-        addCategoryToColumn(categoryAssignments[targetColumn], category, arrangedItems[category] or {})
+        addCategoryToColumn(categoryAssignments[targetColumn], category, arrangedItems[category] or {}, profile)
         appendToLayout(targetColumn, category:GetId())
         targetColumn = targetColumn % NUM_COLUMNS + 1
+    end
+    if profile then
+        profile.unmatchedInsertMs = profileNowMs() - unmatchedInsertStartedAt
+        local totalMs = profileNowMs() - profile.startedAt
+        AddonNS.printDebug(
+            "PROFILE ArrangeCategoriesIntoColumns",
+            string.format("constants=%.2fms", profile.constantsMs),
+            string.format("ensureConstants=%.2fms", profile.ensureConstantsMs),
+            string.format("layoutMatch=%.2fms", profile.layoutMatchMs),
+            string.format("unmatchedBuild=%.2fms", profile.unmatchedBuildMs),
+            string.format("unmatchedSort=%.2fms", profile.unmatchedSortMs),
+            string.format("unmatchedInsert=%.2fms", profile.unmatchedInsertMs),
+            string.format("sortOnly=%.2fms", profile.sortMs),
+            string.format("addCategory=%.2fms", profile.addCategoryMs),
+            "addCalls=" .. profile.addCategoryCalls,
+            "items=" .. profile.itemsTotal,
+            string.format("total=%.2fms", totalMs)
+        )
     end
 
     return categoryAssignments

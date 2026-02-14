@@ -10,6 +10,21 @@ local STORAGE_KEY = "userCategories"
 local STORAGE_SCHEMA_VERSION = 1
 
 local assignments = {}
+local categorizeProfile = {
+    calls = 0,
+    totalMs = 0,
+    infoMs = 0,
+    queryMs = 0,
+    maxMs = 0,
+}
+
+local function profilingEnabled()
+    return AddonNS.Profiling and AddonNS.Profiling.enabled
+end
+
+local function profileNowMs()
+    return debugprofilestop()
+end
 
 local function normalize_array(source)
     local out = {}
@@ -440,24 +455,66 @@ function CustomCategorizer:GetAlwaysVisibleCategories()
 end
 
 function CustomCategorizer:Categorize(itemID, itemButton)
+    local startedAt = profilingEnabled() and profileNowMs() or nil
     local assignedId = assignments[itemID]
     if assignedId then
+        if startedAt then
+            local elapsed = profileNowMs() - startedAt
+            categorizeProfile.calls = categorizeProfile.calls + 1
+            categorizeProfile.totalMs = categorizeProfile.totalMs + elapsed
+        end
         return find_by_id(assignedId)
     end
 
     -- Query-based matching remains internal to custom categorizer.
+    local infoStartedAt = startedAt and profileNowMs() or nil
     local itemInfo, containerInfo = collectItemInfo(itemID, itemButton)
+    if infoStartedAt then
+        categorizeProfile.infoMs = categorizeProfile.infoMs + (profileNowMs() - infoStartedAt)
+    end
     if not itemInfo then
+        if startedAt then
+            local elapsed = profileNowMs() - startedAt
+            categorizeProfile.calls = categorizeProfile.calls + 1
+            categorizeProfile.totalMs = categorizeProfile.totalMs + elapsed
+        end
         return nil
     end
 
     local matches = {}
+    local queryStartedAt = startedAt and profileNowMs() or nil
     for rawId, data in pairs(get_db().categories) do
         if data.query then
             local evaluator = AddonNS.QueryCategories:GetCompiled(rawId)
             if evaluator and evaluator(itemInfo) then
                 table.insert(matches, new_raw(rawId, data))
             end
+        end
+    end
+    if queryStartedAt then
+        categorizeProfile.queryMs = categorizeProfile.queryMs + (profileNowMs() - queryStartedAt)
+    end
+    if startedAt then
+        local elapsed = profileNowMs() - startedAt
+        categorizeProfile.calls = categorizeProfile.calls + 1
+        categorizeProfile.totalMs = categorizeProfile.totalMs + elapsed
+        if elapsed > categorizeProfile.maxMs then
+            categorizeProfile.maxMs = elapsed
+        end
+        if categorizeProfile.calls >= 100 then
+            AddonNS.printDebug(
+                "PROFILE CustomCategorizer:Categorize",
+                "calls=" .. categorizeProfile.calls,
+                string.format("avg=%.3fms", categorizeProfile.totalMs / categorizeProfile.calls),
+                string.format("infoAvg=%.3fms", categorizeProfile.infoMs / categorizeProfile.calls),
+                string.format("queryAvg=%.3fms", categorizeProfile.queryMs / categorizeProfile.calls),
+                string.format("max=%.3fms", categorizeProfile.maxMs)
+            )
+            categorizeProfile.calls = 0
+            categorizeProfile.totalMs = 0
+            categorizeProfile.infoMs = 0
+            categorizeProfile.queryMs = 0
+            categorizeProfile.maxMs = 0
         end
     end
     if #matches > 0 then

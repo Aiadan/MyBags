@@ -166,6 +166,13 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * remove defensive silent-guard anti-patterns (e.g. `if not x then return end` in internal domain flow) and replace with fail-fast preconditions so bugs are surfaced instead of hidden.
 * normalize naming convention across codebase: standalone/local functions to lower camel case (e.g. `doSomething`), and table methods defined with `:` to UpperCamelCase (e.g. `SomeTable:DoSomething()`).
 * ✅ added explicit fail-fast load-order guard in `categoriesColumnAssignment.lua` so it errors clearly if `categories.lua` has not initialized `AddonNS.Categories` yet.
+* ✅ added opt-in performance probes for bag-open hotspots (main iteration/categorization/layout, custom categorizer query path, items sort path) plus debug toggles to enable/disable profiling in-game.
+* ✅ added detailed profiling breakdown inside `ArrangeCategoriesIntoColumns` to identify exact time split (constants/layout match/unmatched build-sort-insert/sort-only/add-category totals).
+* ✅ items sort now uses fail-fast cached item ids from main iterator (`itemButton._myBagsItemId`) and no longer calls `GetContainerItemInfo` inside `ItemsOrder:Sort`.
+* ✅ added deeper `ItemsOrder:Sort` profiling split (map/sort/append) and tiny-list fast paths (`<=1`, `==2`) to reduce sort overhead.
+* ✅ removed unnecessary `order_map_changed` invalidation in `ItemsOrder:Sort`; order-map rebuild now happens only after real order mutations.
+* ✅ added agent skill `.agent/skills/blizzard-code-explorer` to guide Blizzard UI source lookup (path resolution, targeted `rg` patterns, source-cited output contract).
+* ✅ updated `.agent/skills/blizzard-code-explorer` to default to `/mnt/c/Program Files (x86)/World of Warcraft/_retail_/BlizzardInterfaceCode`.
 
 ## Recently added ideas for reactoring witth ai
 
@@ -182,6 +189,12 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 ### TODO
 
+* [TODO] improve categorization performance path (`CustomCategorizer:Categorize`) after sort/layout fixes.
+  * use profiling before each optimization pass:
+  * `/run GLOBAL_MyBagsEnableProfiling()`
+  * reproduce with bag open/refresh and review `PROFILE ...` lines in chat
+  * `/run GLOBAL_MyBagsDisableProfiling()`
+  * target next split: manual-assignment checks vs query evaluation vs category-iteration overhead.
 * [PARTIAL] Code overall should try to as much as possible stop using ids or names to retrieve information about a category and try to as much as possible use references to categories.
   * ✅ completed: custom category GUI drag/drop no longer uses `GetCategoryByName` fallback lookup.
   * ✅ completed: category column assignment now hydrates runtime layout state on load and serializes back on logout.
