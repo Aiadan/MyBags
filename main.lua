@@ -38,18 +38,66 @@ end
 
 AddonNS.QueueContainerUpdateItemLayout = queueContainerUpdateItemLayout;
 
-local function addCategoriesToTooltip(tooltip)
-    local owner = tooltip:GetOwner();
-    if not owner or not owner.ItemCategories or #owner.ItemCategories == 0 then return end
-    GameTooltip_AddBlankLineToTooltip(tooltip);
-    local assigned = owner.ItemCategories[1];
-
-    if #owner.ItemCategories > 0 then
-        GameTooltip_AddNormalLine(tooltip, "MyBags matched categories: ");
-        for i = 1, #owner.ItemCategories do
-            GameTooltip_AddNormalLine(tooltip, i .. ". " .. owner.ItemCategories[i].name);
-        end
+local function resolveTooltipItemId(owner)
+    if owner._myBagsItemId then
+        return owner._myBagsItemId
     end
+    local bagID = owner.GetBagID and owner:GetBagID() or nil
+    local slotID = owner.GetID and owner:GetID() or nil
+    if bagID == nil or slotID == nil then
+        return nil
+    end
+    local info = C_Container.GetContainerItemInfo(bagID, slotID)
+    return info and info.itemID or nil
+end
+
+local function formatCategoryReason(itemID, category)
+    local categoryId = category:GetId()
+    if not categoryId:match("^cus%-") then
+        return nil
+    end
+    if AddonNS.CustomCategories:IsManuallyAssignedToCategory(itemID, category) then
+        return "Manual assignment"
+    end
+    return "Priority: " .. AddonNS.CustomCategories:GetEffectivePriority(category)
+end
+
+local MYBAGS_TOOLTIP_TITLE = "|cffff2459My|r Bags"
+local MYBAGS_TOOLTIP_HINT_COLOR_PREFIX = "|cff72f272"
+
+local function addCategoriesToTooltip(tooltip)
+    local owner = tooltip:GetOwner()
+    if not owner then
+        return
+    end
+    local itemID = resolveTooltipItemId(owner)
+    if not itemID then
+        return
+    end
+    GameTooltip_AddBlankLineToTooltip(tooltip)
+    if not IsShiftKeyDown() then
+        GameTooltip_AddNormalLine(tooltip,  MYBAGS_TOOLTIP_TITLE .. MYBAGS_TOOLTIP_HINT_COLOR_PREFIX ..
+            " - Hold Shift to show matched categories|r")
+        GameTooltip_AddBlankLineToTooltip(tooltip)
+        return
+    end
+
+    local matches = AddonNS.Categories:GetMatches(itemID, owner)
+    if #matches == 0 then
+        return
+    end
+
+    GameTooltip_AddNormalLine(tooltip, MYBAGS_TOOLTIP_TITLE .. MYBAGS_TOOLTIP_HINT_COLOR_PREFIX .." matched categories:|r")
+    for i = 1, #matches do
+        local category = matches[i]
+        local reason = formatCategoryReason(itemID, category)
+        local line = i .. ". " .. category:GetName()
+        if reason then
+            line = line .. " (" .. reason .. ")"
+        end
+        GameTooltip_AddNormalLine(tooltip, line)
+    end
+    GameTooltip_AddBlankLineToTooltip(tooltip)
 end
 
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, addCategoriesToTooltip)

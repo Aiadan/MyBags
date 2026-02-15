@@ -11,7 +11,7 @@ function AddonNS.createGUI()
     local COLOR_COG_NORMAL = { 0.78, 0.78, 0.78, 1 }
     local COLOR_COG_EDIT = { 1, 0.85, 0.2, 1 }
 
-    local containerFrame = GS:CreateButtonFrame(addonName, 360, 580, true);
+    local containerFrame = GS:CreateButtonFrame(addonName, 440, 620, true);
     containerFrame:SetPoint("TOPRIGHT", container, "TOPLEFT", 0, -30);
     containerFrame:EnableMouse(true)
     containerFrame:Hide();
@@ -85,7 +85,7 @@ function AddonNS.createGUI()
     AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, refreshEditModeVisuals)
     refreshEditModeVisuals()
 
-    containerFrame.Inset:SetPoint("BOTTOMRIGHT", -6, 106)
+    containerFrame.Inset:SetPoint("BOTTOMRIGHT", -6, 126)
     containerFrame.categoriesContainer = CreateFrame("Frame", addonName .. "-reagentsContainer", containerFrame)
     local categoriesContainter = containerFrame.categoriesContainer;
     categoriesContainter:SetPoint("TOPLEFT", 16, -65)
@@ -178,10 +178,17 @@ function AddonNS.createGUI()
             })
         end
         list:UpdateView()
+        return entries
     end
 
     containerFrame:SetScript("OnShow", function()
-        list:RefreshList()
+        local entries = list:RefreshList()
+        if lastSelectedCategoryId then
+            selectCategoryById(lastSelectedCategoryId)
+        end
+        if not getSelectedRow() and entries[1] then
+            selectCategory(entries[1])
+        end
         AddonNS.QueueContainerUpdateItemLayout();
     end)
 
@@ -272,9 +279,22 @@ function AddonNS.createGUI()
 
 
     --- [[ Query label ]]
+    local priorityLabel = containerFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal");
+    priorityLabel:SetText("Priority:");
+    priorityLabel:SetPoint("TOPLEFT", newButton, "BOTTOMLEFT", 4, -5);
+
+    local priorityEditBox = CreateFrame("EditBox", nil, containerFrame, "InputBoxTemplate")
+    priorityEditBox:SetAutoFocus(false)
+    priorityEditBox:SetNumeric(true)
+    priorityEditBox:SetMaxLetters(9)
+    priorityEditBox:SetSize(80, 20)
+    priorityEditBox:SetPoint("LEFT", priorityLabel, "RIGHT", 6, 0)
+    containerFrame.priorityEditBox = priorityEditBox
+
+    --- [[ Query label ]]
     local queryLabel = containerFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal");
     queryLabel:SetText("Query:");
-    queryLabel:SetPoint("TOPLEFT", newButton, "BOTTOMLEFT", 4, -5);
+    queryLabel:SetPoint("TOPLEFT", priorityLabel, "BOTTOMLEFT", 0, -6);
     containerFrame.queryLabel = queryLabel
 
 
@@ -317,11 +337,45 @@ function AddonNS.createGUI()
         end
     end)
 
+    local savePriorityButton = CreateFrame("Button", nil, containerFrame, "UIPanelButtonTemplate")
+    savePriorityButton:SetPoint("LEFT", priorityEditBox, "RIGHT", 8, 0)
+    savePriorityButton:SetSize(100, 20)
+    savePriorityButton:SetText("Save Priority")
+    local function savePrioritySelection()
+        local categoryId = getSelectedCategoryId()
+        if not categoryId then
+            return
+        end
+        local rawText = containerFrame.priorityEditBox:GetText()
+        if rawText == "" then
+            AddonNS.CustomCategories:SetPriority(categoryId, nil)
+        else
+            AddonNS.CustomCategories:SetPriority(categoryId, tonumber(rawText))
+        end
+        list:RefreshList()
+        selectCategoryById(categoryId)
+        AddonNS.QueueContainerUpdateItemLayout();
+    end
+    savePriorityButton:SetScript("OnClick", function(self, button)
+        savePrioritySelection()
+    end)
+    priorityEditBox:SetScript("OnEditFocusLost", function(self)
+        if getSelectedCategoryId() then
+            savePrioritySelection()
+        end
+    end)
+    priorityEditBox:SetScript("OnEnterPressed", function(self)
+        savePrioritySelection()
+        self:ClearFocus()
+    end)
+
 
     renameButton:Disable()
     deleteButton:Disable()
     alwaysShowCheckbox:Disable()
     saveQueryButton:Disable()
+    savePriorityButton:Disable()
+    priorityEditBox:Disable()
     list:RegisterCallback("SelectionChanged", function()
         local category = getSelectedCategory()
         local selectedCategoryId = category and category.id or nil
@@ -331,14 +385,20 @@ function AddonNS.createGUI()
             alwaysShowCheckbox:SetChecked(AddonNS.CategorShowAlways:ShouldAlwaysShow(category))
             deleteButton:Enable()
             saveQueryButton:Enable()
+            savePriorityButton:Enable()
+            priorityEditBox:Enable()
             containerFrame.textScrollFrame.EditBox:SetText(AddonNS.CustomCategories:GetQuery(category))
+            containerFrame.priorityEditBox:SetText(tostring(AddonNS.CustomCategories:GetEffectivePriority(category)))
         else
             alwaysShowCheckbox:SetChecked(false)
             alwaysShowCheckbox:Disable()
             renameButton:Disable()
             deleteButton:Disable()
             saveQueryButton:Disable()
+            savePriorityButton:Disable()
+            priorityEditBox:Disable()
             containerFrame.textScrollFrame.EditBox:SetText("")
+            containerFrame.priorityEditBox:SetText("")
         end
         if lastSelectedCategoryId ~= selectedCategoryId then
             lastSelectedCategoryId = selectedCategoryId
@@ -430,7 +490,10 @@ function AddonNS.createGUI()
             alwaysShowCheckbox:SetChecked(false)
             alwaysShowCheckbox:Disable()
             saveQueryButton:Disable()
+            savePriorityButton:Disable()
+            priorityEditBox:Disable()
             containerFrame.textScrollFrame.EditBox:SetText("")
+            containerFrame.priorityEditBox:SetText("")
         end,
         enterClicksFirstButton = true,
         timeout = 0,

@@ -36,6 +36,55 @@ local function normalize_array(source)
     return out
 end
 
+local function default_priority_for_raw_id(rawId)
+    local numeric = tonumber(rawId)
+    if not numeric then
+        error("Custom category raw id must be numeric for priority: " .. tostring(rawId))
+    end
+    return math.floor(numeric)
+end
+
+local function normalize_priority_from_storage(rawId, priority)
+    if priority == nil then
+        return nil
+    end
+    local numeric = tonumber(priority)
+    if not numeric then
+        return nil
+    end
+    local normalized = math.floor(numeric)
+    if normalized == default_priority_for_raw_id(rawId) then
+        return nil
+    end
+    return normalized
+end
+
+local function normalize_priority_override(rawId, priority)
+    if priority == nil then
+        return nil
+    end
+    local numeric = tonumber(priority)
+    if not numeric then
+        error("Custom category priority must be numeric for raw id: " .. tostring(rawId))
+    end
+    local normalized = math.floor(numeric)
+    if normalized == default_priority_for_raw_id(rawId) then
+        return nil
+    end
+    return normalized
+end
+
+local function effective_priority_for_raw_id(storage, rawId)
+    local entry = storage.categories[rawId]
+    if not entry then
+        return default_priority_for_raw_id(rawId)
+    end
+    if entry.priority ~= nil then
+        return entry.priority
+    end
+    return default_priority_for_raw_id(rawId)
+end
+
 local function strip_raw_id_prefix(rawOrWrappedId)
     if not rawOrWrappedId then
         return nil
@@ -73,6 +122,7 @@ local function normalize_storage(storage)
             protected = entry.protected == true or nil,
             alwaysVisible = entry.alwaysVisible == true or nil,
             query = (entry.query and entry.query ~= "") and entry.query or nil,
+            priority = normalize_priority_from_storage(normalizedRawId, entry.priority),
             items = normalize_array(entry.items),
         }
         local numeric = tonumber(normalizedRawId)
@@ -124,6 +174,7 @@ local function migrate_from_current_category_store_shape(db, storage)
             protected = data.protected == true or nil,
             alwaysVisible = data.alwaysVisible == true or nil,
             query = (data.query and data.query ~= "") and data.query or nil,
+            priority = normalize_priority_from_storage(tostring(rawId), data.priority),
             items = normalize_array(data.items),
         }
     end
@@ -145,6 +196,7 @@ local function migrate_from_old_db_shape(db, storage)
                 protected = sourceRecord.protected == true or nil,
                 alwaysVisible = sourceRecord.alwaysVisible == true or nil,
                 query = (sourceRecord.query and sourceRecord.query ~= "") and sourceRecord.query or nil,
+                priority = normalize_priority_from_storage(rawId, sourceRecord.priority),
                 items = normalize_array(sourceRecord.items),
             }
         end
@@ -496,15 +548,34 @@ function CustomCategorizer:Categorize(itemID, itemButton)
         return nil
     end
 
+    local db = get_db()
     local matches = {}
+    local matchedRawIds = {}
     local queryStartedAt = startedAt and profileNowMs() or nil
-    for rawId, data in pairs(get_db().categories) do
+    for rawId, data in pairs(db.categories) do
         if data.query then
             local evaluator = AddonNS.QueryCategories:GetCompiled(rawId)
             if evaluator and evaluator(itemInfo) then
-                table.insert(matches, new_raw(rawId, data))
+                table.insert(matchedRawIds, rawId)
             end
         end
+    end
+    table.sort(matchedRawIds, function(leftRawId, rightRawId)
+        local leftPriority = effective_priority_for_raw_id(db, leftRawId)
+        local rightPriority = effective_priority_for_raw_id(db, rightRawId)
+        if leftPriority ~= rightPriority then
+            return leftPriority > rightPriority
+        end
+        local leftNumeric = tonumber(leftRawId)
+        local rightNumeric = tonumber(rightRawId)
+        if leftNumeric and rightNumeric and leftNumeric ~= rightNumeric then
+            return leftNumeric > rightNumeric
+        end
+        return tostring(leftRawId) > tostring(rightRawId)
+    end)
+    for index = 1, #matchedRawIds do
+        local rawId = matchedRawIds[index]
+        table.insert(matches, new_raw(rawId, db.categories[rawId]))
     end
     if queryStartedAt then
         categorizeProfile.queryMs = categorizeProfile.queryMs + (profileNowMs() - queryStartedAt)
@@ -646,6 +717,20 @@ function CustomCategories:SetQuery(rawId, query)
     fireUpdate()
 end
 
+function CustomCategories:SetPriority(categoryOrId, priorityOrNil)
+    local resolvedRawId = resolve_raw_id(categoryOrId)
+    if not resolvedRawId then
+        return
+    end
+    local db = get_db()
+    local entry = db.categories[resolvedRawId]
+    if not entry then
+        return
+    end
+    entry.priority = normalize_priority_override(resolvedRawId, priorityOrNil)
+    fireUpdate()
+end
+
 function CustomCategories:AssignToCategory(categoryOrId, itemID)
     if not itemID then
         return
@@ -692,6 +777,38 @@ function CustomCategories:GetQuery(rawId)
         return ""
     end
     return entry.query or ""
+end
+
+function CustomCategories:GetStoredPriority(categoryOrId)
+    local resolvedRawId = resolve_raw_id(categoryOrId)
+    if not resolvedRawId then
+        return nil
+    end
+    local entry = get_db().categories[resolvedRawId]
+    if not entry then
+        return nil
+    end
+    return entry.priority
+end
+
+function CustomCategories:GetEffectivePriority(categoryOrId)
+    local resolvedRawId = resolve_raw_id(categoryOrId)
+    if not resolvedRawId then
+        return nil
+    end
+    local db = get_db()
+    if not db.categories[resolvedRawId] then
+        return nil
+    end
+    return effective_priority_for_raw_id(db, resolvedRawId)
+end
+
+function CustomCategories:IsManuallyAssignedToCategory(itemId, categoryOrId)
+    local resolvedRawId = resolve_raw_id(categoryOrId)
+    if not resolvedRawId then
+        return false
+    end
+    return assignments[itemId] == resolvedRawId
 end
 
 function CustomCategories:GetQueryCategoryRawIds()

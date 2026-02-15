@@ -74,7 +74,7 @@ function AddonNS.Categories:GetConstantCategories()
     return constant
 end
 
-function AddonNS.Categories:Categorize(itemID, itemButton)
+function AddonNS.Categories:GetMatches(itemID, itemButton)
     local matches = {}
     local seen = {}
     for _, record in categorizers:iterate() do
@@ -82,9 +82,11 @@ function AddonNS.Categories:Categorize(itemID, itemButton)
         local result = record.categorizer:Categorize(itemID, itemButton)
         wrap_raw_result(record.id, result, matches, seen)
     end
-    if itemButton then
-        itemButton.ItemCategories = matches
-    end
+    return matches
+end
+
+function AddonNS.Categories:Categorize(itemID, itemButton)
+    local matches = self:GetMatches(itemID, itemButton)
     if matches[1] then
         return matches[1]
     end

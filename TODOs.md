@@ -148,7 +148,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 * create some nice default categories based on what I end up with as my query categories in TWW
 * add colours to categories
-* query categorizer should check categories in the order of alphabet till category ordering is introduced
+* ✅ query categorizer now uses explicit custom-category priority scores (defaulting to raw numeric category id), with deterministic tie-breaks and GUI editing.
+* ✅ item tooltip now supports MyBags match diagnostics with Shift-gated category list and reason tags (manual assignment vs query priority).
 * unassigned group should always be visible
 * add an ability to move categories on the list, so that categorization would not be based on the order of (well, currently random) alhabet
 

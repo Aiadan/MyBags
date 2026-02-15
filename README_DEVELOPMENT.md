@@ -30,3 +30,9 @@ Disable profiling in-game:
 - `/run GLOBAL_MyBagsDisableProfiling()`
 
 Use it only during diagnostics. Keep profiling disabled during normal play.
+
+## Custom Query Priority Notes
+
+- Query-based matching inside custom categories is ordered by explicit per-category priority (higher score first).
+- If no explicit priority is stored for a custom category, runtime default priority is the numeric raw category id.
+- Priority ties are resolved deterministically by higher numeric raw id first, then raw id string order.

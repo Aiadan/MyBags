@@ -117,6 +117,10 @@ This policy also applies to generic or reusable components such as utility funct
   - if it does, update that item's status/details and prefix completed entries with a checkmark icon as appropriate.
   - if it does not, add a short new entry describing the completed change in the appropriate section.
 - Modify `README.md` only when explicitly asked, or when resolving a `TODOs.md` item that requires it.
+- `README.md` is user-facing documentation. Keep language user-oriented and avoid internal implementation details there.
+- If a task introduces a user-facing feature, update `README.md` with a short description of that feature.
+- Do not update `README.md` for minor internal behavior tweaks/refactors that do not materially change user-visible functionality.
+- Put technical/implementation details (for example defaults, storage shapes, tie-break rules) in `README_DEVELOPMENT.md` instead of `README.md`.
 
 ## Repository rules
 

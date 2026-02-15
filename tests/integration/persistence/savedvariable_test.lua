@@ -230,6 +230,69 @@ run("custom categories persist with namespaced layout", function()
     assert_true(snapshot.categories == nil, "legacy categories not persisted")
 end)
 
+run("custom category priority persists only for non-default overrides", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    local rawA = catA:GetId():match("^[^%-]+%-(.+)$")
+    local rawB = catB:GetId():match("^[^%-]+%-(.+)$")
+
+    ctx.AddonNS.CustomCategories:SetPriority(catA, 40)
+    ctx.AddonNS.CustomCategories:SetPriority(catB, tonumber(rawB))
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local snapshot = ctx:snapshot()
+    local custom = custom_snapshot(snapshot)
+    assert_true(custom.categories[rawA].priority == 40, "non-default custom priority persisted")
+    assert_true(custom.categories[rawB].priority == nil, "default-equal priority omitted from saved variables")
+
+    local restored = harness.new({ saved = snapshot })
+    assert_true(restored.AddonNS.CustomCategories:GetEffectivePriority("cus-" .. rawA) == 40,
+        "restored effective priority keeps explicit override")
+    assert_true(restored.AddonNS.CustomCategories:GetEffectivePriority("cus-" .. rawB) == tonumber(rawB),
+        "missing stored priority defaults to raw numeric id")
+end)
+
+run("custom query matching uses priority order and manual assignment precedence", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+
+    ctx.AddonNS.QueryCategories:SetQuery(catA, "itemType = 3")
+    ctx.AddonNS.QueryCategories:SetQuery(catB, "itemType = 3")
+    ctx.AddonNS.CustomCategories:SetPriority(catA, 100)
+    ctx.AddonNS.CustomCategories:SetPriority(catB, 10)
+
+    _G.C_Item = {
+        GetItemInfo = function()
+            return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, 3, 0, 0, 0, 0, false
+        end,
+        GetItemInventoryTypeByID = function()
+            return 0
+        end,
+    }
+    rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
+        return {}
+    end)
+    rawset(_G.C_Container, "GetContainerItemInfo", function()
+        return { itemID = 2001, hyperlink = "item:2001" }
+    end)
+
+    local button = item_button(0, 1)
+    local matches = ctx.AddonNS.Categories:GetMatches(2001, button)
+    assert_true(matches[1]:GetId() == catA:GetId(), "higher priority query category matches first")
+    assert_true(matches[2]:GetId() == catB:GetId(), "lower priority query category matches second")
+
+    ctx.AddonNS.CustomCategories:SetPriority(catA, 5)
+    ctx.AddonNS.CustomCategories:SetPriority(catB, 5)
+    local tieMatches = ctx.AddonNS.Categories:GetMatches(2001, button)
+    assert_true(tieMatches[1]:GetId() == catB:GetId(), "priority ties prefer higher raw numeric category id")
+
+    ctx.AddonNS.CustomCategories:AssignToCategory(catB, 2001)
+    local manualMatches = ctx.AddonNS.Categories:GetMatches(2001, button)
+    assert_true(manualMatches[1]:GetId() == catB:GetId(), "manual assignment takes precedence over query ordering")
+end)
+
 run("always visible empty category stays empty in arranged output", function()
     local ctx = harness.new()
     local always = ctx.AddonNS.CustomCategories:NewCategory("Always")

@@ -58,13 +58,15 @@ function itemButton:GetBagID() return 0 end
 function itemButton:GetID() return 1 end
 
 local category = addonEnv.Categories:Categorize(1, itemButton)
+local matches = addonEnv.Categories:GetMatches(1, itemButton)
 
 assert(category:GetName() == "cat1", "returns first matching category")
 assert(category:GetDisplayName(0) == "cat1", "display name defaults to name for categories without custom formatter")
-assert(#itemButton.ItemCategories == 3, "stores all matching categories including unassigned")
-assert(itemButton.ItemCategories[1]:GetName() == "cat1", "first category is first in list")
-assert(itemButton.ItemCategories[2]:GetName() == "cat2", "second category is second in list")
-assert(itemButton.ItemCategories[3]:GetName() == "Unassigned", "unassigned is last catch-all")
+assert(itemButton.ItemCategories == nil, "categorize no longer stores all matches on item buttons")
+assert(#matches == 3, "GetMatches returns all matching categories including unassigned")
+assert(matches[1]:GetName() == "cat1", "first category is first in list")
+assert(matches[2]:GetName() == "cat2", "second category is second in list")
+assert(matches[3]:GetName() == "Unassigned", "unassigned is last catch-all")
 
 local assigned = 0
 local unassigned = 0

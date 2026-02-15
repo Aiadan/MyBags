@@ -44,7 +44,8 @@ Some other worth mentioning:
 * left click category to collapse it
 * hold `Shift` while dropping a dragged category to move that category and the full tail below it
 * searching works as a filter (to be verify whether this is helpful or not)
-* item tooltip lists other matching categories for easier troubleshooting
+* custom query categories support explicit priority scores (higher score wins first)
+* item tooltip diagnostics are Shift-gated: hold `Shift` to show matched categories and reason tags (`manual assignment` or query priority)
 
 ## Q&A
 List of questions about things regarding the addon or possible extentions.
