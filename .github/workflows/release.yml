@@ -38,6 +38,18 @@ jobs:
       - name: Remove tests directory
         run: rm -rf tests
 
+      - name: Remove disallowed markdown files
+        run: find . -type f -name '*.md' ! -name 'README.md' ! -name 'QUERY_ATTRIBUTES.md' -delete
+
+      - name: Verify markdown whitelist
+        run: |
+          disallowed_markdown_files="$(find . -type f -name '*.md' ! -name 'README.md' ! -name 'QUERY_ATTRIBUTES.md')"
+          if [ -n "$disallowed_markdown_files" ]; then
+            echo "Disallowed markdown files found:"
+            echo "$disallowed_markdown_files"
+            exit 1
+          fi
+
       # once cloned, we just run the GitHub Action for the packager project
       - name: Package and release
         uses: BigWigsMods/packager@v2
