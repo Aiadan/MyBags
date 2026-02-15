@@ -44,6 +44,12 @@ local function ensureRuntimeColumns()
     runtimeColumnsLoaded = true
 end
 
+function AddonNS.Categories:ReloadRuntimeColumnsFromStore()
+    runtimeColumns = {}
+    runtimeColumnsLoaded = false
+    ensureRuntimeColumns()
+end
+
 local function persistRuntimeColumns()
     if not runtimeColumnsLoaded then
         return

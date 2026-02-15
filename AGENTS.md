@@ -9,6 +9,7 @@ MyBags is a World of Warcraft bag addon focused on manual organisation. It exten
 - Manual grouping: users drag items or categories to reorganise quickly; flows such as vendor purchases or bank transfers respect assignments.
 - Built-in categorizers: always-present Equipment Set (with icons) and New Items (right-click to clear). Everything else starts in the Unassigned bucket until placed.
 - Design philosophy: simplicity over configuration; minimal persistence; compatibility with default bag features and helpers like BlizzMove.
+- Dependency ownership: `MyLibrary_GUI` and `MyLibrary_Common` are under our control. If a bug originates there, fix it in those libraries directly rather than adding addon-local workarounds.
 
 Runtime interaction:
 

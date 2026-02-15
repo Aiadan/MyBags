@@ -24,6 +24,8 @@ function AddonNS.createGUI()
     local queryHelpText = assert(AddonNS.QueryHelpDocs and AddonNS.QueryHelpDocs.text,
         "MyBags query help docs not loaded. Run: lua tools/generate_query_help.lua")
 
+    local exportFrame
+    local importFrame
     local containerFrame = GS:CreateButtonFrame(addonName, 440, 620, true);
     containerFrame:SetPoint("TOPRIGHT", container, "TOPLEFT", 0, -30);
     containerFrame:EnableMouse(true)
@@ -136,9 +138,16 @@ function AddonNS.createGUI()
         AddonNS.BagViewState:SetMode("normal")
         containerFrame:Hide()
         queryHelpFrame:Hide()
+        if exportFrame then
+            exportFrame:Hide()
+        end
+        if importFrame then
+            importFrame:Hide()
+        end
         StaticPopup_Hide("CREATE_CATEGORY_CONFIRM")
         StaticPopup_Hide("RENAME_CATEGORY_CONFIRM")
         StaticPopup_Hide("DELETE_CATEGORY_CONFIRM")
+        StaticPopup_Hide("IMPORT_CATEGORIES_CONFIRM")
     end)
     AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, refreshEditModeVisuals)
     refreshEditModeVisuals()
@@ -297,6 +306,211 @@ function AddonNS.createGUI()
         return category and category.id or nil
     end
 
+    local function collectSortedCustomCategories()
+        local entries = {}
+        for _, category in pairs(AddonNS.CustomCategories:GetCategories()) do
+            table.insert(entries, category)
+        end
+        table.sort(entries, function(left, right)
+            local leftName = left:GetName() or ""
+            local rightName = right:GetName() or ""
+            leftName = string.lower(leftName)
+            rightName = string.lower(rightName)
+            if leftName == rightName then
+                return left.id < right.id
+            end
+            return leftName < rightName
+        end)
+        return entries
+    end
+
+    local function createExportFrame()
+        local frame = GS:CreateButtonFrame(addonName .. "_exportCategories", 500, 560, true)
+        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        frame:EnableMouse(true)
+        frame:Hide()
+
+        local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        title:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", 4, -8)
+        title:SetText("Export Categories")
+
+        local exportList = WowList:CreateNew(addonName .. "_exportList", {
+            height = 180,
+            rows = 8,
+            columns = {
+                {
+                    name = "Name",
+                    width = 458,
+                    displayFunction = function(cellData, rowData)
+                        return rowData.name, { 1, 1, 1, 1 }
+                    end,
+                },
+            },
+        }, frame)
+        exportList:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+        exportList:SetMultiSelection(true)
+
+        local outputScroll = CreateFrame("ScrollFrame", nil, frame, "InputScrollFrameTemplate")
+        outputScroll.hideCharCount = true
+        outputScroll:SetPoint("TOPLEFT", exportList, "BOTTOMLEFT", 0, -8)
+        outputScroll:SetPoint("BOTTOMRIGHT", frame.Inset, "BOTTOMRIGHT", -10, 36)
+        local outputLoaded = false
+        outputScroll:SetScript("OnShow", function()
+            if not outputLoaded then
+                outputLoaded = true
+                InputScrollFrame_OnLoad(outputScroll)
+            end
+        end)
+        outputScroll.EditBox:SetFontObject(NumberFont_Shadow_Tiny)
+        outputScroll.EditBox:SetAutoFocus(false)
+
+        local function refreshExportList()
+            exportList:RemoveAll()
+            for _, category in ipairs(collectSortedCustomCategories()) do
+                exportList:AddData({
+                    id = category:GetId(),
+                    name = category:GetName() or "",
+                })
+            end
+            exportList:UpdateView()
+            outputScroll.EditBox:SetText("")
+        end
+
+        local exportButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        exportButton:SetSize(130, 20)
+        exportButton:SetPoint("BOTTOMLEFT", frame.Inset, "BOTTOMLEFT", 4, 8)
+        exportButton:SetText("Generate Export")
+        exportButton:SetScript("OnClick", function()
+            local selectedRows = exportList:GetSelected() or {}
+            local selectedCategoryIds = {}
+            for _, row in ipairs(selectedRows) do
+                table.insert(selectedCategoryIds, row.id)
+            end
+            local payload = AddonNS.CustomCategories:BuildExportPayload(selectedCategoryIds)
+            outputScroll.EditBox:SetText(AddonNS.CustomCategories:EncodeExportPayload(payload))
+            outputScroll.EditBox:HighlightText(0)
+            outputScroll.EditBox:SetFocus()
+        end)
+
+        local closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        closeButton:SetSize(80, 20)
+        closeButton:SetPoint("LEFT", exportButton, "RIGHT", 8, 0)
+        closeButton:SetText("Close")
+        closeButton:SetScript("OnClick", function()
+            frame:Hide()
+        end)
+
+        frame:SetScript("OnShow", refreshExportList)
+        return frame
+    end
+
+    local function createImportFrame()
+        local frame = GS:CreateButtonFrame(addonName .. "_importCategories", 520, 560, true)
+        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        frame:EnableMouse(true)
+        frame:Hide()
+
+        local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        title:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", 4, -8)
+        title:SetText("Import Categories")
+
+        local inputScroll = CreateFrame("ScrollFrame", nil, frame, "InputScrollFrameTemplate")
+        inputScroll.hideCharCount = true
+        inputScroll:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+        inputScroll:SetPoint("TOPRIGHT", frame.Inset, "TOPRIGHT", -10, -36)
+        inputScroll:SetHeight(330)
+        local inputLoaded = false
+        inputScroll:SetScript("OnShow", function()
+            if not inputLoaded then
+                inputLoaded = true
+                InputScrollFrame_OnLoad(inputScroll)
+            end
+        end)
+        inputScroll.EditBox:SetFontObject(NumberFont_Shadow_Tiny)
+        inputScroll.EditBox:SetAutoFocus(false)
+
+        local previewScroll = CreateFrame("ScrollFrame", nil, frame, "InputScrollFrameTemplate")
+        previewScroll.hideCharCount = true
+        previewScroll:SetPoint("TOPLEFT", inputScroll, "BOTTOMLEFT", 0, -8)
+        previewScroll:SetPoint("BOTTOMRIGHT", frame.Inset, "BOTTOMRIGHT", -10, 36)
+        local previewLoaded = false
+        previewScroll:SetScript("OnShow", function()
+            if not previewLoaded then
+                previewLoaded = true
+                InputScrollFrame_OnLoad(previewScroll)
+            end
+        end)
+        previewScroll.EditBox:SetFontObject(NumberFont_Shadow_Tiny)
+        previewScroll.EditBox:SetAutoFocus(false)
+        previewScroll.EditBox:EnableMouse(false)
+        previewScroll.EditBox:SetScript("OnEditFocusGained", function(self)
+            self:ClearFocus()
+        end)
+
+        local function setPreviewText(value)
+            previewScroll.EditBox:SetText(value or "")
+            previewScroll:SetVerticalScroll(0)
+        end
+
+        local importPreview = nil
+        local analyzeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        analyzeButton:SetSize(120, 20)
+        analyzeButton:SetPoint("BOTTOMLEFT", frame.Inset, "BOTTOMLEFT", 4, 8)
+        analyzeButton:SetText("Analyze Import")
+
+        local applyButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        applyButton:SetSize(110, 20)
+        applyButton:SetPoint("LEFT", analyzeButton, "RIGHT", 8, 0)
+        applyButton:SetText("Apply Import")
+        applyButton:Disable()
+
+        local closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        closeButton:SetSize(80, 20)
+        closeButton:SetPoint("LEFT", applyButton, "RIGHT", 8, 0)
+        closeButton:SetText("Close")
+        closeButton:SetScript("OnClick", function()
+            frame:Hide()
+        end)
+
+        analyzeButton:SetScript("OnClick", function()
+            importPreview = nil
+            applyButton:Disable()
+            local ok, previewOrErr = pcall(function()
+                return AddonNS.CustomCategories:PreviewImport(inputScroll.EditBox:GetText())
+            end)
+            if not ok then
+                setPreviewText("Import error: " .. tostring(previewOrErr))
+                return
+            end
+            importPreview = previewOrErr
+            local createCount = #importPreview.toCreate
+            local lines = { string.format("Ready to import (%d categories):", createCount) }
+            for _, entry in ipairs(importPreview.toCreate) do
+                lines[#lines + 1] = "• " .. tostring(entry.name or "(unnamed)")
+            end
+            setPreviewText(table.concat(lines, "\n"))
+            applyButton:Enable()
+        end)
+
+        applyButton:SetScript("OnClick", function()
+            if not importPreview then
+                return
+            end
+            local dialog = StaticPopup_Show("IMPORT_CATEGORIES_CONFIRM", tostring(#importPreview.toCreate))
+            if dialog then
+                dialog.data = importPreview
+            end
+        end)
+
+        frame:SetScript("OnShow", function()
+            setPreviewText("")
+            importPreview = nil
+            applyButton:Disable()
+        end)
+
+        return frame
+    end
+
 
     --- [[always show checkbox]]
     -- Create a new frame
@@ -323,6 +537,28 @@ function AddonNS.createGUI()
             AddonNS.QueueContainerUpdateItemLayout();
         end
     end)
+
+    local function toggleExportFrame()
+        if not exportFrame then
+            exportFrame = createExportFrame()
+        end
+        if exportFrame:IsShown() then
+            exportFrame:Hide()
+            return
+        end
+        exportFrame:Show()
+    end
+
+    local function toggleImportFrame()
+        if not importFrame then
+            importFrame = createImportFrame()
+        end
+        if importFrame:IsShown() then
+            importFrame:Hide()
+            return
+        end
+        importFrame:Show()
+    end
 
 
     --- [[ Query label ]]
@@ -560,6 +796,27 @@ function AddonNS.createGUI()
         hideOnEscape = true,
         preferredIndex = 3, -- Avoids some UI taint issues
     }
+    StaticPopupDialogs["IMPORT_CATEGORIES_CONFIRM"] = {
+        text = "Import will create %s categories. Continue?",
+        button1 = "Apply Import",
+        button2 = "Cancel",
+        OnAccept = function(self, data)
+            local preview = data or self.data
+            local ok, err = pcall(function()
+                AddonNS.CustomCategories:ApplyImportPreview(preview)
+            end)
+            if not ok then
+                AddonNS.printDebug("Import failed:", err)
+                return
+            end
+            list:RefreshList()
+            AddonNS.QueueContainerUpdateItemLayout()
+        end,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+        preferredIndex = 3,
+    }
 
     function AddonNS.CategoriesGUI:SelectCategoryById(categoryId)
         if not containerFrame:IsShown() then
@@ -574,6 +831,14 @@ function AddonNS.createGUI()
 
     function AddonNS.CategoriesGUI:GetSelectedCategoryId()
         return getSelectedCategoryId()
+    end
+
+    function AddonNS.CategoriesGUI:ToggleExportFrame()
+        toggleExportFrame()
+    end
+
+    function AddonNS.CategoriesGUI:ToggleImportFrame()
+        toggleImportFrame()
     end
 end
 

@@ -121,7 +121,7 @@ run("fresh install seeds defaults", function()
     local snapshot = ctx:snapshot()
     local custom = custom_snapshot(snapshot)
     assert_true(custom.id == "cus", "custom bucket seeded")
-    assert_true(custom.schemaVersion == 1, "custom schema version seeded")
+    assert_true(custom.schemaVersion == 2, "custom schema version seeded")
     assert_equal({}, custom.categories, "no user categories persisted")
     assert_true(snapshot.layout.columnCount == 3, "layout column count defaults to 3")
     assert_equal({ {}, {}, {} }, snapshot.layout.columns, "layout columns seeded")
@@ -129,6 +129,96 @@ run("fresh install seeds defaults", function()
     assert_equal({}, snapshot.itemOrder, "item order initialised")
     assert_true(snapshot.categorizers == nil or snapshot.categorizers.cus == nil, "legacy custom bucket removed")
     assert_true(snapshot.categories == nil, "old custom categories bucket removed")
+end)
+
+run("import parser accepts plain table payload text without return", function()
+    local ctx = harness.new()
+    local payload = ctx.AddonNS.CustomCategories:DecodeImportPayload("{ version = 1, categories = {} }")
+    assert_true(type(payload) == "table", "decoded payload is table")
+    assert_true(payload.version == 1, "decoded version")
+
+    local ok = pcall(function()
+        ctx.AddonNS.CustomCategories:DecodeImportPayload("return { version = 1, categories = {} }")
+    end)
+    assert_true(ok == false, "return-prefixed payload rejected")
+end)
+
+run("export payload includes manual item assignments", function()
+    local ctx = harness.new()
+    local category = ctx.AddonNS.CustomCategories:NewCategory("ExportItems")
+    ctx.AddonNS.CustomCategories:AssignToCategory(category, 555)
+    local payload = ctx.AddonNS.CustomCategories:BuildExportPayload({ category:GetId() })
+    assert_true(type(payload.categories) == "table" and #payload.categories == 1, "single category exported")
+    assert_equal({ 555 }, payload.categories[1].items, "manual item assignments exported")
+end)
+
+run("import is create-only and applies manual assignments from payload", function()
+    local ctx = harness.new()
+    local localCategory = ctx.AddonNS.CustomCategories:NewCategory("LocalOnly")
+    ctx.AddonNS.CustomCategories:AssignToCategory(localCategory, 777)
+
+    local payload = {
+        version = 1,
+        categories = {
+            {
+                name = "ImportedA",
+                query = "itemType = 4",
+                priority = 42,
+                alwaysVisible = true,
+                items = { 889, 890 },
+            },
+            {
+                name = "ImportedB",
+                query = "ilvl >= 400",
+                priority = 9,
+                alwaysVisible = false,
+                items = { 2000 },
+            },
+        },
+    }
+    local preview = ctx.AddonNS.CustomCategories:PreviewImport(payload)
+    assert_true(#preview.toUpdate == 0, "import no longer updates existing categories")
+    assert_true(#preview.toCreate == 2, "import creates all payload categories")
+    ctx.AddonNS.CustomCategories:ApplyImportPreview(preview)
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local snapshot = ctx:snapshot()
+    local existingRawId, existingData = raw_by_name(snapshot, "ImportedA")
+    local newRawId, newData = raw_by_name(snapshot, "ImportedB")
+    local localRawId, localData = raw_by_name(snapshot, "LocalOnly")
+    assert_true(existingRawId ~= nil, "first imported category created")
+    assert_true(newRawId ~= nil, "second imported category created")
+    assert_true(localRawId ~= nil, "local category remains")
+    assert_true(localData.externalId == nil, "local category keeps no external id")
+    assert_true(existingData.query == "itemType = 4", "first imported category query set")
+    assert_true(existingData.priority == 42, "first imported category priority set")
+    assert_true(existingData.alwaysVisible == true, "first imported category visibility set")
+    assert_equal({ 889, 890 }, existingData.items, "manual assignments imported for first category")
+    assert_true(newData.query == "ilvl >= 400", "new category query set")
+    assert_equal({ 2000 }, newData.items, "new category manual assignments imported")
+
+    assert_true(existingRawId ~= nil and newRawId ~= nil, "created categories persisted")
+end)
+
+run("import with duplicate item ids across payload categories fails", function()
+    local ctx = harness.new()
+    local payload = {
+        version = 1,
+        categories = {
+            {
+                name = "ImportOne",
+                items = { 5001 },
+            },
+            {
+                name = "ImportTwo",
+                items = { 5001 },
+            },
+        },
+    }
+    local ok = pcall(function()
+        ctx.AddonNS.CustomCategories:PreviewImport(payload)
+    end)
+    assert_true(ok == false, "duplicate item ids across categories are rejected")
 end)
 
 run("script api resize increase keeps layout and adds empty right column", function()

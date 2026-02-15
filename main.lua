@@ -378,14 +378,30 @@ local function newIterator(container, index)
             if columnBottomY > 0 then
                 addCategoryY = columnBottomY + AddonNS.Const.COLUMN_SPACING
             end
+            local controlHeight = AddonNS.Const.CATEGORY_HEIGHT
+            local controlSpacing = AddonNS.Const.COLUMN_SPACING
             table.insert(container.MyBags.categoryPositions, {
                 isAddCategoryControl = true,
                 x = (lastColumnIndex - 1) * columnSize - ITEM_SPACING / 2,
                 y = addCategoryY,
                 width = itemSize * AddonNS.Const.ITEMS_PER_ROW,
-                height = AddonNS.Const.CATEGORY_HEIGHT,
+                height = controlHeight,
             })
-            local addControlBottomY = addCategoryY + AddonNS.Const.CATEGORY_HEIGHT
+            table.insert(container.MyBags.categoryPositions, {
+                isExportCategoryControl = true,
+                x = (lastColumnIndex - 1) * columnSize - ITEM_SPACING / 2,
+                y = addCategoryY + controlHeight + controlSpacing,
+                width = itemSize * AddonNS.Const.ITEMS_PER_ROW,
+                height = controlHeight,
+            })
+            table.insert(container.MyBags.categoryPositions, {
+                isImportCategoryControl = true,
+                x = (lastColumnIndex - 1) * columnSize - ITEM_SPACING / 2,
+                y = addCategoryY + (controlHeight + controlSpacing) * 2,
+                width = itemSize * AddonNS.Const.ITEMS_PER_ROW,
+                height = controlHeight,
+            })
+            local addControlBottomY = addCategoryY + (controlHeight + controlSpacing) * 2 + controlHeight
             if addControlBottomY > container.MyBags.height then
                 container.MyBags.height = addControlBottomY
             end

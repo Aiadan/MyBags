@@ -35,7 +35,15 @@ Use it only during diagnostics. Keep profiling disabled during normal play.
 
 - Query-based matching inside custom categories is ordered by explicit per-category priority (higher score first).
 - If no explicit priority is stored for a custom category, runtime default priority is the numeric raw category id.
-- Priority ties are resolved deterministically by higher numeric raw id first, then raw id string order.
+- Priority ties are resolved by alphabetical category name, then internal deterministic fallback.
+
+## Import/Export Notes
+
+- Import/export payloads are plain Lua table literals (no leading `return`).
+- Import is create-only: each payload category creates a new custom category.
+- Export includes rule + manual assignment data (`name`, `query`, `priority`, `alwaysVisible`, `items`).
+- `externalId` matching was intentionally removed to avoid hidden duplicate-id/user-control pitfalls that could block imports.
+- Layout data is intentionally excluded from import/export to keep the flow simple and avoid order/collapse mismatch pitfalls.
 
 ## Generated Query Help Docs
 

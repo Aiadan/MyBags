@@ -49,6 +49,7 @@ Some other worth mentioning:
 * query syntax/attributes reference: see [QUERY_ATTRIBUTES.md](QUERY_ATTRIBUTES.md)
 * query editor now includes an in-game `Help` button with a scrollable query syntax/priority reference panel
 * item tooltip diagnostics are Shift-gated: hold `Shift` to show matched categories and reason tags (`manual assignment` or query priority)
+* custom categories support import/export via in-game text payloads (create-only import; no id-based update matching)
 
 ## Q&A
 List of questions about things regarding the addon or possible extentions.

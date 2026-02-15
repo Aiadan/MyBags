@@ -7,7 +7,7 @@ AddonNS.UserCategorizer = CustomCategorizer
 
 local CATEGORIZER_ID = "cus"
 local STORAGE_KEY = "userCategories"
-local STORAGE_SCHEMA_VERSION = 1
+local STORAGE_SCHEMA_VERSION = 2
 local RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX = "|CFFbbbbbb"
 local SELECTED_CUSTOM_CATEGORY_PREFIX = "|cffff2020>>|r "
 
@@ -34,6 +34,14 @@ local function normalize_array(source)
         table.insert(out, value)
     end
     return out
+end
+
+local function trim(text)
+    return text:match("^%s*(.-)%s*$")
+end
+
+local function fail(message)
+    error(message, 0)
 end
 
 local function default_priority_for_raw_id(rawId)
@@ -823,6 +831,245 @@ function CustomCategories:GetQueryCategoryRawIds()
         end
     end
     return ids
+end
+
+local function categorySortByNameThenId(left, right)
+    local leftName = string.lower(tostring(left.name or ""))
+    local rightName = string.lower(tostring(right.name or ""))
+    if leftName == rightName then
+        return tostring(left.id) < tostring(right.id)
+    end
+    return leftName < rightName
+end
+
+local function encodeLuaString(value)
+    return string.format("%q", value)
+end
+
+local function encodeExportPayload(payload)
+    local lines = {}
+    table.insert(lines, "{")
+    table.insert(lines, "  version = " .. tostring(payload.version) .. ",")
+    table.insert(lines, "  categories = {")
+    for _, category in ipairs(payload.categories) do
+        table.insert(lines, "    {")
+        table.insert(lines, "      name = " .. encodeLuaString(category.name) .. ",")
+        if category.query and category.query ~= "" then
+            table.insert(lines, "      query = " .. encodeLuaString(category.query) .. ",")
+        end
+        if category.priority ~= nil then
+            table.insert(lines, "      priority = " .. tostring(category.priority) .. ",")
+        end
+        if category.alwaysVisible ~= nil then
+            table.insert(lines, "      alwaysVisible = " .. tostring(category.alwaysVisible) .. ",")
+        end
+        local itemValues = {}
+        for itemIndex = 1, #(category.items or {}) do
+            itemValues[itemIndex] = tostring(category.items[itemIndex])
+        end
+        table.insert(lines, "      items = { " .. table.concat(itemValues, ", ") .. " },")
+        table.insert(lines, "    },")
+    end
+    table.insert(lines, "  },")
+    table.insert(lines, "}")
+    return table.concat(lines, "\n")
+end
+
+local function decodeImportPayload(text)
+    if type(text) ~= "string" then
+        fail("Import payload must be a string")
+    end
+    local trimmed = trim(text)
+    if trimmed == "" then
+        fail("Import payload is empty")
+    end
+    if trimmed:sub(1, 1) ~= "{" then
+        fail("Import payload must be a Lua table literal (without leading 'return').")
+    end
+    if loadstring then
+        local chunk, err = loadstring("return " .. trimmed)
+        if not chunk then
+            fail("Failed to parse import payload")
+        end
+        setfenv(chunk, {})
+        return chunk()
+    end
+    local chunk, err = load("return " .. trimmed, "MyBagsImport", "t", {})
+    if not chunk then
+        fail("Failed to parse import payload")
+    end
+    return chunk()
+end
+
+function CustomCategories:BuildExportPayload(categoryIds)
+    local db = get_db()
+    local selected = {}
+    for index = 1, #(categoryIds or {}) do
+        local rawId = resolve_raw_id(categoryIds[index])
+        local entry = rawId and db.categories[rawId]
+        if entry then
+            local wrappedId = CATEGORIZER_ID .. "-" .. rawId
+            table.insert(selected, {
+                id = wrappedId,
+                name = entry.name or "",
+                query = entry.query or nil,
+                priority = effective_priority_for_raw_id(db, rawId),
+                alwaysVisible = entry.alwaysVisible == true,
+                items = normalize_array(entry.items),
+            })
+        end
+    end
+    table.sort(selected, categorySortByNameThenId)
+    return {
+        version = 1,
+        categories = selected,
+    }
+end
+
+function CustomCategories:EncodeExportPayload(payload)
+    return encodeExportPayload(payload)
+end
+
+function CustomCategories:DecodeImportPayload(text)
+    return decodeImportPayload(text)
+end
+
+function CustomCategories:PreviewImport(payloadOrText)
+    local payload = payloadOrText
+    if type(payloadOrText) == "string" then
+        payload = decodeImportPayload(payloadOrText)
+    end
+    if type(payload) ~= "table" then
+        fail("Import payload root must be a table")
+    end
+    if payload.version ~= 1 then
+        fail("Unsupported import payload version: " .. tostring(payload.version))
+    end
+    if type(payload.categories) ~= "table" then
+        fail("Import payload must include categories array")
+    end
+
+    local seenPayloadItems = {}
+    local toCreate = {}
+    local normalizedEntries = {}
+
+    for index = 1, #payload.categories do
+        local item = payload.categories[index]
+        if type(item) ~= "table" then
+            fail("Import category at index " .. tostring(index) .. " must be a table")
+        end
+        local categoryLabel = (type(item.name) == "string" and trim(item.name) ~= "") and
+            ("\"" .. trim(item.name) .. "\"") or ("at index " .. tostring(index))
+        local name = type(item.name) == "string" and trim(item.name) or ""
+        if name == "" then
+            fail("Import category " .. categoryLabel .. " has empty name")
+        end
+        if item.query ~= nil and type(item.query) ~= "string" then
+            fail("Import category " .. categoryLabel .. " has invalid query")
+        end
+        if item.priority ~= nil and type(item.priority) ~= "number" then
+            fail("Import category " .. categoryLabel .. " has invalid priority")
+        end
+        if item.alwaysVisible ~= nil and type(item.alwaysVisible) ~= "boolean" then
+            fail("Import category " .. categoryLabel .. " has invalid alwaysVisible")
+        end
+        local itemsProvided = item.items ~= nil
+        local items = {}
+        if itemsProvided then
+            if type(item.items) ~= "table" then
+                fail("Import category " .. categoryLabel .. " has invalid items list")
+            end
+            local perCategorySeen = {}
+            for _, itemIdValue in ipairs(item.items) do
+                local numericItemId = tonumber(itemIdValue)
+                if not numericItemId or math.floor(numericItemId) ~= numericItemId then
+                    fail("Import category " .. categoryLabel .. " has non-numeric item id")
+                end
+                numericItemId = math.floor(numericItemId)
+                if perCategorySeen[numericItemId] then
+                    fail("Import category " .. categoryLabel .. " has duplicate item id: " .. tostring(numericItemId))
+                end
+                perCategorySeen[numericItemId] = true
+                if seenPayloadItems[numericItemId] then
+                    fail("Import payload item id appears in multiple categories: " .. tostring(numericItemId))
+                end
+                seenPayloadItems[numericItemId] = true
+                table.insert(items, numericItemId)
+            end
+        end
+        local entry = {
+            name = name,
+            query = (item.query and item.query ~= "") and item.query or nil,
+            priority = item.priority and math.floor(item.priority) or nil,
+            alwaysVisible = item.alwaysVisible == true,
+            items = items,
+            itemsProvided = itemsProvided,
+            existingRawId = nil,
+        }
+        table.insert(normalizedEntries, entry)
+        table.insert(toCreate, entry)
+    end
+
+    return {
+        payload = payload,
+        entries = normalizedEntries,
+        toCreate = toCreate,
+        toUpdate = {},
+    }
+end
+
+function CustomCategories:ApplyImportPreview(preview)
+    if type(preview) ~= "table" or type(preview.entries) ~= "table" then
+        error("Import preview is invalid")
+    end
+    local db = get_db()
+    local providedItemsByRawId = {}
+    local allReassignedItemIds = {}
+
+    for _, entry in ipairs(preview.entries) do
+        local created = self:NewCategory(entry.name)
+        local createdRawId = resolve_raw_id(created)
+        local createdEntry = db.categories[createdRawId]
+        createdEntry.query = entry.query
+        createdEntry.priority = normalize_priority_override(createdRawId, entry.priority)
+        createdEntry.alwaysVisible = entry.alwaysVisible == true or nil
+        AddonNS.QueryCategories:SyncCompiledQuery(createdRawId, createdEntry.query)
+        entry.existingRawId = createdRawId
+        if entry.itemsProvided then
+            providedItemsByRawId[createdRawId] = normalize_array(entry.items)
+        end
+    end
+
+    if next(providedItemsByRawId) then
+        for rawId, entryItems in pairs(providedItemsByRawId) do
+            local existingItems = db.categories[rawId] and db.categories[rawId].items or {}
+            for _, itemId in ipairs(existingItems) do
+                allReassignedItemIds[itemId] = true
+            end
+            for _, itemId in ipairs(entryItems) do
+                allReassignedItemIds[itemId] = true
+            end
+        end
+
+        for _, categoryData in pairs(db.categories) do
+            local sourceItems = categoryData.items or {}
+            local filtered = {}
+            for _, itemId in ipairs(sourceItems) do
+                if not allReassignedItemIds[itemId] then
+                    table.insert(filtered, itemId)
+                end
+            end
+            categoryData.items = filtered
+        end
+
+        for rawId, entryItems in pairs(providedItemsByRawId) do
+            db.categories[rawId].items = normalize_array(entryItems)
+        end
+
+        rebuild_assignments()
+    end
+
+    fireUpdate()
 end
 
 AddonNS.Events:OnInitialize(function()

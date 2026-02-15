@@ -58,6 +58,10 @@ local HINT_TONE_STYLE = {
 }
 local ADD_CATEGORY_CONTROL_LABEL = "|cff90ff90+ Add Category|r"
 local ADD_CATEGORY_CONTROL_LABEL_HOVER = "|cffffff80+ Add Category|r"
+local EXPORT_CATEGORY_CONTROL_LABEL = "|cffffe266Export Categories|r"
+local EXPORT_CATEGORY_CONTROL_LABEL_HOVER = "|cffffff9fExport Categories|r"
+local IMPORT_CATEGORY_CONTROL_LABEL = "|cffffe266Import Categories|r"
+local IMPORT_CATEGORY_CONTROL_LABEL_HOVER = "|cffffff9fImport Categories|r"
 local ADD_CATEGORY_CONTROL_BACKDROP = {
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
     edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -77,8 +81,38 @@ local ADD_CATEGORY_CONTROL_STYLE = {
     },
 }
 
-local function styleAddCategoryControl(frame, isHovered)
-    local style = isHovered and ADD_CATEGORY_CONTROL_STYLE.hover or ADD_CATEGORY_CONTROL_STYLE.normal
+local CONTROL_STYLE_BY_KIND = {
+    add = ADD_CATEGORY_CONTROL_STYLE,
+    export = {
+        normal = {
+            bg = { 0.20, 0.17, 0.06, 0.86 },
+            border = { 0.95, 0.82, 0.32, 1 },
+            label = EXPORT_CATEGORY_CONTROL_LABEL,
+        },
+        hover = {
+            bg = { 0.32, 0.27, 0.10, 0.92 },
+            border = { 1, 0.90, 0.45, 1 },
+            label = EXPORT_CATEGORY_CONTROL_LABEL_HOVER,
+        },
+    },
+    import = {
+        normal = {
+            bg = { 0.20, 0.17, 0.06, 0.86 },
+            border = { 0.95, 0.82, 0.32, 1 },
+            label = IMPORT_CATEGORY_CONTROL_LABEL,
+        },
+        hover = {
+            bg = { 0.32, 0.27, 0.10, 0.92 },
+            border = { 1, 0.90, 0.45, 1 },
+            label = IMPORT_CATEGORY_CONTROL_LABEL_HOVER,
+        },
+    },
+}
+
+local function styleCategoryControl(frame, isHovered)
+    local kind = frame.controlKind or "add"
+    local styleSet = CONTROL_STYLE_BY_KIND[kind] or CONTROL_STYLE_BY_KIND.add
+    local style = isHovered and styleSet.hover or styleSet.normal
     frame.addControlBackdrop:SetBackdropColor(style.bg[1], style.bg[2], style.bg[3], style.bg[4])
     frame.addControlBackdrop:SetBackdropBorderColor(style.border[1], style.border[2], style.border[3], style.border[4])
     frame:SetText(style.label)
@@ -612,7 +646,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                 function(self)
                     hoveredCategoryFrame = self
                     if self.isAddCategoryControl then
-                        styleAddCategoryControl(self, true)
+                        styleCategoryControl(self, true)
                     end
                     AddonNS.gui:RefreshCategoryDragHints()
                 end)
@@ -624,7 +658,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                         hoveredCategoryFrame = nil
                     end
                     if self.isAddCategoryControl then
-                        styleAddCategoryControl(self, false)
+                        styleCategoryControl(self, false)
                     end
                     AddonNS.gui:RefreshCategoryDragHints()
                 end)
@@ -664,18 +698,31 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         -- fs.fs:SetWidth(categoryGUIInfo.width)
         f:SetHeight(categoryGUIInfo.height)
 
-        if categoryGUIInfo.isAddCategoryControl then
+        if categoryGUIInfo.isAddCategoryControl or categoryGUIInfo.isExportCategoryControl or categoryGUIInfo.isImportCategoryControl then
             f.ItemCategory = nil
             f.isAddCategoryControl = true
+            if categoryGUIInfo.isExportCategoryControl then
+                f.controlKind = "export"
+            elseif categoryGUIInfo.isImportCategoryControl then
+                f.controlKind = "import"
+            else
+                f.controlKind = "add"
+            end
             f.bg:Hide()
             f.addControlBackdrop:Show()
             f.deleteButton:Hide()
             f:ApplyAddControlTextLayout()
-            styleAddCategoryControl(f, false)
+            styleCategoryControl(f, false)
             f:RegisterForDrag("LeftButton")
             f:SetScript("OnMouseUp", function(_, button)
                 if button == "LeftButton" then
-                    StaticPopup_Show("CREATE_CATEGORY_CONFIRM")
+                    if f.controlKind == "add" then
+                        StaticPopup_Show("CREATE_CATEGORY_CONFIRM")
+                    elseif f.controlKind == "export" then
+                        AddonNS.CategoriesGUI:ToggleExportFrame()
+                    elseif f.controlKind == "import" then
+                        AddonNS.CategoriesGUI:ToggleImportFrame()
+                    end
                 end
             end)
             f:SetScript("OnReceiveDrag", nil)
@@ -685,6 +732,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         else
             f.ItemCategory = categoryGUIInfo.category;
             f.isAddCategoryControl = false
+            f.controlKind = nil
             f.bg:Hide()
             f.addControlBackdrop:Hide()
             local categoryId = f.ItemCategory:GetId()
