@@ -113,11 +113,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ query syntax/help window now stays open when custom category GUI is closed (it still closes when the bag/container itself is hidden).
 * ✅ finalized search-query union feature: search now includes Blizzard default matches plus valid query-language matches from the same text (invalid query ignored), query-only matches are not dimmed, search text is captured via direct `OnTextChanged` wrappers on `BagItemSearchBox` and `BankItemSearchBox`, custom GUI query-to-search sync stays local to `categoriesGUI.lua`, temporary debug/race-workaround code was removed, and `README.md` was updated.
 * ✅ custom query-edit preview flow finalized: editing/focusing query text in custom categories GUI mirrors into bag search for live results, search anchor lock stays active while query editor is focused in edit mode, and bag/bank search max length is 255.
+* ✅ added in-bag free-space text in the money/footer strip showing remaining generic bag slots and reagent-bag slots.
 
 ### TODO
 
-* show somewhere how many empty spaces are left
-* display empty space if available to show how many items we can still add.
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
 * [bug] when draggin an item an click right click on a column part, it moves entire cateogory in which a given itembutton was in
 * add info at the top, and in bright colour, of query expanation in game that this information is available also at https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md

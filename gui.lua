@@ -328,6 +328,32 @@ backgroundFrame:SetScript("OnMouseUp", AddonNS.DragAndDrop.backgroundOnReceiveDr
 backgroundFrame:SetPoint("BOTTOMRIGHT", AddonNS.container.MoneyFrame, "TOPRIGHT", 0, 0)
 backgroundFrame.myBagAddonHooked = true;
 
+local FREE_SLOT_COUNT_LABEL_FORMAT = "Free %d   Reagents %d"
+local freeSlotCountOverlay = CreateFrame("Frame", nil, AddonNS.container)
+freeSlotCountOverlay:SetAllPoints(AddonNS.container.MoneyFrame)
+freeSlotCountOverlay:SetFrameLevel(AddonNS.container.MoneyFrame:GetFrameLevel() + 10)
+freeSlotCountOverlay:EnableMouse(false)
+
+local freeSlotCountLabel = freeSlotCountOverlay:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+freeSlotCountLabel:SetPoint("LEFT", freeSlotCountOverlay, "LEFT", 6, 0)
+freeSlotCountLabel:SetJustifyH("LEFT")
+freeSlotCountLabel:SetTextColor(1, 0.82, 0.2, 1)
+
+function AddonNS.gui:RefreshFreeSlotCountLabel()
+    local freeItemSlots, freeReagentSlots = AddonNS.GetFreeSlotCounts()
+    freeSlotCountLabel:SetText(FREE_SLOT_COUNT_LABEL_FORMAT:format(freeItemSlots, freeReagentSlots))
+end
+
+AddonNS.container:HookScript("OnShow", function()
+    AddonNS.gui:RefreshFreeSlotCountLabel()
+end)
+
+AddonNS.Events:RegisterEvent("BAG_UPDATE", function()
+    if AddonNS.container:IsShown() then
+        AddonNS.gui:RefreshFreeSlotCountLabel()
+    end
+end)
+
 local resizeHandle = CreateFrame("Button", nil, AddonNS.container, "PanelResizeButtonTemplate")
 resizeHandle:SetPoint("BOTTOMLEFT", AddonNS.container, "BOTTOMLEFT", 2, 2)
 resizeHandle:SetFrameStrata("TOOLTIP")

@@ -115,6 +115,19 @@ TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, addCategories
 
 local freeBagSlots = 10000;
 local lockedUpdates = false;
+
+local function getFreeSlotCounts()
+    local freeItemSlots = 0
+    for bagID = Enum.BagIndex.Backpack, Constants.InventoryConstants.NumBagSlots do
+        local slotsInBag = C_Container.GetContainerNumFreeSlots(bagID)
+        freeItemSlots = freeItemSlots + slotsInBag
+    end
+    local freeReagentSlots = C_Container.GetContainerNumFreeSlots(Enum.BagIndex.ReagentBag)
+    return freeItemSlots, freeReagentSlots
+end
+
+AddonNS.GetFreeSlotCounts = getFreeSlotCounts
+
 function AddonNS.Events:BAG_UPDATE(event, bagID)
     AddonNS.printDebug("BAG_UPDATE", bagID)
 
