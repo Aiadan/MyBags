@@ -10,6 +10,25 @@ CategoryStore.__index = CategoryStore
 local UNASSIGNED_ID = "unassigned"
 local SINGLETON_SUFFIX = "singleton"
 
+local function defaultIsProtected()
+    return false
+end
+
+local function defaultGetDisplayName(self)
+    return self:GetName()
+end
+
+local function defaultOnRightClick()
+    return false
+end
+
+local function defaultOnLeftClickConfigMode()
+    return false
+end
+
+local function defaultNoop()
+end
+
 local function compute_wrapper_ids(categorizerId, rawId)
     if categorizerId == UNASSIGNED_ID then
         return UNASSIGNED_ID, UNASSIGNED_ID .. "::" .. (rawId or "")
@@ -24,8 +43,14 @@ local function compute_wrapper_ids(categorizerId, rawId)
 end
 
 local function default_raw_methods(raw)
-    -- Provide safe defaults for optional raw methods.
-    raw.IsProtected = raw.IsProtected or function() return false end
+    -- Provide safe defaults for wrapper-facing methods so internal callers can
+    -- always use strict direct calls.
+    raw.IsProtected = raw.IsProtected or defaultIsProtected
+    raw.GetDisplayName = raw.GetDisplayName or defaultGetDisplayName
+    raw.OnRightClick = raw.OnRightClick or defaultOnRightClick
+    raw.OnLeftClickConfigMode = raw.OnLeftClickConfigMode or defaultOnLeftClickConfigMode
+    raw.OnItemAssigned = raw.OnItemAssigned or defaultNoop
+    raw.OnItemUnassigned = raw.OnItemUnassigned or defaultNoop
     return raw
 end
 
@@ -56,28 +81,23 @@ local function wrap_category(store, categorizerId, rawCategory)
     function wrapper:GetName()
         return self._raw:GetName()
     end
+    function wrapper:GetDisplayName(itemsCount)
+        return self._raw:GetDisplayName(itemsCount)
+    end
     function wrapper:IsProtected()
         return self._raw:IsProtected()
     end
     function wrapper:OnRightClick(...)
-        if self._raw.OnRightClick then
-            return self._raw:OnRightClick(...)
-        end
+        return self._raw:OnRightClick(...)
     end
     function wrapper:OnLeftClickConfigMode(...)
-        if self._raw.OnLeftClickConfigMode then
-            return self._raw:OnLeftClickConfigMode(...)
-        end
+        return self._raw:OnLeftClickConfigMode(...)
     end
     function wrapper:OnItemAssigned(itemId, context)
-        if self._raw.OnItemAssigned then
-            self._raw:OnItemAssigned(itemId, context)
-        end
+        self._raw:OnItemAssigned(itemId, context)
     end
     function wrapper:OnItemUnassigned(itemId, context)
-        if self._raw.OnItemUnassigned then
-            self._raw:OnItemUnassigned(itemId, context)
-        end
+        self._raw:OnItemUnassigned(itemId, context)
     end
     store._wrappersByRaw[rawKey] = wrapper
     if wrapperId == UNASSIGNED_ID then

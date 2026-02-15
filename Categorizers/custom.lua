@@ -8,6 +8,7 @@ AddonNS.UserCategorizer = CustomCategorizer
 local CATEGORIZER_ID = "cus"
 local STORAGE_KEY = "userCategories"
 local STORAGE_SCHEMA_VERSION = 1
+local RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX = "|CFFbbbbbb"
 
 local assignments = {}
 local categorizeProfile = {
@@ -299,6 +300,13 @@ local function new_raw(id, data)
     end
     function raw:GetName()
         return data.name or ""
+    end
+    function raw:GetDisplayName(itemsCount)
+        local name = data.name or ""
+        if itemsCount == 0 and not data.alwaysVisible then
+            return RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX .. name
+        end
+        return name
     end
     function raw:IsProtected()
         return data.protected == true

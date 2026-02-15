@@ -58,6 +58,7 @@ function itemButton:GetID() return 1 end
 local category = addonEnv.Categories:Categorize(1, itemButton)
 
 assert(category:GetName() == "cat1", "returns first matching category")
+assert(category:GetDisplayName(0) == "cat1", "display name defaults to name for categories without custom formatter")
 assert(#itemButton.ItemCategories == 3, "stores all matching categories including unassigned")
 assert(itemButton.ItemCategories[1]:GetName() == "cat1", "first category is first in list")
 assert(itemButton.ItemCategories[2]:GetName() == "cat2", "second category is second in list")
@@ -71,6 +72,7 @@ local configLeftClicks = 0
 local catA = {
   GetId = function() return "hook:a" end,
   GetName = function() return "A" end,
+  GetDisplayName = function(_, itemsCount) return "A[" .. tostring(itemsCount) .. "]" end,
   IsProtected = function() return false end,
   OnItemUnassigned = function(_, itemId, context)
     unassigned = unassigned + 1
@@ -103,6 +105,7 @@ assert(unassigned == 1, "unassign hook fires for source category")
 assert(targetSeen == catB, "target category is passed through")
 assert(wrappedA:OnRightClick() == true and rightClicks == 1, "right-click passes through to raw category")
 assert(wrappedA:OnLeftClickConfigMode() == "ok" and configLeftClicks == 1, "config-mode left-click passes through to raw category")
+assert(wrappedA:GetDisplayName(3) == "A[3]", "display-name formatter passes through to raw category")
 
 local protectedTrigger = {
   GetId = function() return "hook:protected" end,
