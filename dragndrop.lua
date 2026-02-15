@@ -239,9 +239,10 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
         ClearCursor();
         AddonNS.QueueContainerUpdateItemLayout();
     elseif pickedItemCategory and (pickedItemCategory ~= targetItemCategory) then -- category frame
+        local moveTail = IsShiftKeyDown()
         AddonNS.printDebug("sending CATEGORY_MOVED", AddonNS.Const.Events.CATEGORY_MOVED)
         AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED,
-            getCategoryId(pickedItemCategory), getCategoryId(targetItemCategory));
+            getCategoryId(pickedItemCategory), getCategoryId(targetItemCategory), moveTail);
         RunNextFrame(function() -- todo: maybe these actually should be triggered at the point where action is processed... hmm
             AddonNS.TriggerContainerOnTokenWatchChanged();
             -- container:UpdateContainerFrameAnchors();
@@ -305,9 +306,10 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self)
             ClearCursor();
             AddonNS.QueueContainerUpdateItemLayout();
         elseif pickedItemCategory then -- category frame
+            local moveTail = IsShiftKeyDown()
             AddonNS.printDebug("sending CATEGORY_MOVED_TO_COLUMN", AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN)
             AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN,
-                getCategoryId(pickedItemCategory), columnNo);
+                getCategoryId(pickedItemCategory), columnNo, moveTail);
             -- ClearCursor();
             RunNextFrame(function()
                 AddonNS.TriggerContainerOnTokenWatchChanged();

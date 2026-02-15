@@ -2,14 +2,29 @@ local collapsedCalls = 0
 local selectedCategoryId = nil
 local categoriesConfigMode = false
 local configModeClickCalls = 0
+local shiftDown = false
+local cursorInfoType = nil
+local cursorItemId = nil
+local currentTime = 1
+local cursorX = 0
+local cursorY = 0
+local lastEvent = nil
 
 _G.C_Container = {}
 _G.hooksecurefunc = function() end
-_G.GetTime = function() return 1 end
-_G.GetCursorInfo = function() return nil end
+_G.GetTime = function() return currentTime end
+_G.GetCursorInfo = function() return cursorInfoType, cursorItemId, nil end
+_G.IsShiftKeyDown = function() return shiftDown end
+_G.RunNextFrame = function(fn) fn() end
+_G.GetCursorPosition = function() return cursorX, cursorY end
 
 local addonEnv = {
     container = {},
+    CategoryStore = {
+        GetColumnCount = function()
+            return 3
+        end,
+    },
     Collapsed = {
         toggleCollapsed = function()
             collapsedCalls = collapsedCalls + 1
@@ -25,6 +40,7 @@ local addonEnv = {
             selectedCategoryId = categoryId
         end,
     },
+    TriggerContainerOnTokenWatchChanged = function() end,
     printDebug = function() end,
     Const = {
         Events = {
@@ -34,7 +50,12 @@ local addonEnv = {
         },
     },
     Events = {
-        TriggerCustomEvent = function() end,
+        TriggerCustomEvent = function(_, eventName, ...)
+            lastEvent = {
+                name = eventName,
+                args = { ... },
+            }
+        end,
     },
     QueueContainerUpdateItemLayout = function() end,
 }
@@ -45,6 +66,12 @@ dragAndDropChunk("MyBags", addonEnv)
 local function assertTrue(condition, message)
     if not condition then
         error(message or "assertion failed", 2)
+    end
+end
+
+local function assertEqual(actual, expected, message)
+    if actual ~= expected then
+        error((message or "assertion failed") .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual), 2)
     end
 end
 
@@ -71,6 +98,38 @@ local function category(id, opts)
         end,
     }
     return value
+end
+
+local function resetDragTestState()
+    shiftDown = false
+    cursorInfoType = nil
+    cursorItemId = nil
+    currentTime = currentTime + 1
+    lastEvent = nil
+end
+
+local function frameForColumn(columnIndex)
+    local width = 300
+    local sectionWidth = width / 3
+    cursorX = (columnIndex - 1) * sectionWidth + sectionWidth / 2
+    cursorY = 50
+    return {
+        GetEffectiveScale = function()
+            return 1
+        end,
+        GetLeft = function()
+            return 0
+        end,
+        GetBottom = function()
+            return 0
+        end,
+        GetWidth = function()
+            return width
+        end,
+        GetHeight = function()
+            return 100
+        end,
+    }
 end
 
 run("config mode custom category click selects and does not collapse", function()
@@ -110,4 +169,52 @@ run("normal mode category click still toggles collapse", function()
     assertTrue(collapsedCalls == 1, "collapse should be triggered in normal mode")
     assertTrue(configModeClickCalls == 0, "normal mode should not call config mode hook")
     assertTrue(selectedCategoryId == nil, "normal mode click should not select in config GUI")
+end)
+
+run("category drop emits CATEGORY_MOVED with moveTail when shift is held", function()
+    resetDragTestState()
+    shiftDown = true
+    addonEnv.DragAndDrop.categoryStartDrag({ ItemCategory = category("cus-11") })
+    addonEnv.DragAndDrop.categoryOnReceiveDrag({ ItemCategory = category("cus-22") })
+
+    assertTrue(lastEvent ~= nil, "event should be emitted")
+    assertEqual(lastEvent.name, "CATEGORY_MOVED", "should emit category moved event")
+    assertEqual(lastEvent.args[1], "cus-11", "picked category id")
+    assertEqual(lastEvent.args[2], "cus-22", "target category id")
+    assertEqual(lastEvent.args[3], true, "moveTail should be true when shift is held")
+end)
+
+run("category drop emits CATEGORY_MOVED with moveTail false when shift is not held", function()
+    resetDragTestState()
+    shiftDown = false
+    addonEnv.DragAndDrop.categoryStartDrag({ ItemCategory = category("cus-11") })
+    addonEnv.DragAndDrop.categoryOnReceiveDrag({ ItemCategory = category("cus-22") })
+
+    assertTrue(lastEvent ~= nil, "event should be emitted")
+    assertEqual(lastEvent.name, "CATEGORY_MOVED", "should emit category moved event")
+    assertEqual(lastEvent.args[3], false, "moveTail should be false when shift is not held")
+end)
+
+run("background drop emits CATEGORY_MOVED_TO_COLUMN with moveTail when shift is held", function()
+    resetDragTestState()
+    shiftDown = true
+    addonEnv.DragAndDrop.categoryStartDrag({ ItemCategory = category("cus-11") })
+    addonEnv.DragAndDrop.backgroundOnReceiveDrag(frameForColumn(2))
+
+    assertTrue(lastEvent ~= nil, "event should be emitted")
+    assertEqual(lastEvent.name, "CATEGORY_MOVED_TO_COLUMN", "should emit category moved to column event")
+    assertEqual(lastEvent.args[1], "cus-11", "picked category id")
+    assertEqual(lastEvent.args[2], 2, "target column index")
+    assertEqual(lastEvent.args[3], true, "moveTail should be true when shift is held")
+end)
+
+run("background drop emits CATEGORY_MOVED_TO_COLUMN with moveTail false when shift is not held", function()
+    resetDragTestState()
+    shiftDown = false
+    addonEnv.DragAndDrop.categoryStartDrag({ ItemCategory = category("cus-11") })
+    addonEnv.DragAndDrop.backgroundOnReceiveDrag(frameForColumn(2))
+
+    assertTrue(lastEvent ~= nil, "event should be emitted")
+    assertEqual(lastEvent.name, "CATEGORY_MOVED_TO_COLUMN", "should emit category moved to column event")
+    assertEqual(lastEvent.args[3], false, "moveTail should be false when shift is not held")
 end)

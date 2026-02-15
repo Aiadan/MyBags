@@ -111,6 +111,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ categories config rename/delete popups now pass category wrapper references (not ids) through UI flow, keeping internal interactions object-based.
 * ✅ added explicit in-bag edit-mode indicator (`Edit mode` badge + highlighted cog icon), and closing the bag now always exits edit mode and hides the custom categories config UI/popups.
 * ✅ `Edit mode` badge next to the cog now acts as part of the config toggle (clicking the badge triggers the same edit-mode on/off behavior as the cog).
+* ✅ holding Shift while dragging a category now moves that category and all categories below it in the source column (applies to category-drop reorder and background column-drop).
 
 ### TODO
 

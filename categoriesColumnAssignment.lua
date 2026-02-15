@@ -252,7 +252,7 @@ local function findCategoryPosition(categoryIdValue)
     return nil
 end
 
-local function categoryMoved(eventName, pickedCategory, targetCategory)
+local function categoryMoved(eventName, pickedCategory, targetCategory, moveTail)
     AddonNS.printDebug(eventName)
     local pickedCategoryId = categoryId(pickedCategory)
     local targetCategoryId = categoryId(targetCategory)
@@ -264,14 +264,35 @@ local function categoryMoved(eventName, pickedCategory, targetCategory)
     if not targetColumn then
         return
     end
-    if pickedColumn then
-        table.remove(pickedColumnRef, pickedRow)
+
+    if moveTail and pickedColumn and (pickedColumn == targetColumn) and (targetRow >= pickedRow) then
+        return
     end
+
+    local movedCategoryIds = {}
+    if pickedColumn then
+        if moveTail then
+            for rowIndex = pickedRow, #pickedColumnRef do
+                table.insert(movedCategoryIds, pickedColumnRef[rowIndex])
+            end
+            for rowIndex = #pickedColumnRef, pickedRow, -1 do
+                table.remove(pickedColumnRef, rowIndex)
+            end
+        else
+            table.remove(pickedColumnRef, pickedRow)
+            table.insert(movedCategoryIds, pickedCategoryId)
+        end
+    else
+        table.insert(movedCategoryIds, pickedCategoryId)
+    end
+
     local targetColumnRef = runtimeColumns[targetColumn]
-    table.insert(targetColumnRef, targetRow, pickedCategoryId)
+    for offset, id in ipairs(movedCategoryIds) do
+        table.insert(targetColumnRef, targetRow + offset - 1, id)
+    end
 end
 
-local function categoryMovedToColumn(eventName, pickedCategory, columnIndex)
+local function categoryMovedToColumn(eventName, pickedCategory, columnIndex, moveTail)
     AddonNS.printDebug(eventName)
     local pickedCategoryId = categoryId(pickedCategory)
     if not pickedCategoryId or not columnIndex then
@@ -279,10 +300,25 @@ local function categoryMovedToColumn(eventName, pickedCategory, columnIndex)
     end
     ensureRuntimeColumns()
     local pickedColumn, pickedRow, pickedColumnRef = findCategoryPosition(pickedCategoryId)
+    local movedCategoryIds = {}
     if pickedColumn and pickedColumnRef then
-        table.remove(pickedColumnRef, pickedRow)
+        if moveTail then
+            for rowIndex = pickedRow, #pickedColumnRef do
+                table.insert(movedCategoryIds, pickedColumnRef[rowIndex])
+            end
+            for rowIndex = #pickedColumnRef, pickedRow, -1 do
+                table.remove(pickedColumnRef, rowIndex)
+            end
+        else
+            table.remove(pickedColumnRef, pickedRow)
+            table.insert(movedCategoryIds, pickedCategoryId)
+        end
+    else
+        table.insert(movedCategoryIds, pickedCategoryId)
     end
-    table.insert(runtimeColumns[columnIndex], pickedCategoryId)
+    for _, id in ipairs(movedCategoryIds) do
+        table.insert(runtimeColumns[columnIndex], id)
+    end
 end
 
 local function categoryDeleted(eventName, category)

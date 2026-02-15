@@ -378,27 +378,75 @@ run("category move events use category ids for reorder and column move", functio
     })
     ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catB:GetId(), 1)
 
-    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED, catA:GetId(), catB:GetId())
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED, catA:GetId(), catB:GetId(), false)
     ctx:events():fire_game("PLAYER_LOGOUT")
     local columnsAfterReorder = layout_columns(ctx:snapshot())
     local firstColumn = columnsAfterReorder[1] or {}
     assert_true(firstColumn[1] == catB:GetId(), "reorder places target category first in column")
     assert_true(firstColumn[2] == catA:GetId(), "reorder places moved category after target")
 
-    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED, catB:GetId(), catA:GetId())
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED, catB:GetId(), catA:GetId(), false)
     ctx:events():fire_game("PLAYER_LOGOUT")
     local columnsAfterReverseReorder = layout_columns(ctx:snapshot())
     local firstColumnAfterReverse = columnsAfterReverseReorder[1] or {}
     assert_true(firstColumnAfterReverse[1] == catA:GetId(), "reverse reorder moves dragged category before target")
     assert_true(firstColumnAfterReverse[2] == catB:GetId(), "reverse reorder keeps both categories ordered")
 
-    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catA:GetId(), 2)
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catA:GetId(), 2, false)
     ctx:events():fire_game("PLAYER_LOGOUT")
     local columnsAfterMove = layout_columns(ctx:snapshot())
     local column1 = columnsAfterMove[1] or {}
     local column2 = columnsAfterMove[2] or {}
     assert_true(column1[1] == catB:GetId(), "column 1 keeps target category after move")
     assert_true(column2[#column2] == catA:GetId(), "column 2 receives moved category")
+end)
+
+run("shift category move reorders source tail block and preserves relative order", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    local catC = ctx.AddonNS.CustomCategories:NewCategory("C")
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [catA] = {},
+        [catB] = {},
+        [catC] = {},
+    })
+
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catB:GetId(), 1, false)
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catC:GetId(), 1, false)
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED, catB:GetId(), catA:GetId(), true)
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local columnsAfterShiftReorder = layout_columns(ctx:snapshot())
+    local firstColumn = columnsAfterShiftReorder[1] or {}
+    assert_true(firstColumn[1] == catB:GetId(), "shift reorder puts dragged category at target anchor")
+    assert_true(firstColumn[2] == catC:GetId(), "shift reorder keeps tail relative order")
+    assert_true(firstColumn[3] == catA:GetId(), "shift reorder keeps target after moved tail block")
+end)
+
+run("shift background move sends source tail block to destination column", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    local catC = ctx.AddonNS.CustomCategories:NewCategory("C")
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [catA] = {},
+        [catB] = {},
+        [catC] = {},
+    })
+
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catB:GetId(), 1, false)
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catC:GetId(), 1, false)
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, catB:GetId(), 2, true)
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local columnsAfterShiftColumnMove = layout_columns(ctx:snapshot())
+    local firstColumn = columnsAfterShiftColumnMove[1] or {}
+    local secondColumn = columnsAfterShiftColumnMove[2] or {}
+    assert_true(firstColumn[1] == catA:GetId(), "source column keeps categories above dragged one")
+    assert_true(secondColumn[#secondColumn - 1] == catB:GetId(), "destination receives dragged category")
+    assert_true(secondColumn[#secondColumn] == catC:GetId(),
+        "destination appends moved tail in original relative order")
 end)
 
 run("category delete removes layout entry via category id event", function()

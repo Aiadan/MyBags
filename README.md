@@ -14,6 +14,9 @@ Main features provided by the addon
 
 ### Easy category adjustments
 
+Drag a category header onto another category to reorder it.  
+Hold `Shift` while releasing the drag to move the dragged category together with all categories below it in that source column.
+
 ![Category adjustments](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/main/.previews/cat_move.gif)
 
 ### Easy item category change
@@ -39,6 +42,7 @@ Some other worth mentioning:
   * for New items. Right click on category name to move items to their preassigned categories.
 * All items by default land in Unassigned category.
 * left click category to collapse it
+* hold `Shift` while dropping a dragged category to move that category and the full tail below it
 * searching works as a filter (to be verify whether this is helpful or not)
 * item tooltip lists other matching categories for easier troubleshooting
 
