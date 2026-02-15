@@ -51,35 +51,72 @@ AddonNS.gui.categoriesFrames = {};
 
 --- draggable frame 
 local draggableFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+local activeDraggedCategoryName = nil
+local activeDragShiftState = nil
 
-draggableFrame:SetSize(160, AddonNS.Const.CATEGORY_HEIGHT * 2)
+draggableFrame:SetSize(320, AddonNS.Const.CATEGORY_HEIGHT * 3.2)
 draggableFrame:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
     edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
     edgeSize = 16,
     insets = { left = 4, right = 4, top = 4, bottom = 4 },
 })
-draggableFrame:SetBackdropColor(0, 0, 1, .5)
+draggableFrame:SetBackdropColor(0, 0, 0, 0.9)
 draggableFrame:SetMovable(true)
 draggableFrame:SetPoint("CENTER")
 draggableFrame:Hide()
-draggableFrame.textFrame = draggableFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal");
-draggableFrame.textFrame:SetAllPoints();
-draggableFrame.textFrame:SetWordWrap(false);
 draggableFrame:SetFrameStrata("TOOLTIP")
-function draggableFrame:SetText(text) draggableFrame.textFrame:SetText(text) end
+draggableFrame.nameLine = draggableFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+draggableFrame.nameLine:SetPoint("TOPLEFT", draggableFrame, "TOPLEFT", 12, -10)
+draggableFrame.nameLine:SetPoint("TOPRIGHT", draggableFrame, "TOPRIGHT", -12, -10)
+draggableFrame.nameLine:SetJustifyH("LEFT")
+draggableFrame.nameLine:SetWordWrap(false)
+draggableFrame.nameLine:SetTextColor(1, 1, 1, 1)
+draggableFrame.nameLine:SetFontObject("GameFontHighlight")
+draggableFrame.nameLine:SetShadowColor(0, 0, 0, 1)
+draggableFrame.nameLine:SetShadowOffset(1, -1)
+
+draggableFrame.hintLine = draggableFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+draggableFrame.hintLine:SetPoint("TOPLEFT", draggableFrame.nameLine, "BOTTOMLEFT", 0, -4)
+draggableFrame.hintLine:SetPoint("TOPRIGHT", draggableFrame, "TOPRIGHT", -12, -4)
+draggableFrame.hintLine:SetJustifyH("LEFT")
+draggableFrame.hintLine:SetWordWrap(true)
+draggableFrame.hintLine:SetShadowColor(0, 0, 0, 1)
+draggableFrame.hintLine:SetShadowOffset(1, -1)
+
+local function refreshDragTooltipText()
+    if not activeDraggedCategoryName then
+        return
+    end
+    local categoryNameText = activeDraggedCategoryName .. "|r"
+    local shiftDown = IsShiftKeyDown()
+    if activeDragShiftState ~= shiftDown then
+        activeDragShiftState = shiftDown
+        if shiftDown then
+            draggableFrame.hintLine:SetText("|cff72f272Moving |r" ..
+                categoryNameText .. "|cff72f272 and all categories below it|r")
+        else
+            draggableFrame.hintLine:SetText("|cffc8c8c8Hold Shift: move |r" ..
+                categoryNameText .. "|cffc8c8c8 and all categories below it|r")
+        end
+    end
+    draggableFrame.nameLine:SetText(activeDraggedCategoryName)
+end
 
 function draggableFrame:StartDragging()
     self:SetScript("OnUpdate",
         function()
             local x, y = GetCursorPosition()
             local scale = UIParent:GetEffectiveScale()
-            self:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", x / scale, y / scale)
+            self:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / scale, y / scale)
+            refreshDragTooltipText()
         end);
 end
 
 function draggableFrame:StopDragging()
     self:SetScript("OnUpdate", nil);
+    activeDraggedCategoryName = nil
+    activeDragShiftState = nil
 end
 
 local backgroundFrame = nil;
@@ -282,7 +319,8 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f:RegisterForDrag("LeftButton")
             f:SetScript("OnDragStart", function(self, button)
                 -- adjustDraggableFramePositionToMouse()
-                draggableFrame:SetText(self.ItemCategory:GetDisplayName() or "Unassigned");
+                activeDraggedCategoryName = self.ItemCategory:GetDisplayName() or "Unassigned"
+                refreshDragTooltipText()
                 -- draggableFrame:SetWidth(self:GetWidth());
                 draggableFrame:Show()
                 draggableFrame:StartDragging()
