@@ -116,6 +116,7 @@ This policy also applies to generic or reusable components such as utility funct
 - Before closing any task, check whether the change maps to an existing `TODOs.md` item:
   - if it does, update that item's status/details and prefix completed entries with a checkmark icon as appropriate.
   - if it does not, add a short new entry describing the completed change in the appropriate section.
+  - when adding a new completed entry to a `DONE` list, append it at the end of that list (do not insert it by topic in the middle).
 - Modify `README.md` only when explicitly asked, or when resolving a `TODOs.md` item that requires it.
 - `README.md` is user-facing documentation. Keep language user-oriented and avoid internal implementation details there.
 - If a task introduces a user-facing feature, update `README.md` with a short description of that feature.

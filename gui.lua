@@ -272,9 +272,6 @@ local function startColumnResize()
     if InCombatLockdown() then
         return
     end
-    if not AddonNS.BagViewState:IsCategoriesConfigMode() then
-        return
-    end
 
     local container = AddonNS.container
     local startColumns = AddonNS:GetNumColumns()
@@ -297,7 +294,7 @@ local function startColumnResize()
 end
 
 local function refreshResizeHandle()
-    local shouldShow = AddonNS.container:IsShown() and AddonNS.BagViewState:IsCategoriesConfigMode() and not InCombatLockdown()
+    local shouldShow = AddonNS.container:IsShown() and not InCombatLockdown()
     if shouldShow then
         resizeHandle:Show()
         resizeHandle:EnableMouse(true)

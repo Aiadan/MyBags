@@ -162,6 +162,7 @@ Tasks which after implementation user will not see.
 * ✅ added profiling for bag refresh, `ArrangeCategoriesIntoColumns`, `ItemsOrder:Sort`, and `CustomCategorizer:Categorize` to pinpoint hotspots.
 * ✅ addon freezes when opening bags or changing categories.
   * optimized item sorting, still CustomCategorizer:Categorize could be improved which was separated to another ticket
+* ✅ bag column resize handle is now always visible/usable while bags are open (not gated to edit mode; still hidden in combat lockdown).
 
 ### TODO
 
