@@ -338,7 +338,7 @@ run("custom query matching uses priority order and manual assignment precedence"
     ctx.AddonNS.CustomCategories:SetPriority(catA, 5)
     ctx.AddonNS.CustomCategories:SetPriority(catB, 5)
     local tieMatches = ctx.AddonNS.Categories:GetMatches(2001, button)
-    assert_true(tieMatches[1]:GetId() == catB:GetId(), "priority ties prefer higher raw numeric category id")
+    assert_true(tieMatches[1]:GetId() == catA:GetId(), "priority ties prefer alphabetical category name")
 
     ctx.AddonNS.CustomCategories:AssignToCategory(catB, 2001)
     local manualMatches = ctx.AddonNS.Categories:GetMatches(2001, button)

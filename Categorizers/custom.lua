@@ -566,12 +566,14 @@ function CustomCategorizer:Categorize(itemID, itemButton)
         if leftPriority ~= rightPriority then
             return leftPriority > rightPriority
         end
-        local leftNumeric = tonumber(leftRawId)
-        local rightNumeric = tonumber(rightRawId)
-        if leftNumeric and rightNumeric and leftNumeric ~= rightNumeric then
-            return leftNumeric > rightNumeric
+        local leftName = tostring((db.categories[leftRawId] and db.categories[leftRawId].name) or "")
+        local rightName = tostring((db.categories[rightRawId] and db.categories[rightRawId].name) or "")
+        local leftLower = string.lower(leftName)
+        local rightLower = string.lower(rightName)
+        if leftLower ~= rightLower then
+            return leftLower < rightLower
         end
-        return tostring(leftRawId) > tostring(rightRawId)
+        return tostring(leftRawId) < tostring(rightRawId)
     end)
     for index = 1, #matchedRawIds do
         local rawId = matchedRawIds[index]

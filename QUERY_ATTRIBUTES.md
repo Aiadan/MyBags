@@ -6,8 +6,10 @@ This guide explains how to write queries for custom categories.
 
 When multiple query categories match the same item:
 1. Higher category priority wins first.
-2. If priorities tie, the category with the higher numeric id wins.
-3. If that still ties, a string id comparison is used.
+2. If priorities tie, category name alphabetical order is used.
+3. If that still ties, internal tie-break logic is applied.
+
+Avoid giving matching categories the same name and priority if you need predictable ordering.
 
 Manual assignment always wins over query matching.
 
