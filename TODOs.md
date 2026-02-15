@@ -98,11 +98,11 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ unassigned group should always be visible
 * ✅ search focus now locks combined-bag top edge while typing in bag search (frame still resizes for filtered items, but top/search field stays visually fixed; default Blizzard anchoring resumes when search loses focus).
 * ✅ completed item-drag category hint UX: non-interactive category overlays + dark floating text frame, protected/unassigned action messaging, assign-to text for normal targets, left-anchored column-width layout, persistent target highlighting while dragging over item buttons, and category hover info shown in the same dark frame (no old `GameTooltip`).
+* ✅ edit mode category creation now uses a single in-grid `+ Add Category` row after the last category in the last column (opens the existing create-category popup), newly created categories default to appending in the last column (except first-time empty-layout bootstrap, which keeps round-robin placement), and the side-panel `New` button was removed.
 
 ### TODO
 
 * [!] create some nice default categories based on what I end up with as my query categories in TWW
-* add a button in edit mode to add another category
 * while using search box the itembuttons included in the results should both include items searched by default functionality, but also the functionality should try to use the text inserted into the search box as query. If query is valid, it should be used to expand results of the search. The result should be an union of standard functionality and what is accepted by the query.
 * if the above is done we can during edit mode put the query user is typing in the query for a given category into the search to show all the time what a given query user uses would filter, "catch".
 * show somewhere how many empty spaces are left

@@ -657,7 +657,9 @@ function CustomCategories:NewCategory(name, opts)
         alwaysVisible = opts.alwaysVisible or false,
         items = {},
     }
+    local wrappedId = CATEGORIZER_ID .. "-" .. rawId
     fireUpdate()
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_CREATED, wrappedId)
     return AddonNS.CategoryStore:GetWrapperForRaw(CATEGORIZER_ID, new_raw(rawId, db.categories[rawId]))
 end
 

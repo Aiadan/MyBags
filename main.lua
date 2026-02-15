@@ -346,6 +346,7 @@ local function newIterator(container, index)
                 container.MyBags.height = currentRowY;
                 container.MyBags.rows = currentRowNo;
             end
+            return currentRowY
         end
 
         -- Calculate positions for each column
@@ -359,9 +360,30 @@ local function newIterator(container, index)
 
         local columnSize = itemSize * AddonNS.Const.ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING;
         local placeStartedAt = refreshProfile and profileNowMs() or nil
+        local columnBottomYByIndex = {}
         for colIndex, categoryObjs in ipairs(categoryAssignments) do
             local columnStartX = (colIndex - 1) * columnSize
-            placeItemsInGrid(categoryObjs, columnStartX)
+            columnBottomYByIndex[colIndex] = placeItemsInGrid(categoryObjs, columnStartX)
+        end
+
+        if AddonNS.BagViewState:IsCategoriesConfigMode() then
+            local lastColumnIndex = #categoryAssignments
+            local columnBottomY = columnBottomYByIndex[lastColumnIndex] or 0
+            local addCategoryY = 0
+            if columnBottomY > 0 then
+                addCategoryY = columnBottomY + AddonNS.Const.COLUMN_SPACING
+            end
+            table.insert(container.MyBags.categoryPositions, {
+                isAddCategoryControl = true,
+                x = (lastColumnIndex - 1) * columnSize - ITEM_SPACING / 2,
+                y = addCategoryY,
+                width = itemSize * AddonNS.Const.ITEMS_PER_ROW,
+                height = AddonNS.Const.CATEGORY_HEIGHT,
+            })
+            local addControlBottomY = addCategoryY + AddonNS.Const.CATEGORY_HEIGHT
+            if addControlBottomY > container.MyBags.height then
+                container.MyBags.height = addControlBottomY
+            end
         end
         if refreshProfile then
             refreshProfile.placeMs = refreshProfile.placeMs + (profileNowMs() - placeStartedAt)

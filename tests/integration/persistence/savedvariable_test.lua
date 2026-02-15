@@ -102,6 +102,18 @@ local function layout_columns(snapshot)
     return columns
 end
 
+local function count_layout_id(columns, targetId)
+    local count = 0
+    for _, column in ipairs(columns) do
+        for _, id in ipairs(column) do
+            if id == targetId then
+                count = count + 1
+            end
+        end
+    end
+    return count
+end
+
 run("fresh install seeds defaults", function()
     local ctx = harness.new()
     ctx:events():fire_game("PLAYER_LOGOUT")
@@ -228,6 +240,46 @@ run("custom categories persist with namespaced layout", function()
     assert_true(foundCatA, "layout uses namespaced ids for custom categories")
     assert_true(snapshot.categorizers == nil or snapshot.categorizers.cus == nil, "old custom bucket not persisted")
     assert_true(snapshot.categories == nil, "legacy categories not persisted")
+end)
+
+run("new custom category appends to last column when layout already seeded", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [catA] = {},
+        [catB] = {},
+    })
+
+    local catC = ctx.AddonNS.CustomCategories:NewCategory("C")
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [catA] = {},
+        [catB] = {},
+        [catC] = {},
+    })
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local columns = layout_columns(ctx:snapshot())
+    local lastColumn = columns[3] or {}
+    assert_true(lastColumn[#lastColumn] == catC:GetId(), "new category is appended to last column")
+    assert_true(count_layout_id(columns, catC:GetId()) == 1, "new category appears only once in layout")
+end)
+
+run("empty layout bootstrap keeps round-robin placement for new categories", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [catA] = {},
+        [catB] = {},
+    })
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local columns = layout_columns(ctx:snapshot())
+    assert_true((columns[1] or {})[1] == catA:GetId(), "first unmatched category stays in first column on empty bootstrap")
+    assert_true((columns[2] or {})[1] == catB:GetId(), "second unmatched category stays in second column on empty bootstrap")
+    assert_true(count_layout_id(columns, catA:GetId()) == 1, "first category appears only once")
+    assert_true(count_layout_id(columns, catB:GetId()) == 1, "second category appears only once")
 end)
 
 run("custom category priority persists only for non-default overrides", function()

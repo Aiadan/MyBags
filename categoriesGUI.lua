@@ -197,21 +197,9 @@ function AddonNS.createGUI()
         AddonNS.QueueContainerUpdateItemLayout();
     end)
 
-    -- new button
-    local newButton = CreateFrame("Button", nil, containerFrame, "UIPanelButtonTemplate")
-    newButton:SetPoint("TOPLEFT", containerFrame.Inset,
-        "BOTTOMLEFT", 0, -6);
-
-    newButton:SetSize(60, 20)
-    newButton:SetText("New")
-
-    newButton:SetScript("OnClick", function(self)
-        StaticPopup_Show("CREATE_CATEGORY_CONFIRM");
-    end)
-
     --- [[ save button]]
     local renameButton = CreateFrame("Button", nil, containerFrame, "UIPanelButtonTemplate")
-    renameButton:SetPoint("TOPLEFT", newButton, "TOPRIGHT", 5, 0);
+    renameButton:SetPoint("TOPLEFT", containerFrame.Inset, "BOTTOMLEFT", 0, -6);
 
     renameButton:SetSize(60, 20)
     renameButton:SetText("Rename")
@@ -281,7 +269,7 @@ function AddonNS.createGUI()
     --- [[ Query label ]]
     local priorityLabel = containerFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal");
     priorityLabel:SetText("Priority:");
-    priorityLabel:SetPoint("TOPLEFT", newButton, "BOTTOMLEFT", 4, -5);
+    priorityLabel:SetPoint("TOPLEFT", renameButton, "BOTTOMLEFT", 4, -5);
 
     local priorityEditBox = CreateFrame("EditBox", nil, containerFrame, "InputBoxTemplate")
     priorityEditBox:SetAutoFocus(false)

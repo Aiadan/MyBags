@@ -54,6 +54,33 @@ local HINT_TONE_STYLE = {
     assign = { 0.20, 0.85, 0.35, 0.30 },
     blocked = { 0.90, 0.24, 0.24, 0.30 },
 }
+local ADD_CATEGORY_CONTROL_LABEL = "|cff90ff90+ Add Category|r"
+local ADD_CATEGORY_CONTROL_LABEL_HOVER = "|cffffff80+ Add Category|r"
+local ADD_CATEGORY_CONTROL_BACKDROP = {
+    bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+}
+local ADD_CATEGORY_CONTROL_STYLE = {
+    normal = {
+        bg = { 0.08, 0.18, 0.08, 0.86 },
+        border = { 0.30, 0.85, 0.30, 1 },
+        label = ADD_CATEGORY_CONTROL_LABEL,
+    },
+    hover = {
+        bg = { 0.14, 0.30, 0.14, 0.92 },
+        border = { 0.55, 1, 0.55, 1 },
+        label = ADD_CATEGORY_CONTROL_LABEL_HOVER,
+    },
+}
+
+local function styleAddCategoryControl(frame, isHovered)
+    local style = isHovered and ADD_CATEGORY_CONTROL_STYLE.hover or ADD_CATEGORY_CONTROL_STYLE.normal
+    frame.addControlBackdrop:SetBackdropColor(style.bg[1], style.bg[2], style.bg[3], style.bg[4])
+    frame.addControlBackdrop:SetBackdropBorderColor(style.border[1], style.border[2], style.border[3], style.border[4])
+    frame:SetText(style.label)
+end
 
 local function applyCategoryHint(frame, hint)
     if not hint then
@@ -137,7 +164,7 @@ local function findFocusedCategory(frame)
 end
 
 local function getHoveredCategoryIdForHints()
-    if hoveredCategoryFrame and hoveredCategoryFrame:IsShown() then
+    if hoveredCategoryFrame and hoveredCategoryFrame:IsShown() and hoveredCategoryFrame.ItemCategory then
         return hoveredCategoryFrame.ItemCategory:GetId()
     end
     if not AddonNS.DragAndDrop:IsItemDragActive() then
@@ -159,16 +186,20 @@ function AddonNS.gui:RefreshCategoryDragHints()
     for i = 1, #self.categoriesFrames do
         local frame = self.categoriesFrames[i]
         if frame:IsShown() then
-            local isHovered = frame.ItemCategory:GetId() == hoveredCategoryId
-            local hint = AddonNS.DragAndDrop:GetCategoryDropHint(frame.ItemCategory, isHovered)
-            applyCategoryHint(frame, hint)
-            if isHovered then
-                shownTextFrame = frame
-                if hint and hint.text then
-                    shownText = hint.text
-                else
-                    shownText = getCategoryHoverText(frame)
+            if frame.ItemCategory then
+                local isHovered = frame.ItemCategory:GetId() == hoveredCategoryId
+                local hint = AddonNS.DragAndDrop:GetCategoryDropHint(frame.ItemCategory, isHovered)
+                applyCategoryHint(frame, hint)
+                if isHovered then
+                    shownTextFrame = frame
+                    if hint and hint.text then
+                        shownText = hint.text
+                    else
+                        shownText = getCategoryHoverText(frame)
+                    end
                 end
+            else
+                applyCategoryHint(frame, nil)
             end
         end
     end
@@ -481,10 +512,35 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             fs:SetJustifyV("TOP")
             fs:SetWordWrap(false);
 
+            local function applyCategoryTextLayout()
+                fs:ClearAllPoints()
+                fs:SetPoint("TOPLEFT", f, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
+                fs:SetPoint("TOPRIGHT", f, "TOPRIGHT", -ITEM_SPACING / 2, -ITEM_SPACING / 2)
+                fs:SetJustifyH("LEFT")
+                fs:SetJustifyV("TOP")
+                fs:SetFontObject("GameFontNormal")
+            end
+
+            local function applyAddControlTextLayout()
+                fs:ClearAllPoints()
+                fs:SetPoint("LEFT", f, "LEFT", 6, 0)
+                fs:SetPoint("RIGHT", f, "RIGHT", -6, 0)
+                fs:SetJustifyH("CENTER")
+                fs:SetJustifyV("MIDDLE")
+                fs:SetFontObject("GameFontHighlight")
+            end
+
             f.bg = CreateFrame("Frame", nil, f, "InsetFrameTemplate")
             f.bg:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -AddonNS.Const.CATEGORY_HEIGHT + AddonNS.Const.COLUMN_SPACING / 2)
             f.bg:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, AddonNS.Const.COLUMN_SPACING / 2)
             f.bg:Hide();
+
+            f.addControlBackdrop = CreateFrame("Frame", nil, f, "BackdropTemplate")
+            f.addControlBackdrop:SetBackdrop(ADD_CATEGORY_CONTROL_BACKDROP)
+            f.addControlBackdrop:SetAllPoints(f)
+            f.addControlBackdrop:EnableMouse(false)
+            f.addControlBackdrop:SetFrameLevel(f:GetFrameLevel() - 1)
+            f.addControlBackdrop:Hide()
 
             f.hintOverlay = CreateFrame("Frame", nil, f, "BackdropTemplate")
             f.hintOverlay:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
@@ -494,11 +550,17 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
 
             AddonNS.gui.categoriesFrames[i] = f;
             function f:SetText(text) fs:SetText(text) end
+            f.ApplyCategoryTextLayout = applyCategoryTextLayout
+            f.ApplyAddControlTextLayout = applyAddControlTextLayout
+            f.isAddCategoryControl = false
 
             f:EnableMouse(true)
             f:SetScript("OnEnter",
                 function(self)
                     hoveredCategoryFrame = self
+                    if self.isAddCategoryControl then
+                        styleAddCategoryControl(self, true)
+                    end
                     AddonNS.gui:RefreshCategoryDragHints()
                 end)
             f:SetScript("OnLeave",
@@ -507,6 +569,9 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                     -- self:SetBackdropColor(0, 0, 1, .5)
                     if hoveredCategoryFrame == self then
                         hoveredCategoryFrame = nil
+                    end
+                    if self.isAddCategoryControl then
+                        styleAddCategoryControl(self, false)
                     end
                     AddonNS.gui:RefreshCategoryDragHints()
                 end)
@@ -537,7 +602,6 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         end
 
         local f = AddonNS.gui.categoriesFrames[i];
-        f.ItemCategory = categoryGUIInfo.category;
         f:SetPoint("TOPLEFT", backgroundFrame, "TOPLEFT", categoryGUIInfo.x, -categoryGUIInfo.y)
         -- if categoryGUIInfo.last then
         --     f:SetPoint("BOTTOM", relativeTo, "TOP", 0, 0)
@@ -546,12 +610,55 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         f:SetWidth(categoryGUIInfo.width)
         -- fs.fs:SetWidth(categoryGUIInfo.width)
         f:SetHeight(categoryGUIInfo.height)
-        local label = categoryGUIInfo.category:GetDisplayName(categoryGUIInfo.itemsCount) or "Unassigned"
-        if isCollapsed(categoryGUIInfo.category) then
-            label = label .. " (" .. categoryGUIInfo.itemsCount .. ") |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a"
+
+        if categoryGUIInfo.isAddCategoryControl then
+            f.ItemCategory = nil
+            f.isAddCategoryControl = true
+            f.bg:Hide()
+            f.addControlBackdrop:Show()
+            f:ApplyAddControlTextLayout()
+            styleAddCategoryControl(f, false)
+            f:RegisterForDrag("LeftButton")
+            f:SetScript("OnMouseUp", function(_, button)
+                if button == "LeftButton" then
+                    StaticPopup_Show("CREATE_CATEGORY_CONFIRM")
+                end
+            end)
+            f:SetScript("OnReceiveDrag", nil)
+            f:SetScript("OnDragStart", nil)
+            f:SetScript("OnDragStop", nil)
+            f:Show()
+        else
+            f.ItemCategory = categoryGUIInfo.category;
+            f.isAddCategoryControl = false
+            f.bg:Hide()
+            f.addControlBackdrop:Hide()
+            f:ApplyCategoryTextLayout()
+            f:RegisterForDrag("LeftButton")
+            f:SetScript("OnMouseUp", AddonNS.DragAndDrop.categoryOnMouseUp)
+            f:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.categoryOnReceiveDrag)
+            f:SetScript("OnDragStart", function(self, button)
+                activeDraggedCategoryName = self.ItemCategory:GetDisplayName() or "Unassigned"
+                refreshDragTooltipText()
+                draggableFrame:Show()
+                draggableFrame:StartDragging()
+                AddonNS.DragAndDrop.categoryStartDrag(self);
+                PlaySound(1183 );
+                AddonNS.printDebug("OnDragStart", button)
+            end)
+            f:SetScript("OnDragStop", function(self)
+                draggableFrame:Hide()
+                draggableFrame:StopDragging()
+                PlaySound(1200);
+                AddonNS.printDebug("OnDragStop")
+            end)
+            local label = categoryGUIInfo.category:GetDisplayName(categoryGUIInfo.itemsCount) or "Unassigned"
+            if isCollapsed(categoryGUIInfo.category) then
+                label = label .. " (" .. categoryGUIInfo.itemsCount .. ") |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a"
+            end
+            f:SetText(label); -- .
+            f:Show()
         end
-        f:SetText(label); -- .
-        f:Show()
         -- f:Raise();
     end
     -- backgroundFrame:Lower();

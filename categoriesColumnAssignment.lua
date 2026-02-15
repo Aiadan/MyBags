@@ -121,6 +121,17 @@ local function appendToLayout(columnIndex, categoryIdValue)
     table.insert(column, id)
 end
 
+local function isLayoutEmpty()
+    ensureRuntimeColumns()
+    local numColumns = getNumColumns()
+    for columnIndex = 1, numColumns do
+        if #(runtimeColumns[columnIndex] or {}) > 0 then
+            return false
+        end
+    end
+    return true
+end
+
 function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     local profile = nil
     if profilingEnabled() then
@@ -333,6 +344,15 @@ local function categoryDeleted(eventName, category)
     end
 end
 
+local function customCategoryCreated(eventName, category)
+    AddonNS.printDebug(eventName)
+    if isLayoutEmpty() then
+        return
+    end
+    local lastColumnIndex = getNumColumns()
+    appendToLayout(lastColumnIndex, category)
+end
+
 function AddonNS.Categories:SetColumnCount(columnCount)
     ensureRuntimeColumns()
     local previousCount = getNumColumns()
@@ -366,5 +386,6 @@ AddonNS.Events:RegisterEvent("PLAYER_LOGOUT", function()
 end)
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_CREATED, customCategoryCreated)
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED, categoryMoved)
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN, categoryMovedToColumn)
