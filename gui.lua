@@ -133,7 +133,7 @@ backgroundFrame.myBagAddonHooked = true;
 local resizeHandle = CreateFrame("Button", nil, AddonNS.container, "PanelResizeButtonTemplate")
 resizeHandle:SetPoint("BOTTOMLEFT", AddonNS.container, "BOTTOMLEFT", 2, 2)
 resizeHandle:SetFrameStrata("TOOLTIP")
-resizeHandle:SetRotationDegrees(90)
+resizeHandle:SetRotationDegrees(270)
 resizeHandle:Hide()
 
 local activeResize = nil
