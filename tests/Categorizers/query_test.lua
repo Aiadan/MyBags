@@ -97,3 +97,17 @@ for _, case in ipairs(testCases) do
   local evaluateItem = Query.evaluate(compiledQuery, quotedValues)
   assert(evaluateItem(case.item) == case.expected, case.name)
 end
+
+local adHocEvaluator = addonEnv.QueryCategories:CompileAdHoc("itemType = 3")
+assert(type(adHocEvaluator) == "function", "CompileAdHoc returns evaluator for valid query")
+assert(adHocEvaluator(testItem1) == true, "CompileAdHoc evaluator matches valid item")
+assert(adHocEvaluator(testItem2) == false, "CompileAdHoc evaluator rejects invalid item")
+
+local invalidAttribute = addonEnv.QueryCategories:CompileAdHoc("unknownAttr = 3")
+assert(invalidAttribute == nil, "CompileAdHoc returns nil for unknown attribute")
+
+local invalidComparator = addonEnv.QueryCategories:CompileAdHoc("itemType == 3")
+assert(invalidComparator == nil, "CompileAdHoc returns nil for invalid comparator")
+
+local invalidSyntax = addonEnv.QueryCategories:CompileAdHoc("itemType = 3 OR")
+assert(invalidSyntax == nil, "CompileAdHoc returns nil for malformed syntax")

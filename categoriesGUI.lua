@@ -261,7 +261,6 @@ function AddonNS.createGUI()
 
     containerFrame:SetScript("OnHide", function()
         lastSelectedCategoryId = nil
-        queryHelpFrame:Hide()
         AddonNS.QueueContainerUpdateItemLayout();
     end)
 

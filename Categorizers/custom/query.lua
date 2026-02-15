@@ -79,14 +79,28 @@ local function prepare(query)
     return query, quotedValues
 end
 
-local function toboolean(text)
-    return text == "true" and true or false
+local function parseBoolValue(text)
+    if text == "true" then
+        return true
+    end
+    if text == "false" then
+        return false
+    end
+    return nil
+end
+
+local function isValidLuaPattern(value)
+    local success = pcall(string.match, "", value)
+    return success
 end
 
 local Comparators = {
     [ValueType.STRING] = {
         ["="] = {
             createNew = function(retriver, value)
+                if not isValidLuaPattern(value) then
+                    return nil
+                end
                 return function(itemInfo)
                     local candidate = retriver(itemInfo)
                     if type(candidate) ~= "string" then
@@ -98,6 +112,9 @@ local Comparators = {
         },
         ["!="] = {
             createNew = function(retriver, value)
+                if not isValidLuaPattern(value) then
+                    return nil
+                end
                 return function(itemInfo)
                     local candidate = retriver(itemInfo)
                     if type(candidate) ~= "string" then
@@ -112,6 +129,9 @@ local Comparators = {
         ["="] = {
             createNew = function(retriver, value)
                 local numberValue = tonumber(value)
+                if not numberValue then
+                    return nil
+                end
                 return function(itemInfo)
                     return retriver(itemInfo) == numberValue
                 end
@@ -120,6 +140,9 @@ local Comparators = {
         ["!="] = {
             createNew = function(retriver, value)
                 local numberValue = tonumber(value)
+                if not numberValue then
+                    return nil
+                end
                 return function(itemInfo)
                     return retriver(itemInfo) ~= numberValue
                 end
@@ -128,6 +151,9 @@ local Comparators = {
         [">"] = {
             createNew = function(retriver, value)
                 local numberValue = tonumber(value)
+                if not numberValue then
+                    return nil
+                end
                 return function(itemInfo)
                     return retriver(itemInfo) > numberValue
                 end
@@ -136,6 +162,9 @@ local Comparators = {
         [">="] = {
             createNew = function(retriver, value)
                 local numberValue = tonumber(value)
+                if not numberValue then
+                    return nil
+                end
                 return function(itemInfo)
                     return retriver(itemInfo) >= numberValue
                 end
@@ -144,6 +173,9 @@ local Comparators = {
         ["<"] = {
             createNew = function(retriver, value)
                 local numberValue = tonumber(value)
+                if not numberValue then
+                    return nil
+                end
                 return function(itemInfo)
                     return retriver(itemInfo) < numberValue
                 end
@@ -152,6 +184,9 @@ local Comparators = {
         ["<="] = {
             createNew = function(retriver, value)
                 local numberValue = tonumber(value)
+                if not numberValue then
+                    return nil
+                end
                 return function(itemInfo)
                     return retriver(itemInfo) <= numberValue
                 end
@@ -161,7 +196,10 @@ local Comparators = {
     [ValueType.BOOL] = {
         ["="] = {
             createNew = function(retriver, value)
-                local boolValue = toboolean(value)
+                local boolValue = parseBoolValue(value)
+                if boolValue == nil then
+                    return nil
+                end
                 return function(itemInfo)
                     return boolValue == retriver(itemInfo)
                 end
@@ -169,7 +207,10 @@ local Comparators = {
         },
         ["!="] = {
             createNew = function(retriver, value)
-                local boolValue = toboolean(value)
+                local boolValue = parseBoolValue(value)
+                if boolValue == nil then
+                    return nil
+                end
                 return function(itemInfo)
                     return boolValue ~= retriver(itemInfo)
                 end
@@ -219,22 +260,15 @@ end
 local function GetRetriever(name, comparison, value)
     local descriptor = RetrieversByLowerName[string.lower(name)]
     if not descriptor then
-        return function()
-            return false
-        end
+        return nil
     end
     local comparatorFactory = Comparators[descriptor.type] and Comparators[descriptor.type][comparison]
     if not comparatorFactory then
-        return function()
-            return false
-        end
+        return nil
     end
     return comparatorFactory.createNew(descriptor.func, value)
 end
 
-local alwaysFalse = function()
-    return false
-end
 local space = ""
 
 local function parseLeafValue(value, quotedValues)
@@ -255,7 +289,7 @@ local function evaluateLeaf(leafQuery, quotedValues)
     leafQuery = trim(leafQuery)
     local name, comparison, value = leafQuery:match("^(%S+)%s+(%S+)%s+(.+)$")
     if not name then
-        return alwaysFalse
+        return nil
     end
     value = parseLeafValue(trim(value), quotedValues)
     return GetRetriever(name, comparison, value)
@@ -313,7 +347,10 @@ local function evaluate(query, quotedValues)
         tokenString = query:match("^%b()")
         if tokenString then
             local subQuery = tokenString:sub(2, -2)
-            local func = evaluate(subQuery, quotedValues)
+            local func, isValid = evaluate(subQuery, quotedValues)
+            if not isValid then
+                return nil, false
+            end
             local notFunc
             if nextOp then
                 if nextOp == OpEnum.NOT then
@@ -365,6 +402,9 @@ local function evaluate(query, quotedValues)
                 (not tokenString and vanillaTokenString or tokenString)
             if tokenString then
                 local func = evaluateLeaf(tokenString, quotedValues)
+                if not func then
+                    return nil, false
+                end
                 local notFunc
                 if nextOp then
                     if nextOp == OpEnum.NOT then
@@ -378,13 +418,16 @@ local function evaluate(query, quotedValues)
             end
         end
         if not tokenString then
-            return alwaysFalse
+            return nil, false
         end
         query = trim(query:sub(#tokenString + 1))
         tokenString = nil
     end
 
-    return orFunction
+    if #orFunctions == 0 then
+        return nil, false
+    end
+    return orFunction, true
 end
 
 local compiledQueries = {}
@@ -401,6 +444,18 @@ local function resolveRawId(categoryOrId)
     return categoryOrId
 end
 
+local function compileQuery(queryString)
+    if not queryString or #trim(queryString) == 0 then
+        return nil, false
+    end
+    local preparedQuery, quotedValues = prepare(queryString)
+    local evaluator, isValid = evaluate(preparedQuery, quotedValues)
+    if not isValid or not evaluator then
+        return nil, false
+    end
+    return evaluator, true
+end
+
 local function storeCompiledQuery(rawId, queryString)
     if not rawId or not queryString or #trim(queryString) == 0 then
         if rawId then
@@ -408,7 +463,8 @@ local function storeCompiledQuery(rawId, queryString)
         end
         return
     end
-    compiledQueries[rawId] = evaluate(prepare(queryString))
+    local evaluator = compileQuery(queryString)
+    compiledQueries[rawId] = evaluator
 end
 
 function AddonNS.QueryCategories:SyncCompiledQuery(categoryOrId, queryString)
@@ -459,6 +515,19 @@ function AddonNS.QueryCategories:GetCompiled(categoryOrId)
     return compiledQueries[rawId]
 end
 
+function AddonNS.QueryCategories:CompileAdHoc(queryText)
+    local evaluator = compileQuery(queryText)
+    return evaluator
+end
+
+function AddonNS.QueryCategories:EvaluateSearchUnion(defaultMatch, evaluator, itemInfo)
+    local queryMatch = false
+    if evaluator and itemInfo then
+        queryMatch = evaluator(itemInfo) == true
+    end
+    return defaultMatch or queryMatch, queryMatch
+end
+
 AddonNS.Events:OnInitialize(function()
     for _, rawId in ipairs(AddonNS.CustomCategories:GetQueryCategoryRawIds()) do
         local query = AddonNS.CustomCategories:GetQuery(rawId)
@@ -481,4 +550,5 @@ AddonNS._Test = AddonNS._Test or {}
 AddonNS._Test.Query = {
     prepare = prepare,
     evaluate = evaluate,
+    compileQuery = compileQuery,
 }

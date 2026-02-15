@@ -44,7 +44,8 @@ Some other worth mentioning:
 * While dragging an item, category hint banners explain the drop action; dropping onto `Unassigned` removes manual assignment from custom categories.
 * left click category to collapse it
 * hold `Shift` while dropping a dragged category to move that category and the full tail below it
-* searching works as a filter (to be verify whether this is helpful or not)
+* searching works as a filter
+* search results use a union: Blizzard default search matches plus valid query-language matches from the same search text; invalid query text is ignored
 * custom query categories support explicit priority scores (higher score wins first)
 * query syntax/attributes reference: see [QUERY_ATTRIBUTES.md](QUERY_ATTRIBUTES.md)
 * query editor now includes an in-game `Help` button with a scrollable query syntax/priority reference panel

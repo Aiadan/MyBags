@@ -569,6 +569,11 @@ local function collectItemInfo(itemID, itemButton)
     return payload, containerInfo
 end
 
+function CustomCategories:GetItemQueryPayload(itemID, itemButton)
+    local payload = collectItemInfo(itemID, itemButton)
+    return payload
+end
+
 function CustomCategorizer:ListCategories()
     return all_raw()
 end

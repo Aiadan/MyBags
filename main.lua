@@ -16,6 +16,10 @@ end
 local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
 local triggerContainerUpdateItemLayout
+local searchQueryState = {
+    text = "",
+    evaluator = nil,
+}
 
 local function triggerContainerOnTokenWatchChanged()
     AddonNS.printDebug("triggerContainerOnTokenWatchChanged fired")
@@ -173,6 +177,15 @@ local function refreshSearchAnchorLockState(searchBox)
     end
 end
 
+local function refreshSearchQueryState(searchText)
+    local nextText = searchText or ""
+    if searchQueryState.text == nextText then
+        return
+    end
+    searchQueryState.text = nextText
+    searchQueryState.evaluator = AddonNS.QueryCategories:CompileAdHoc(nextText)
+end
+
 BagItemSearchBox:HookScript("OnEditFocusGained", function(searchBox)
     refreshSearchAnchorLockState(searchBox)
 end)
@@ -185,9 +198,33 @@ BagItemSearchBox:HookScript("OnTextChanged", function(searchBox)
     refreshSearchAnchorLockState(searchBox)
 end)
 
+local function installSearchBoxWrapper(searchBox)
+    if not searchBox then
+        return
+    end
+    if searchBox.MyBagsSearchWrapped then
+        return
+    end
+    local oldOnTextChanged = searchBox:GetScript("OnTextChanged")
+    if not oldOnTextChanged then
+        return
+    end
+    searchBox:SetScript("OnTextChanged", function(box, userChanged)
+        local text = box:GetText() or ""
+        refreshSearchQueryState(text)
+        oldOnTextChanged(box, userChanged)
+    end)
+    searchBox.MyBagsSearchWrapped = true
+end
+
+installSearchBoxWrapper(BagItemSearchBox)
+installSearchBoxWrapper(BankItemSearchBox)
+
 container:HookScript("OnHide", function()
     container:SetSearchAnchorLockActive(false)
 end)
+
+refreshSearchQueryState(BagItemSearchBox:GetText())
 
 function container:GetColumns()
     return AddonNS.Const.ITEMS_PER_ROW * AddonNS.CategoryStore:GetColumnCount()
@@ -232,18 +269,33 @@ local function newIterator(container, index)
         -- [[ CATEGORISATION ]]
         local info = C_Container.GetContainerItemInfo(itemButton:GetBagID(), itemButton:GetID());
         itemButton.ItemCategory = nil;
-        if (info and not info.isFiltered) then
-            itemButton._myBagsItemId = info.itemID
-            local categorizeStartedAt = refreshProfile and profileNowMs() or nil
-            itemButton.ItemCategory = AddonNS.Categories:Categorize(info.itemID, itemButton);
-            if refreshProfile then
-                refreshProfile.itemsSeen = refreshProfile.itemsSeen + 1
-                refreshProfile.categorizeMs = refreshProfile.categorizeMs + (profileNowMs() - categorizeStartedAt)
+        if (info) then
+            local defaultMatch = not info.isFiltered
+            local includeInSearch = defaultMatch
+            local queryMatch = false
+            if not defaultMatch and searchQueryState.evaluator then
+                local payload = AddonNS.CustomCategories:GetItemQueryPayload(info.itemID, itemButton)
+                includeInSearch, queryMatch = AddonNS.QueryCategories:EvaluateSearchUnion(defaultMatch,
+                    searchQueryState.evaluator, payload)
             end
-            arrangedItems[itemButton.ItemCategory] = arrangedItems[itemButton.ItemCategory] or
-                {}
+            if queryMatch then
+                itemButton:SetMatchesSearch(true)
+            end
+            if includeInSearch then
+                itemButton._myBagsItemId = info.itemID
+                local categorizeStartedAt = refreshProfile and profileNowMs() or nil
+                itemButton.ItemCategory = AddonNS.Categories:Categorize(info.itemID, itemButton);
+                if refreshProfile then
+                    refreshProfile.itemsSeen = refreshProfile.itemsSeen + 1
+                    refreshProfile.categorizeMs = refreshProfile.categorizeMs + (profileNowMs() - categorizeStartedAt)
+                end
+                arrangedItems[itemButton.ItemCategory] = arrangedItems[itemButton.ItemCategory] or
+                    {}
 
-            table.insert(arrangedItems[itemButton.ItemCategory], itemButton);
+                table.insert(arrangedItems[itemButton.ItemCategory], itemButton);
+            elseif itemButton:GetBagID() ~= Enum.BagIndex.ReagentBag then
+                AddonNS.emptyItemButton = itemButton;
+            end
         elseif itemButton:GetBagID() ~= Enum.BagIndex.ReagentBag then
             AddonNS.emptyItemButton = itemButton;
         end
