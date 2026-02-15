@@ -7,6 +7,7 @@ AddonNS.CategoriesGUI = AddonNS.CategoriesGUI or {}
 
 function AddonNS.createGUI()
     local container = AddonNS.container;
+    local lastSelectedCategoryId = nil
 
     local containerFrame = GS:CreateButtonFrame(addonName, 360, 580, true);
     containerFrame:SetPoint("TOPRIGHT", container, "TOPLEFT", 0, -30);
@@ -135,6 +136,7 @@ function AddonNS.createGUI()
     end)
 
     containerFrame:SetScript("OnHide", function()
+        lastSelectedCategoryId = nil
         AddonNS.QueueContainerUpdateItemLayout();
     end)
 
@@ -272,6 +274,7 @@ function AddonNS.createGUI()
     saveQueryButton:Disable()
     list:RegisterCallback("SelectionChanged", function()
         local category = getSelectedCategory()
+        local selectedCategoryId = category and category.id or nil
         if category then
             renameButton:Enable()
             alwaysShowCheckbox:Enable()
@@ -286,6 +289,10 @@ function AddonNS.createGUI()
             deleteButton:Disable()
             saveQueryButton:Disable()
             containerFrame.textScrollFrame.EditBox:SetText("")
+        end
+        if lastSelectedCategoryId ~= selectedCategoryId then
+            lastSelectedCategoryId = selectedCategoryId
+            AddonNS.QueueContainerUpdateItemLayout();
         end
     end)
 
@@ -392,6 +399,10 @@ function AddonNS.createGUI()
 
     function AddonNS.CategoriesGUI:IsShown()
         return containerFrame:IsShown()
+    end
+
+    function AddonNS.CategoriesGUI:GetSelectedCategoryId()
+        return getSelectedCategoryId()
     end
 end
 

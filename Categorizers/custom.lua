@@ -9,6 +9,7 @@ local CATEGORIZER_ID = "cus"
 local STORAGE_KEY = "userCategories"
 local STORAGE_SCHEMA_VERSION = 1
 local RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX = "|CFFbbbbbb"
+local SELECTED_CUSTOM_CATEGORY_PREFIX = "|cffff2020>>|r "
 
 local assignments = {}
 local categorizeProfile = {
@@ -304,7 +305,10 @@ local function new_raw(id, data)
     function raw:GetDisplayName(itemsCount)
         local name = data.name or ""
         if itemsCount == 0 and not data.alwaysVisible then
-            return RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX .. name
+            name = RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX .. name
+        end
+        if itemsCount ~= nil and AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:GetSelectedCategoryId() == CATEGORIZER_ID .. "-" .. id then
+            name = SELECTED_CUSTOM_CATEGORY_PREFIX .. name
         end
         return name
     end

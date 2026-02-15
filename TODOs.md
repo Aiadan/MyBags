@@ -104,6 +104,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ categories config panel can now be hidden without exiting edit mode; selecting a custom category from bag headers reopens the panel automatically and WowList single-select now stays single when selecting by predicate.
 * ✅ config-mode category header left click now uses category-level hook (`OnLeftClickConfigMode`) so categories decide their own edit-mode behavior; custom category implements it to select itself in categories GUI.
 * ✅ category wrappers now expose `GetDisplayName(itemsCount)` and GUI uses it as the single header label source (no `cus-*` checks or direct `.name` reads in `gui.lua`); custom category owns muted-empty display formatting.
+* ✅ selected custom category in config mode now gets `>> ` prefix in bag headers via `GetDisplayName(itemsCount)`; selection change in categories GUI triggers layout refresh so highlight updates immediately.
 * ✅ AGENTS.md now has strict "Internal contracts" rules (mandatory wrapper interfaces, boundary-only defensive checks, fail-fast internal flows, and a review checklist to block defensive call-site guards).
 * ✅ in-bag category headers now render custom categories in grey when runtime-empty and not marked Always Visible.
 
