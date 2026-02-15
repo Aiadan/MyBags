@@ -111,11 +111,86 @@ run("fresh install seeds defaults", function()
     assert_true(custom.id == "cus", "custom bucket seeded")
     assert_true(custom.schemaVersion == 1, "custom schema version seeded")
     assert_equal({}, custom.categories, "no user categories persisted")
+    assert_true(snapshot.layout.columnCount == 3, "layout column count defaults to 3")
     assert_equal({ {}, {}, {} }, snapshot.layout.columns, "layout columns seeded")
     assert_equal({}, snapshot.layout.collapsed, "collapsed state empty")
     assert_equal({}, snapshot.itemOrder, "item order initialised")
     assert_true(snapshot.categorizers == nil or snapshot.categorizers.cus == nil, "legacy custom bucket removed")
     assert_true(snapshot.categories == nil, "old custom categories bucket removed")
+end)
+
+run("script api resize increase keeps layout and adds empty right column", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [catA] = {},
+        [catB] = {},
+    })
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local before = layout_columns(ctx:snapshot())
+    ctx.AddonNS.QueueContainerUpdateItemLayout = function() end
+    ctx.AddonNS.TriggerContainerOnTokenWatchChanged = function() end
+    ctx.AddonNS:SetNumColumns(4)
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local snapshot = ctx:snapshot()
+    local after = layout_columns(snapshot)
+    assert_true(snapshot.layout.columnCount == 4, "column count persisted as 4")
+    assert_equal(before[1] or {}, after[1] or {}, "column 1 preserved")
+    assert_equal(before[2] or {}, after[2] or {}, "column 2 preserved")
+    assert_equal(before[3] or {}, after[3] or {}, "column 3 preserved")
+    assert_equal({}, after[4] or {}, "newly added column 4 starts empty")
+end)
+
+run("resize decrease appends removed columns to last visible", function()
+    local ctx = harness.new({
+        saved = {
+            layout = {
+                columnCount = 4,
+                columns = {
+                    { "cus-1" },
+                    { "cus-2" },
+                    { "cus-3" },
+                    { "cus-4", "cus-5" },
+                },
+                collapsed = {},
+            },
+        },
+    })
+
+    ctx.AddonNS.Categories:SetColumnCount(3)
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local snapshot = ctx:snapshot()
+    assert_true(snapshot.layout.columnCount == 3, "column count persisted as 3")
+    local columns = layout_columns(snapshot)
+    assert_equal({ "cus-1" }, columns[1] or {}, "column 1 unchanged")
+    assert_equal({ "cus-2" }, columns[2] or {}, "column 2 unchanged")
+    assert_equal({ "cus-3", "cus-4", "cus-5" }, columns[3] or {}, "removed columns appended to last visible in order")
+    assert_true(columns[4] == nil, "column 4 removed")
+end)
+
+run("invalid requested column count clamps to supported range", function()
+    local ctx = harness.new()
+    ctx.AddonNS.Categories:SetColumnCount(1)
+    assert_true(ctx:snapshot().layout.columnCount == 2, "count clamps to minimum")
+    ctx.AddonNS.Categories:SetColumnCount(99)
+    assert_true(ctx:snapshot().layout.columnCount == 5, "count clamps to maximum")
+end)
+
+run("column count round trips via saved variables", function()
+    local first = harness.new()
+    first.AddonNS.Categories:SetColumnCount(5)
+    first:events():fire_game("PLAYER_LOGOUT")
+    local saved = first:snapshot()
+
+    local second = harness.new({ saved = saved })
+    local snapshot = second:snapshot()
+    assert_true(snapshot.layout.columnCount == 5, "column count restored from saved variables")
+    local columns = layout_columns(snapshot)
+    assert_true(#columns == 5, "five layout columns restored")
 end)
 
 run("custom categories persist with namespaced layout", function()

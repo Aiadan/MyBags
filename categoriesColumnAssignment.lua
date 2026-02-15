@@ -10,7 +10,6 @@ local addonName, AddonNS = ...
 
 AddonNS.Categories = AddonNS.Categories or {}
 
-local NUM_COLUMNS = AddonNS.Const.NUM_COLUMNS
 local isCollapsed = AddonNS.Collapsed.isCollapsed
 local runtimeColumns = {}
 local runtimeColumnsLoaded = false
@@ -25,13 +24,18 @@ local function profileNowMs()
     return debugprofilestop()
 end
 
+local function getNumColumns()
+    return AddonNS.CategoryStore:GetColumnCount()
+end
+
 local function ensureRuntimeColumns()
     if runtimeColumnsLoaded then
         return
     end
     local persistedColumns = AddonNS.CategoryStore:GetLayoutColumns()
+    local numColumns = getNumColumns()
     runtimeColumns = {}
-    for index = 1, NUM_COLUMNS do
+    for index = 1, numColumns do
         runtimeColumns[index] = {}
         for _, categoryId in ipairs(persistedColumns[index] or {}) do
             table.insert(runtimeColumns[index], categoryId)
@@ -44,8 +48,9 @@ local function persistRuntimeColumns()
     if not runtimeColumnsLoaded then
         return
     end
+    local numColumns = getNumColumns()
     local serialized = {}
-    for index = 1, NUM_COLUMNS do
+    for index = 1, numColumns do
         serialized[index] = {}
         for _, categoryId in ipairs(runtimeColumns[index] or {}) do
             table.insert(serialized[index], categoryId)
@@ -150,11 +155,15 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         profile.ensureConstantsMs = profileNowMs() - ensureConstantsStartedAt
     end
 
-    categoryAssignments = { {}, {}, {} }
+    local numColumns = getNumColumns()
+    categoryAssignments = {}
+    for index = 1, numColumns do
+        categoryAssignments[index] = {}
+    end
     local known = {}
 
     local layoutMatchStartedAt = profile and profileNowMs() or nil
-    for columnIndex = 1, NUM_COLUMNS do
+    for columnIndex = 1, numColumns do
         local assignmentsForColumn = categoryAssignments[columnIndex]
         local ids = runtimeColumns[columnIndex]
         for _, id in ipairs(ids) do
@@ -201,7 +210,7 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     for _, category in ipairs(unmatched) do
         addCategoryToColumn(categoryAssignments[targetColumn], category, arrangedItems[category] or {}, profile)
         appendToLayout(targetColumn, category:GetId())
-        targetColumn = targetColumn % NUM_COLUMNS + 1
+        targetColumn = targetColumn % numColumns + 1
     end
     if profile then
         profile.unmatchedInsertMs = profileNowMs() - unmatchedInsertStartedAt
@@ -231,7 +240,8 @@ local function findCategoryPosition(categoryIdValue)
     if not id then
         return nil
     end
-    for columnIndex = 1, NUM_COLUMNS do
+    local numColumns = getNumColumns()
+    for columnIndex = 1, numColumns do
         local column = runtimeColumns[columnIndex]
         for rowIndex = 1, #column do
             if column[rowIndex] == id then
@@ -285,6 +295,30 @@ local function categoryDeleted(eventName, category)
     if columnIndex and column then
         table.remove(column, rowIndex)
     end
+end
+
+function AddonNS.Categories:SetColumnCount(columnCount)
+    ensureRuntimeColumns()
+    local previousCount = getNumColumns()
+    AddonNS.CategoryStore:SetColumnCount(columnCount)
+    local currentCount = getNumColumns()
+    if currentCount == previousCount then
+        return
+    end
+    if currentCount > previousCount then
+        for columnIndex = previousCount + 1, currentCount do
+            runtimeColumns[columnIndex] = {}
+        end
+    else
+        local lastVisible = runtimeColumns[currentCount]
+        for columnIndex = currentCount + 1, previousCount do
+            for _, id in ipairs(runtimeColumns[columnIndex] or {}) do
+                table.insert(lastVisible, id)
+            end
+            runtimeColumns[columnIndex] = nil
+        end
+    end
+    persistRuntimeColumns()
 end
 
 AddonNS.Events:OnInitialize(function()

@@ -112,7 +112,7 @@ end
 
 function ContainerFrameMyBagsMixin:CalculateWidth()
     return ContainerFrameCombinedBagsMixin.CalculateWidth(self) +
-        (AddonNS.Const.NUM_COLUMNS - 1) * AddonNS.Const.COLUMN_SPACING -
+        (AddonNS.CategoryStore:GetColumnCount() - 1) * AddonNS.Const.COLUMN_SPACING -
         self:GetColumns() * (AddonNS.Const.ORIGINAL_SPACING - ITEM_SPACING);
 end
 

@@ -166,11 +166,13 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 * Add ability to hide category so it won't show, nor the items in it
   * I dont want to create this, items should be visible not cause confusion "where is my item, oh I have hidden it"
-* consider actually adding some options - number of columns, items per column, always break category to new line.
-  * no, this if added will be by dragging side of the bag to change the number of columns and that will be it - easy to understand and use
+* ~~consider actually adding some options - number of columns, items per column, always break category to new line.~~
+  * ✅ partial outcome: number of columns is now configurable (persisted, via `/script ChangeTheNumberOfColumns(count)`).
+  * ⏳ remaining decision: final UX is still intended to be resizing by dragging side of the bag rather than options UI.
 * I have decided to not include button for authenticator that is available in normal bags. Consider adding it via adding to layout update self:LayoutAddSlots(); as well as support for this button. Although I have no idea how I could test it
-* [REJECTED - in order to keep simplicity and default behaviour ] consider making the number of columns configurable
-  * this will be replaced by resizing which will on horizontal drag cause to add or remove number of columns
+* ~~[REJECTED - in order to keep simplicity and default behaviour ] consider making the number of columns configurable~~
+  * ✅ superseded: configurable columns are now implemented with persisted `layout.columnCount` (2..5, default 3) and temporary `/script ChangeTheNumberOfColumns(count)` control.
+  * ✅ resize behavior implemented: increasing adds empty rightmost columns; decreasing appends removed-column categories to the last visible column in order.
 
 ### UNKNOWN what they were about, meaning lost in the ether
 

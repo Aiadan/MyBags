@@ -9,14 +9,15 @@ AddonNS.Events = {};
 LibStub("MyLibrary_Events").embed(AddonNS.Events);
 AddonNS.Const ={
     ITEMS_PER_ROW = 4, -- Maximum items per row
-    NUM_COLUMNS = 3, -- Number of columns
+    DEFAULT_NUM_COLUMNS = 3,
+    MIN_NUM_COLUMNS = 2,
+    MAX_NUM_COLUMNS = 5,
     ORIGINAL_SPACING = 5,
     COLUMN_SPACING = 2,
     CATEGORY_HEIGHT = 20,
     MAX_ROWS = 118,
     UNASSIGNE_CATEGORY_DB_STORAGE_NAME = "UNASSIGNED_CATEGORY_DB_STORAGE_NAME"
 }
-AddonNS.Const.NUM_ITEM_COLUMNS = AddonNS.Const.ITEMS_PER_ROW * AddonNS.Const.NUM_COLUMNS
 AddonNS.Const.ITEM_SPACING= AddonNS.Const.ORIGINAL_SPACING
 AddonNS.Const.Events = {}
 AddonNS.Const.Events.ITEM_MOVED= "MYBAGS_ITEM_MOVED";
@@ -58,6 +59,35 @@ AddonNS.init = function()
 end
 
 AddonNS.Events:OnDbLoaded(AddonNS.init)
+
+local function normalizeColumnCount(value)
+    local numeric = tonumber(value) or AddonNS.Const.DEFAULT_NUM_COLUMNS
+    numeric = math.floor(numeric)
+    if numeric < AddonNS.Const.MIN_NUM_COLUMNS then
+        return AddonNS.Const.MIN_NUM_COLUMNS
+    end
+    if numeric > AddonNS.Const.MAX_NUM_COLUMNS then
+        return AddonNS.Const.MAX_NUM_COLUMNS
+    end
+    return numeric
+end
+
+function AddonNS:GetNumColumns()
+    return AddonNS.CategoryStore:GetColumnCount()
+end
+
+function AddonNS:SetNumColumns(count)
+    local normalized = normalizeColumnCount(count)
+    AddonNS.Categories:SetColumnCount(normalized)
+    AddonNS.QueueContainerUpdateItemLayout()
+    AddonNS.TriggerContainerOnTokenWatchChanged()
+    print("MyBags columns set to " .. normalized)
+    return normalized
+end
+
+_G.ChangeTheNumberOfColumns = function(count)
+    return AddonNS:SetNumColumns(count)
+end
 
 function AddonNS.printDebug(...)
 --@debug@

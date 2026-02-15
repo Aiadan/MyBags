@@ -124,15 +124,64 @@ local function ensure_db(self)
     end
 end
 
+local function defaultColumnCount()
+    return AddonNS.Const.DEFAULT_NUM_COLUMNS
+end
+
+local function minColumnCount()
+    return AddonNS.Const.MIN_NUM_COLUMNS
+end
+
+local function maxColumnCount()
+    return AddonNS.Const.MAX_NUM_COLUMNS
+end
+
+local function sanitizeColumnCount(count)
+    local numeric = tonumber(count) or defaultColumnCount()
+    numeric = math.floor(numeric)
+    if numeric < minColumnCount() then
+        return minColumnCount()
+    end
+    if numeric > maxColumnCount() then
+        return maxColumnCount()
+    end
+    return numeric
+end
+
+local function ensure_layout_shape(layout)
+    layout.columns = layout.columns or {}
+    layout.collapsed = layout.collapsed or {}
+end
+
+local function normalize_columns_to_count(columns, targetCount)
+    columns = columns or {}
+    for columnIndex = 1, targetCount do
+        columns[columnIndex] = columns[columnIndex] or {}
+    end
+    if #columns > targetCount then
+        local lastVisible = columns[targetCount]
+        for columnIndex = targetCount + 1, #columns do
+            for _, categoryId in ipairs(columns[columnIndex] or {}) do
+                table.insert(lastVisible, categoryId)
+            end
+            columns[columnIndex] = nil
+        end
+    end
+    return columns
+end
+
 function CategoryStore:LoadOrBootstrap(db, legacyDb)
     self.db = db or {}
     self.db.categorizers = self.db.categorizers or {}
     self.db.itemOrder = self.db.itemOrder or {}
     self.db.layout = self.db.layout or {}
-    self.db.layout.columns = self.db.layout.columns or { {}, {}, {} }
-    self.db.layout.collapsed = self.db.layout.collapsed or {}
+    ensure_layout_shape(self.db.layout)
+    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
+    self:EnsureLayoutColumnsCount()
     self:_migrateFromLegacy(legacyDb)
     self:_migrateFromOldDb()
+    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
+    self:EnsureLayoutColumnsCount()
     self:_normalizeUnassignedLayout()
     return self
 end
@@ -177,8 +226,9 @@ function CategoryStore:_migrateFromLegacy(legacyDb)
     -- Layout: preserve legacy layout values as-is. Custom category specific ID/name
     -- conversion is handled by CustomCategories migration.
     local legacyColumns = legacyDb.categoriesColumnAssignments or {}
-    self.db.layout.columns = self.db.layout.columns or { {}, {}, {} }
-    for columnIndex = 1, 3 do
+    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
+    self.db.layout.columns = self.db.layout.columns or {}
+    for columnIndex = 1, self.db.layout.columnCount do
         self.db.layout.columns[columnIndex] = {}
         local sourceColumn = legacyColumns[columnIndex] or {}
         for _, id in ipairs(sourceColumn) do
@@ -220,7 +270,8 @@ end
 
 function CategoryStore:_normalizeUnassignedLayout()
     self.db.layout = self.db.layout or {}
-    self.db.layout.columns = self.db.layout.columns or { {}, {}, {} }
+    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
+    self:EnsureLayoutColumnsCount()
     for columnIndex = 1, #self.db.layout.columns do
         local column = self.db.layout.columns[columnIndex]
         local seen = {}
@@ -371,6 +422,27 @@ end
 function CategoryStore:SetLayoutColumns(columns)
     ensure_db(self)
     self.db.layout.columns = columns
+    self:EnsureLayoutColumnsCount()
+end
+
+function CategoryStore:EnsureLayoutColumnsCount()
+    ensure_db(self)
+    self.db.layout = self.db.layout or {}
+    ensure_layout_shape(self.db.layout)
+    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
+    self.db.layout.columns = normalize_columns_to_count(self.db.layout.columns, self.db.layout.columnCount)
+end
+
+function CategoryStore:GetColumnCount()
+    ensure_db(self)
+    self:EnsureLayoutColumnsCount()
+    return self.db.layout.columnCount
+end
+
+function CategoryStore:SetColumnCount(count)
+    ensure_db(self)
+    self.db.layout.columnCount = sanitizeColumnCount(count)
+    self:EnsureLayoutColumnsCount()
 end
 
 function CategoryStore:SetCollapsed(id, collapsed)

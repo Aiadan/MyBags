@@ -279,7 +279,7 @@ local function GetMouseSectionRelativeToFrame(frame)
 
     -- Determine which section (column) the mouse is in
 
-    return math.floor(relativeX * AddonNS.Const.NUM_COLUMNS / frameWidth) + 1
+    return math.floor(relativeX * AddonNS.CategoryStore:GetColumnCount() / frameWidth) + 1
 end
 
 

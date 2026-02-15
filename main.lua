@@ -101,7 +101,7 @@ AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE");
 
 AddonNS.Events:RegisterEvent("BAG_UPDATE");
 function container:GetColumns()
-    return AddonNS.Const.NUM_ITEM_COLUMNS
+    return AddonNS.Const.ITEMS_PER_ROW * AddonNS.CategoryStore:GetColumnCount()
 end
 
 local it = container:EnumerateValidItems()

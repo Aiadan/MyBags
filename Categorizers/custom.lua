@@ -196,7 +196,7 @@ local function normalize_layout_custom_ids(db, storage)
     if type(layout) ~= "table" then
         return
     end
-    layout.columns = layout.columns or { {}, {}, {} }
+    layout.columns = layout.columns or {}
     layout.collapsed = layout.collapsed or {}
     local nameIndex = index_names(storage)
 
