@@ -153,6 +153,8 @@ Tasks which after implementation user will not see.
 * ✅ updated `.agent/skills/blizzard-code-explorer` to default to `/mnt/c/Program Files (x86)/World of Warcraft/_retail_/BlizzardInterfaceCode`.
 * ✅ enabled `BankFrame_Open` override in `ContainerFrameMyBagsMixin.lua` (`OpenAllBags(BankFrame)` before calling original) as the current workaround that resolves the observed bank taint path.
 * ✅ refactored search-lock ownership so `ContainerFrameMyBagsMixin` is the single owner/mutator of search lock runtime state; `main.lua` now calls mixin methods instead of writing lock fields directly.
+* ✅ simplified search-lock internals in `ContainerFrameMyBagsMixin` (centralized pending check helper + reused capture/apply stored-lock methods) without behavior changes.
+* ✅ simplified search-lock flow further by removing pending-state bookkeeping; active lock now always captures/applies around layout updates while enabled.
 * ✅ hard separation between custom/user-managed categories and dynamic ones is now in place (CustomCategories owns custom persistence/query/manual assignment; CategoryStore owns wrappers/shared layout).
 * ✅ naming convention for categories/categorizers is now considered done (implemented convention differs from the original `sys:*`/`ext:*` proposal).
   * chosen convention: categorizer ids are short stable tokens (`unassigned`, `new`, `cus`, `eq`) and runtime wrapper category ids are namespaced as `<categorizerId>-<rawId>` (with `unassigned` kept as a sentinel singleton id).

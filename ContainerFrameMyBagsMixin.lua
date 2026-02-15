@@ -15,7 +15,6 @@ function ContainerFrameMyBagsMixin:MyBagsInit()
     self.MyBags.height = 0;
     self.MyBags.updateItemLayoutCalledAtLeastOnce = false
     self.MyBags.searchAnchorLockActive = false
-    self.MyBags.searchAnchorLockPending = false
     self.MyBags.searchLockedTop = nil
     self.MyBags.searchLockedRight = nil
 end
@@ -24,7 +23,6 @@ function ContainerFrameMyBagsMixin:SetSearchAnchorLockActive(isActive)
     local changed = self.MyBags.searchAnchorLockActive ~= isActive
     self.MyBags.searchAnchorLockActive = isActive
     if not isActive then
-        self.MyBags.searchAnchorLockPending = false
         self.MyBags.searchLockedTop = nil
         self.MyBags.searchLockedRight = nil
     end
@@ -36,7 +34,7 @@ function ContainerFrameMyBagsMixin:IsSearchAnchorLockActive()
 end
 
 function ContainerFrameMyBagsMixin:CaptureSearchAnchorLockPosition()
-    if not self.MyBags.searchAnchorLockActive then
+    if not self:IsSearchAnchorLockActive() then
         return
     end
     self.MyBags.searchLockedTop = self:GetTop()
@@ -44,11 +42,7 @@ function ContainerFrameMyBagsMixin:CaptureSearchAnchorLockPosition()
 end
 
 function ContainerFrameMyBagsMixin:MarkSearchAnchorLockPending()
-    if not self.MyBags.searchAnchorLockActive then
-        return
-    end
     self:CaptureSearchAnchorLockPosition()
-    self.MyBags.searchAnchorLockPending = true
 end
 
 function ContainerFrameMyBagsMixin:ApplyStoredSearchAnchorLock()
@@ -81,18 +75,12 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
     local point, relativeTo, relativePoint, x, y = anchor:Get();
     AddonNS.printDebug("Anchor", x, y)
 
-    local lockedTop = nil
-    local lockedRight = nil
-    if self:IsSearchAnchorLockActive() and self.MyBags.searchAnchorLockPending then
-        lockedTop = self:GetTop()
-        lockedRight = self:GetRight()
-        self.MyBags.searchLockedTop = lockedTop
-        self.MyBags.searchLockedRight = lockedRight
+    if self:IsSearchAnchorLockActive() then
+        self:CaptureSearchAnchorLockPosition()
     end
     self:UpdateFrameSize();
-    if self:IsSearchAnchorLockActive() and self.MyBags.searchAnchorLockPending then
-        self:ApplySearchAnchorLock(lockedTop, lockedRight)
-        self.MyBags.searchAnchorLockPending = false
+    if self:IsSearchAnchorLockActive() then
+        self:ApplyStoredSearchAnchorLock()
     end
     for i, itemButton in ipairs(itemButtons) do
         if (itemButton.ItemCategory and not isCollapsed(itemButton.ItemCategory)) then

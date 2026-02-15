@@ -144,7 +144,7 @@ end
 
 function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
     AddonNS.printDebug("INVENTORY_SEARCH_UPDATE", bagID)
-    container:MarkSearchAnchorLockPending()
+    container:CaptureSearchAnchorLockPosition()
     triggerContainerUpdateItemLayout();
 end
 
@@ -166,7 +166,7 @@ local function refreshSearchAnchorLockState(searchBox)
     local shouldLock = searchBox.anchorBag == container and (searchBox:HasFocus() or searchBox:GetText() ~= "")
     local changed = container:SetSearchAnchorLockActive(shouldLock)
     if shouldLock then
-        container:MarkSearchAnchorLockPending()
+        container:CaptureSearchAnchorLockPosition()
     end
     if changed and not shouldLock then
         UpdateContainerFrameAnchors()
