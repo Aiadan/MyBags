@@ -15,7 +15,57 @@ end
 
 local OpEnum = { AND = 1, OR = 2, NOT = 3 };
 
+local function unescapeQuotedString(text)
+    return (string.gsub(text, "\\(.)", "%1"))
+end
+
+local function protectQuotedValues(query)
+    local placeholders = {}
+    local out = {}
+    local index = 1
+    local length = #query
+    local placeholderIndex = 0
+
+    while index <= length do
+        local character = query:sub(index, index)
+        if character ~= "\"" then
+            table.insert(out, character)
+            index = index + 1
+        else
+            local endIndex = index + 1
+            local isEscaped = false
+            while endIndex <= length do
+                local current = query:sub(endIndex, endIndex)
+                if current == "\\" and not isEscaped then
+                    isEscaped = true
+                elseif current == "\"" and not isEscaped then
+                    break
+                else
+                    isEscaped = false
+                end
+                endIndex = endIndex + 1
+            end
+
+            if endIndex > length then
+                table.insert(out, character)
+                index = index + 1
+            else
+                local value = unescapeQuotedString(query:sub(index + 1, endIndex - 1))
+                placeholderIndex = placeholderIndex + 1
+                local token = "__MYBAGS_QUOTED_" .. placeholderIndex .. "__"
+                placeholders[token] = value
+                table.insert(out, token)
+                index = endIndex + 1
+            end
+        end
+    end
+
+    return table.concat(out), placeholders
+end
+
 local function prepare(query)
+    local quotedValues
+    query, quotedValues = protectQuotedValues(query)
     query = string.gsub(query, "%(", " ( ")
     query = string.gsub(query, "%)", " ) ")
     query = string.gsub(query, "([%=%!%~%<%>]+)", " %1 ")
@@ -26,7 +76,7 @@ local function prepare(query)
     query = string.gsub(query, " [Nn][Oo][Tt] ", " NOT ")
     query = string.gsub(query, " [Oo][Rr] ", " OR ")
     query = string.gsub(query, "%s%s+", " ")
-    return query;
+    return query, quotedValues
 end
 
 local function toboolean(text)
@@ -184,12 +234,27 @@ local alwaysFalse = function()
 end
 local space = ""
 
-local function evaluateLeaf(leafQuery)
+local function parseLeafValue(value, quotedValues)
+    local quotedPlaceholderValue = quotedValues and quotedValues[value]
+    if quotedPlaceholderValue ~= nil then
+        return quotedPlaceholderValue
+    end
+
+    local directQuotedValue = value:match("^\"(.*)\"$")
+    if directQuotedValue ~= nil then
+        return unescapeQuotedString(directQuotedValue)
+    end
+
+    return value
+end
+
+local function evaluateLeaf(leafQuery, quotedValues)
     leafQuery = trim(leafQuery)
-    local name, comparison, value = leafQuery:match("^(%S+) (%S+) (%S+)$")
+    local name, comparison, value = leafQuery:match("^(%S+)%s+(%S+)%s+(.+)$")
     if not name then
         return alwaysFalse
     end
+    value = parseLeafValue(trim(value), quotedValues)
     return GetRetriever(name, comparison, value)
 end
 
@@ -201,7 +266,7 @@ local function pumpDown()
     space = space:sub(3)
 end
 
-local function evaluate(query)
+local function evaluate(query, quotedValues)
     query = trim(query)
     local andFunctions
     local orFunctions = {}
@@ -245,7 +310,7 @@ local function evaluate(query)
         tokenString = query:match("^%b()")
         if tokenString then
             local subQuery = tokenString:sub(2, -2)
-            local func = evaluate(subQuery)
+            local func = evaluate(subQuery, quotedValues)
             local notFunc
             if nextOp then
                 if nextOp == OpEnum.NOT then
@@ -296,7 +361,7 @@ local function evaluate(query)
             tokenString = tokenString and vanillaTokenString and #vanillaTokenString < #tokenString and vanillaTokenString or
                 (not tokenString and vanillaTokenString or tokenString)
             if tokenString then
-                local func = evaluateLeaf(tokenString)
+                local func = evaluateLeaf(tokenString, quotedValues)
                 local notFunc
                 if nextOp then
                     if nextOp == OpEnum.NOT then

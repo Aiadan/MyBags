@@ -32,6 +32,8 @@ local testItem1 = {
 }
 
 local testItem2 = { itemType = 4 }
+local testItem3 = { itemName = "Epic Sword of Trials" }
+local testItem4 = { itemName = "Epic Shield" }
 
 local testCases = {
   {
@@ -58,10 +60,34 @@ local testCases = {
     item = testItem2,
     expected = true,
   },
+  {
+    name = "keeps unquoted itemName pattern behavior",
+    query = "itemName = Epic.*",
+    item = testItem3,
+    expected = true,
+  },
+  {
+    name = "supports quoted multi-word itemName",
+    query = "itemName = \"Epic Sword\"",
+    item = testItem3,
+    expected = true,
+  },
+  {
+    name = "treats quoted value as pattern",
+    query = "itemName = \"Epic.*\"",
+    item = testItem3,
+    expected = true,
+  },
+  {
+    name = "supports operators inside quoted itemName text",
+    query = "itemName = \"Epic OR Sword\" OR itemName = \"Epic Shield\"",
+    item = testItem4,
+    expected = true,
+  },
 }
 
 for _, case in ipairs(testCases) do
-  local compiledQuery = Query.prepare(case.query)
-  local evaluateItem = Query.evaluate(compiledQuery)
+  local compiledQuery, quotedValues = Query.prepare(case.query)
+  local evaluateItem = Query.evaluate(compiledQuery, quotedValues)
   assert(evaluateItem(case.item) == case.expected, case.name)
 end

@@ -41,19 +41,22 @@ Queries are case-sensitive:
 
 ## String Matching
 
-`itemName` uses Lua pattern matching, not strict literal equality.
+`itemName` supports two value styles:
+- Unquoted values use Lua pattern matching.
+- Quoted values are also pattern matching, but allow multi-word values (spaces).
 
 Examples:
 ```lua
 itemName = Epic.*
+itemName = "Epic Sword"
 itemName != .*Potion.*
 ```
 
 Notes:
 - `itemName = Epic` matches names containing `Epic`.
-- You can use Lua patterns like `.*`, character classes, and anchors.
-- Quoted multi-word values are not supported.
-- Workaround for spaces in names: use a single-character wildcard, for example `itemName = Epic.Sword` to match `Epic Sword`.
+- `itemName = "Epic Sword"` matches names containing `Epic Sword`.
+- Both unquoted and quoted values can use Lua patterns like `.*`, character classes, and anchors.
+- Use quotes when the pattern includes spaces or query operators as plain text.
 
 ## Supported Attributes
 

@@ -44,19 +44,22 @@ Queries are case-sensitive:
 
 |cffe6d0a2String Matching|r
 
-|cff8ebfe9itemName|r uses Lua pattern matching, not strict literal equality.
+|cff8ebfe9itemName|r supports two value styles:
+• Unquoted values use Lua pattern matching.
+• Quoted values are also pattern matching, but allow multi-word values (spaces).
 
 Examples:
 |cffb6c6d8Code|r
 |cff9bb6cfitemName = Epic.*|r
+|cff9bb6cfitemName = "Epic Sword"|r
 |cff9bb6cfitemName != .*Potion.*|r
 
 
 Notes:
 • |cff8ebfe9itemName = Epic|r matches names containing |cff8ebfe9Epic|r.
-• You can use Lua patterns like |cff8ebfe9.*|r, character classes, and anchors.
-• Quoted multi-word values are not supported.
-• Workaround for spaces in names: use a single-character wildcard, for example |cff8ebfe9itemName = Epic.Sword|r to match |cff8ebfe9Epic Sword|r.
+• |cff8ebfe9itemName = "Epic Sword"|r matches names containing |cff8ebfe9Epic Sword|r.
+• Both unquoted and quoted values can use Lua patterns like |cff8ebfe9.*|r, character classes, and anchors.
+• Use quotes when the pattern includes spaces or query operators as plain text.
 
 |cffe6d0a2Supported Attributes|r
 
