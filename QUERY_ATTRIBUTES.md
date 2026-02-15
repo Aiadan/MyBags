@@ -33,8 +33,8 @@ NOT isQuestItem = true
 
 ## Case Sensitivity
 
-Queries are case-sensitive:
-- Field names are case-sensitive: `itemType` works, `ItemType` does not.
+Query field names are not case-sensitive:
+- Field names are case-insensitive: `itemType`, `ItemType`, and `ITEMTYPE` are equivalent.
 - Boolean values should be lowercase: `true` / `false`.
 - `itemName` matching is case-sensitive by default.
 - Use uppercase logical operators (`AND`, `OR`, `NOT`) for predictable results.

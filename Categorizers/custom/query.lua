@@ -201,6 +201,8 @@ local Retrievers = {
     bindType = { type = ValueType.NUMBER },
 }
 
+local RetrieversByLowerName = {}
+
 local function genericRetrieverFunction(name)
     return function(itemInfo)
         return itemInfo[name]
@@ -211,10 +213,11 @@ for key, descriptor in pairs(Retrievers) do
     if not descriptor.func then
         descriptor.func = genericRetrieverFunction(key)
     end
+    RetrieversByLowerName[string.lower(key)] = descriptor
 end
 
 local function GetRetriever(name, comparison, value)
-    local descriptor = Retrievers[name]
+    local descriptor = RetrieversByLowerName[string.lower(name)]
     if not descriptor then
         return function()
             return false

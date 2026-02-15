@@ -32,7 +32,7 @@ local testItem1 = {
 }
 
 local testItem2 = { itemType = 4 }
-local testItem3 = { itemName = "Epic Sword of Trials" }
+local testItem3 = { itemName = "Epic Sword of Trials", itemType = 3 }
 local testItem4 = { itemName = "Epic Shield" }
 
 local testCases = {
@@ -58,6 +58,12 @@ local testCases = {
     name = "accepts uppercase operators",
     query = "itemType=3 OR itemType=4",
     item = testItem2,
+    expected = true,
+  },
+  {
+    name = "accepts case-insensitive attribute names",
+    query = "ITEMTYPE = 3 and ItemName = \"Epic Sword\"",
+    item = testItem3,
     expected = true,
   },
   {

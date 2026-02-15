@@ -106,10 +106,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ refreshed query documentation in `QUERY_ATTRIBUTES.md` to match current parser/runtime behavior (including priority order, syntax, and case sensitivity) and added `README.md` link to the query reference.
 * ✅ added in-game query documentation panel opened by a `MainHelpPlateButton`-styled Help trigger next to `Save Priority`; content is sourced from generated Lua docs built from `QUERY_ATTRIBUTES.md`, rendered with WoW-style formatting (headings/bullets/table-to-list/inline-code coloring) and a refined softer color palette.
 * ✅ query parser now supports quoted multi-word `itemName` values (for example `itemName = "Epic Sword"`), while keeping existing unquoted pattern behavior; query docs were updated accordingly.
+* ✅ query attribute names are now case-insensitive (`itemType`, `ItemType`, `ITEMTYPE` all work); docs updated while keeping canonical-case examples.
 
 ### TODO
 
-* Make queries non case sensitive and update query documentation accordingly.
 * Change the priority and match order in categorization to start with priority and then string name comparison (alphabetical). Update query documentation accordingly.
 * add import export categories. Exported categories should have "external id" which during export is derived for simplicity from category name. If during import given external id is already defined, importing will override its setup. Export functionality will open a window where user will be able to multiselect from a list (made with WoWList) of categories categories they wish to export. The exported value should be in readable lue which later on can be imported. Both export and import buttons should be added below "Add Category" but with less poping out colour, maybe yellowish. Import button opens a frame where user can paster the exported categories and accept. Once accepted there should be a notification about which categories are going to be added, and which are going to be updated with the new config - user should be forced to accept those changes. User can only export of course custom categories.
 * [!] create some nice default categories based on what I end up with as my query categories in TWW

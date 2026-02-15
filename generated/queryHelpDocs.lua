@@ -36,8 +36,8 @@ Examples:
 
 |cffe6d0a2Case Sensitivity|r
 
-Queries are case-sensitive:
-• Field names are case-sensitive: |cff8ebfe9itemType|r works, |cff8ebfe9ItemType|r does not.
+Query field names are not case-sensitive:
+• Field names are case-insensitive: |cff8ebfe9itemType|r, |cff8ebfe9ItemType|r, and |cff8ebfe9ITEMTYPE|r are equivalent.
 • Boolean values should be lowercase: |cff8ebfe9true|r / |cff8ebfe9false|r.
 • |cff8ebfe9itemName|r matching is case-sensitive by default.
 • Use uppercase logical operators (|cff8ebfe9AND|r, |cff8ebfe9OR|r, |cff8ebfe9NOT|r) for predictable results.
