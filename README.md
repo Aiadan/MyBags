@@ -41,6 +41,7 @@ Some other worth mentioning:
   * for equipment sets (with pretty icons ;) )
   * for New items. Right click on category name to move items to their preassigned categories.
 * All items by default land in Unassigned category.
+* While dragging an item, category hint banners explain the drop action; dropping onto `Unassigned` removes manual assignment from custom categories.
 * left click category to collapse it
 * hold `Shift` while dropping a dragged category to move that category and the full tail below it
 * searching works as a filter (to be verify whether this is helpful or not)

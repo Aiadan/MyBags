@@ -1,6 +1,9 @@
 local addonName, AddonNS = ...
 
 AddonNS.DragAndDrop = {};
+AddonNS.gui = AddonNS.gui or {}
+AddonNS.gui.RefreshCategoryDragHints = AddonNS.gui.RefreshCategoryDragHints or function()
+end
 local toggleCollapsed = AddonNS.Collapsed.toggleCollapsed;
 
 
@@ -14,6 +17,8 @@ local container = AddonNS.container;
 local recentAt = 0
 local TTL = 0.10 -- 100 ms
 local cachedInfoType, cachedItemID, cachedItemLink;
+local HINT_TEXT_UNASSIGNED = "|cff64a9ffRemove category assignment|r\nDrop here to remove manual category assignment"
+local HINT_TEXT_BLOCKED = "|cffff4a4aCannot assign here.|r\nDynamic / protected category"
 
 local function getCachedCursorInfo()
     local now = GetTime();
@@ -22,6 +27,41 @@ local function getCachedCursorInfo()
         recentAt = now;
     end
     return cachedInfoType, cachedItemID, cachedItemLink;
+end
+
+local function hasActiveItemDrag()
+    local infoType = getCachedCursorInfo()
+    return infoType == "item" or infoType == "merchant"
+end
+
+function AddonNS.DragAndDrop:IsItemDragActive()
+    return hasActiveItemDrag()
+end
+
+function AddonNS.DragAndDrop:GetCategoryDropHint(category, isHovered)
+    if not hasActiveItemDrag() then
+        return nil
+    end
+    if not isHovered then
+        return nil
+    end
+    local categoryId = category:GetId()
+    if categoryId == "unassigned" then
+        return {
+            tone = "unassigned",
+            text = HINT_TEXT_UNASSIGNED,
+        }
+    end
+    if category:IsProtected() then
+        return {
+            tone = "blocked",
+            text = HINT_TEXT_BLOCKED,
+        }
+    end
+    return {
+        tone = "assign",
+        text = "Assign to " .. category:GetName(),
+    }
 end
 
 local function resolveCategory(category)
@@ -64,6 +104,9 @@ function AddonNS.DragAndDrop.cleanUp()
     pickedItemButton = nil;
     pickedItemID = nil
     pickedItemCategory = nil;
+    recentAt = 0
+    cachedInfoType, cachedItemID, cachedItemLink = nil, nil, nil
+    AddonNS.gui:RefreshCategoryDragHints()
 end
 
 --[[
@@ -131,6 +174,7 @@ function AddonNS.DragAndDrop.itemStopDrag(self)                 -- its only here
     if (isMouseOverHookedFrame(getItemIdFromButton(self))) then -- [faster movement feature]
         ClearCursor();                                          -- see INFO in itemOnReceiveDrag function
     end
+    AddonNS.gui:RefreshCategoryDragHints()
 end
 
 function AddonNS.DragAndDrop.itemStartDrag(self)
@@ -142,6 +186,7 @@ function AddonNS.DragAndDrop.itemStartDrag(self)
         pickedItemID = itemID;
         pickedItemCategory = self.ItemCategory;
     end
+    AddonNS.gui:RefreshCategoryDragHints()
 end
 
 function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
@@ -185,6 +230,7 @@ function AddonNS.DragAndDrop.categoryStartDrag(self)
     AddonNS.printDebug("categoryStartDrag")
     pickedItemCategory = self.ItemCategory;
     AddonNS.printDebug("categoryStartDrag", pickedItemCategory)
+    AddonNS.gui:RefreshCategoryDragHints()
 end
 
 function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)

@@ -46,8 +46,139 @@ local unprotectedCategoryBackdrop = {
     }
 }
 
-AddonNS.gui = {}
+AddonNS.gui = AddonNS.gui or {}
 AddonNS.gui.categoriesFrames = {};
+local hoveredCategoryFrame = nil
+local HINT_TONE_STYLE = {
+    unassigned = { 0.35, 0.58, 0.94, 0.24 },
+    assign = { 0.20, 0.85, 0.35, 0.30 },
+    blocked = { 0.90, 0.24, 0.24, 0.30 },
+}
+
+local function applyCategoryHint(frame, hint)
+    if not hint then
+        frame.hintOverlay:Hide()
+        return
+    end
+    local color = HINT_TONE_STYLE[hint.tone]
+    frame.hintOverlay:SetBackdropColor(color[1], color[2], color[3], color[4])
+    frame.hintOverlay:Show()
+end
+
+local hintTextFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+local HINT_TEXT_MIN_HEIGHT = 28
+local HINT_TEXT_VERTICAL_GAP = 3
+local HINT_TEXT_PADDING = 8
+hintTextFrame:SetBackdrop({
+    bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+    edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+})
+hintTextFrame:SetBackdropColor(0, 0, 0, 0.92)
+hintTextFrame:SetBackdropBorderColor(0.35, 0.35, 0.35, 1)
+hintTextFrame:SetFrameStrata("TOOLTIP")
+hintTextFrame:SetFrameLevel(300)
+hintTextFrame:EnableMouse(false)
+hintTextFrame:SetSize(320, 34)
+hintTextFrame:Hide()
+
+hintTextFrame.label = hintTextFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+hintTextFrame.label:SetPoint("TOPLEFT", hintTextFrame, "TOPLEFT", 8, -8)
+hintTextFrame.label:SetPoint("BOTTOMRIGHT", hintTextFrame, "BOTTOMRIGHT", -8, 8)
+hintTextFrame.label:SetJustifyH("LEFT")
+hintTextFrame.label:SetJustifyV("MIDDLE")
+hintTextFrame.label:SetWordWrap(true)
+hintTextFrame.label:SetTextColor(1, 1, 1, 1)
+
+local function layoutHintTextFrame(anchorFrame, text)
+    hintTextFrame:SetWidth(anchorFrame:GetWidth())
+    hintTextFrame.label:SetText(text)
+
+    local textHeight = math.ceil(hintTextFrame.label:GetStringHeight() or 0)
+    local frameHeight = textHeight + HINT_TEXT_PADDING * 2
+    if frameHeight < HINT_TEXT_MIN_HEIGHT then
+        frameHeight = HINT_TEXT_MIN_HEIGHT
+    end
+    hintTextFrame:SetHeight(frameHeight)
+
+    local uiTop = UIParent:GetTop() or UIParent:GetHeight()
+    local anchorTop = anchorFrame:GetTop() or 0
+    local hasRoomAbove = (anchorTop + frameHeight + HINT_TEXT_VERTICAL_GAP) <= uiTop
+
+    hintTextFrame:ClearAllPoints()
+    if hasRoomAbove then
+        hintTextFrame:SetPoint("BOTTOMLEFT", anchorFrame, "TOPLEFT", 0, HINT_TEXT_VERTICAL_GAP)
+    else
+        hintTextFrame:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 0, -HINT_TEXT_VERTICAL_GAP)
+    end
+end
+
+local function getCategoryHoverText(frame)
+    local title = frame.ItemCategory:GetDisplayName() or frame.ItemCategory:GetName() or frame.fs:GetText()
+    if frame.ItemCategory.description then
+        return title .. "\n" .. frame.ItemCategory.description
+    end
+    return title
+end
+
+local function findFocusedCategory(frame)
+    local current = frame
+    while current do
+        if current.ItemCategory then
+            return current.ItemCategory
+        end
+        if not current.GetParent then
+            return nil
+        end
+        current = current:GetParent()
+    end
+    return nil
+end
+
+local function getHoveredCategoryIdForHints()
+    if hoveredCategoryFrame and hoveredCategoryFrame:IsShown() then
+        return hoveredCategoryFrame.ItemCategory:GetId()
+    end
+    if not AddonNS.DragAndDrop:IsItemDragActive() then
+        return nil
+    end
+    local mouseFoci = GetMouseFoci()
+    local focus = mouseFoci and mouseFoci[1] or nil
+    local focusedCategory = findFocusedCategory(focus)
+    if focusedCategory then
+        return focusedCategory:GetId()
+    end
+    return nil
+end
+
+function AddonNS.gui:RefreshCategoryDragHints()
+    local hoveredCategoryId = getHoveredCategoryIdForHints()
+    local shownTextFrame = nil
+    local shownText = nil
+    for i = 1, #self.categoriesFrames do
+        local frame = self.categoriesFrames[i]
+        if frame:IsShown() then
+            local isHovered = frame.ItemCategory:GetId() == hoveredCategoryId
+            local hint = AddonNS.DragAndDrop:GetCategoryDropHint(frame.ItemCategory, isHovered)
+            applyCategoryHint(frame, hint)
+            if isHovered then
+                shownTextFrame = frame
+                if hint and hint.text then
+                    shownText = hint.text
+                else
+                    shownText = getCategoryHoverText(frame)
+                end
+            end
+        end
+    end
+    if shownTextFrame and shownText then
+        layoutHintTextFrame(shownTextFrame, shownText)
+        hintTextFrame:Show()
+        return
+    end
+    hintTextFrame:Hide()
+end
 
 --- draggable frame 
 local draggableFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
@@ -354,35 +485,30 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.bg:SetPoint("TOPLEFT", f, "TOPLEFT", 0, -AddonNS.Const.CATEGORY_HEIGHT + AddonNS.Const.COLUMN_SPACING / 2)
             f.bg:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, AddonNS.Const.COLUMN_SPACING / 2)
             f.bg:Hide();
+
+            f.hintOverlay = CreateFrame("Frame", nil, f, "BackdropTemplate")
+            f.hintOverlay:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
+            f.hintOverlay:SetAllPoints(f)
+            f.hintOverlay:EnableMouse(false)
+            f.hintOverlay:Hide()
+
             AddonNS.gui.categoriesFrames[i] = f;
             function f:SetText(text) fs:SetText(text) end
 
             f:EnableMouse(true)
             f:SetScript("OnEnter",
                 function(self)
-                    -- local infoType, itemID, itemLink = GetCursorInfo()
-                    -- if infoType == "item" then
-                    --     if self.ItemCategory.protected then
-                    --         self:SetBackdrop(protectedCategoryBackdrop)
-                    --     else
-                    --         self:SetBackdrop(unprotectedCategoryBackdrop)
-                    --     end
-                    -- end
-                    -- self:SetBackdropColor(0, 0, 0, .5)
-                    GameTooltip:SetOwner(self);
-                    --GameTooltip_SetTitle(GameTooltip, BAG_CLEANUP_BAGS, HIGHLIGHT_FONT_COLOR);
-                    GameTooltip_AddNormalLine(GameTooltip, self.fs:GetText());
-                    if (self.ItemCategory.description) then
-                        GameTooltip_AddNormalLine(GameTooltip, self.ItemCategory.description);
-                    end
-
-                    GameTooltip:Show();
+                    hoveredCategoryFrame = self
+                    AddonNS.gui:RefreshCategoryDragHints()
                 end)
             f:SetScript("OnLeave",
                 function(self)
                     -- self:SetBackdrop(test)
                     -- self:SetBackdropColor(0, 0, 1, .5)
-                    GameTooltip_Hide()
+                    if hoveredCategoryFrame == self then
+                        hoveredCategoryFrame = nil
+                    end
+                    AddonNS.gui:RefreshCategoryDragHints()
                 end)
 
             f:SetScript("OnMouseUp", AddonNS.DragAndDrop.categoryOnMouseUp)
@@ -430,6 +556,10 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
     end
     -- backgroundFrame:Lower();
     for i = #categoriesGUIInfo + 1, #AddonNS.gui.categoriesFrames, 1 do
+        if hoveredCategoryFrame == AddonNS.gui.categoriesFrames[i] then
+            hoveredCategoryFrame = nil
+        end
         AddonNS.gui.categoriesFrames[i]:Hide();
     end
+    AddonNS.gui:RefreshCategoryDragHints()
 end

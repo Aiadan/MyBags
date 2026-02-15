@@ -108,6 +108,20 @@ local function resetDragTestState()
     lastEvent = nil
 end
 
+local function hintCategory(id, isProtected)
+    return {
+        GetId = function()
+            return id
+        end,
+        GetName = function()
+            return id
+        end,
+        IsProtected = function()
+            return isProtected == true
+        end,
+    }
+end
+
 local function frameForColumn(columnIndex)
     local width = 300
     local sectionWidth = width / 3
@@ -217,4 +231,64 @@ run("background drop emits CATEGORY_MOVED_TO_COLUMN with moveTail false when shi
     assertTrue(lastEvent ~= nil, "event should be emitted")
     assertEqual(lastEvent.name, "CATEGORY_MOVED_TO_COLUMN", "should emit category moved to column event")
     assertEqual(lastEvent.args[3], false, "moveTail should be false when shift is not held")
+end)
+
+run("GetCategoryDropHint returns nil when no drag item is active", function()
+    resetDragTestState()
+    cursorInfoType = nil
+    local hint = addonEnv.DragAndDrop:GetCategoryDropHint(hintCategory("cus-1", false), false)
+    assertTrue(hint == nil, "hint should be hidden without item drag")
+end)
+
+run("GetCategoryDropHint hides unassigned when not hovered", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+    local hint = addonEnv.DragAndDrop:GetCategoryDropHint(hintCategory("unassigned", false), false)
+    assertTrue(hint == nil, "unassigned should be hidden when not hovered")
+end)
+
+run("GetCategoryDropHint returns unassigned hint when hovered", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+    local hint = addonEnv.DragAndDrop:GetCategoryDropHint(hintCategory("unassigned", false), true)
+    assertTrue(hint ~= nil, "hint should be shown for hovered unassigned")
+    assertEqual(hint.tone, "unassigned", "tone should describe unassigned action")
+end)
+
+run("GetCategoryDropHint returns blocked tone when hovered protected", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1002
+    local hint = addonEnv.DragAndDrop:GetCategoryDropHint(hintCategory("eq-5", true), true)
+    assertTrue(hint ~= nil, "hint should be shown")
+    assertEqual(hint.tone, "blocked", "protected category should be blocked")
+end)
+
+run("GetCategoryDropHint returns assign tone when hovered assignable", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1003
+    local hint = addonEnv.DragAndDrop:GetCategoryDropHint(hintCategory("cus-2", false), true)
+    assertTrue(hint ~= nil, "hint should be shown")
+    assertEqual(hint.tone, "assign", "assignable hovered category should be assign tone")
+    assertEqual(hint.text, "Assign to cus-2", "assign tone should include target category name")
+end)
+
+run("GetCategoryDropHint hides protected category when not hovered", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1004
+    local hint = addonEnv.DragAndDrop:GetCategoryDropHint(hintCategory("eq-8", true), false)
+    assertTrue(hint == nil, "non-hovered protected category should stay neutral")
+end)
+
+run("GetCategoryDropHint treats merchant cursor as active item drag", function()
+    resetDragTestState()
+    cursorInfoType = "merchant"
+    cursorItemId = 2
+    local hint = addonEnv.DragAndDrop:GetCategoryDropHint(hintCategory("cus-3", false), true)
+    assertTrue(hint ~= nil, "merchant item drag should show hint")
+    assertEqual(hint.tone, "assign", "merchant drag over assignable category should assign")
 end)
