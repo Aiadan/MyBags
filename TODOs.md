@@ -189,6 +189,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ added opt-in performance probes for bag-open hotspots (main iteration/categorization/layout, custom categorizer query path, items sort path) plus debug toggles to enable/disable profiling in-game.
 * ✅ added detailed profiling breakdown inside `ArrangeCategoriesIntoColumns` to identify exact time split (constants/layout match/unmatched build-sort-insert/sort-only/add-category totals).
 * ✅ added edit-mode bottom-left drag resize handle for bag columns (x-axis only), with release-time hysteresis mapping (`+0.5` grow / `-0.5` shrink) to persisted column count.
+* ✅ added live resize preview overlays in edit mode: soft-blue baseline over current columns, green overlays for projected added columns, red overlays for projected removed columns, plus `start -> target` count label while dragging.
 * ✅ items sort now uses fail-fast cached item ids from main iterator (`itemButton._myBagsItemId`) and no longer calls `GetContainerItemInfo` inside `ItemsOrder:Sort`.
 * ✅ added deeper `ItemsOrder:Sort` profiling split (map/sort/append) and tiny-list fast paths (`<=1`, `==2`) to reduce sort overhead.
 * ✅ removed unnecessary `order_map_changed` invalidation in `ItemsOrder:Sort`; order-map rebuild now happens only after real order mutations.

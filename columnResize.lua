@@ -23,9 +23,17 @@ function AddonNS.ColumnResize:CalculateTarget(currentColumns, estimatedVisibleCo
     return target
 end
 
+function AddonNS.ColumnResize:ClassifyPreview(currentColumns, estimatedVisibleColumns, minColumns, maxColumns)
+    local targetColumns = self:CalculateTarget(currentColumns, estimatedVisibleColumns, minColumns, maxColumns)
+    return targetColumns, targetColumns - currentColumns
+end
+
 AddonNS._Test = AddonNS._Test or {}
 AddonNS._Test.ColumnResize = {
     CalculateTarget = function(currentColumns, estimatedVisibleColumns, minColumns, maxColumns)
         return AddonNS.ColumnResize:CalculateTarget(currentColumns, estimatedVisibleColumns, minColumns, maxColumns)
+    end,
+    ClassifyPreview = function(currentColumns, estimatedVisibleColumns, minColumns, maxColumns)
+        return AddonNS.ColumnResize:ClassifyPreview(currentColumns, estimatedVisibleColumns, minColumns, maxColumns)
     end,
 }
