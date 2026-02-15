@@ -102,12 +102,18 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 ### TODO
 
+* add thrash icon (or cross, or something that could indicate deletion) on the right side (anchored to the left) of the category title. Clicking it invokes prompt to confirm deletion of given category. You need to look for thrash icons used in the game.
+* review the documentation of queries and update it
+* add similiar documentation of queries into the game. Add button below next to "Save Priority"  called in game "HelpButton" or "Help" - can be for instance seen in encounterJournalMonthlyActivitiesFrame.  Click on this button opens an explanation on queries, what priority is for and afterwards we can scroll through details - the same as in QUERY_ATTRIBUTES.md . I am not sure if we could somehow use the same file in the game somehow?
+* add import export categories. Exported categories should have "external id" which during export is derived for simplicity from category name. If during import given external id is already defined, importing will override its setup. Export functionality will open a window where user will be able to multiselect from a list (made with WoWList) of categories categories they wish to export. The exported value should be in readable lue which later on can be imported. Both export and import buttons should be added below "Add Category" but with less poping out colour, maybe yellowish. Import button opens a frame where user can paster the exported categories and accept. Once accepted there should be a notification about which categories are going to be added, and which are going to be updated with the new config - user should be forced to accept those changes. User can only export of course custom categories.
+* modify the build to not include any *.md files apart from README.md and QUERY_ATTRIBUTES.md
 * [!] create some nice default categories based on what I end up with as my query categories in TWW
 * while using search box the itembuttons included in the results should both include items searched by default functionality, but also the functionality should try to use the text inserted into the search box as query. If query is valid, it should be used to expand results of the search. The result should be an union of standard functionality and what is accepted by the query.
 * if the above is done we can during edit mode put the query user is typing in the query for a given category into the search to show all the time what a given query user uses would filter, "catch".
 * show somewhere how many empty spaces are left
 * display empty space if available to show how many items we can still add.
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
+* [bug] when draggin an item an click right click on a column part, it moves entire cateogory in which a given itembutton was in
 
 #### Low priority
 
