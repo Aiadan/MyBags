@@ -84,10 +84,6 @@ function AddonNS:SetNumColumns(count)
     return normalized
 end
 
-_G.ChangeTheNumberOfColumns = function(count)
-    return AddonNS:SetNumColumns(count)
-end
-
 function AddonNS.printDebug(...)
 --@debug@
     -- print(...)

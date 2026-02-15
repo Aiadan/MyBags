@@ -96,7 +96,7 @@ local function refreshDragTooltipText()
             draggableFrame.hintLine:SetText("|cff72f272Moving |r" ..
                 categoryNameText .. "|cff72f272 and all categories below it|r")
         else
-            draggableFrame.hintLine:SetText("|cffc8c8c8Hold Shift: move |r" ..
+            draggableFrame.hintLine:SetText("|cff72f272Hold Shift:|r|cffc8c8c8 to move |r" ..
                 categoryNameText .. "|cffc8c8c8 and all categories below it|r")
         end
     end

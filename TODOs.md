@@ -4,47 +4,6 @@ There is a number of things that I can consdier for implementation. Some are mor
 
 Some of the things are marked with [!] indicating their cruciallity before exposing this addon to wider audience.
 
-## Design changes needed
-
-* [PLAN] Plan for proper groupping:
-
-    ```
-    local sampleCategory = {
-        id = "" -- generated id or concatenation of categorizer id and name of the categorized category. Needed for container settings. Categorizer ids are not stored.
-        name="",
-        categorizer = "", -- whewther categorizer was used to generate this one. These are special kind of categories and should be treated separtely. Most operations such as renames should not be available to these.
-        ~protected = "",~ -- this has to be removed, ie. when categorizer is set, it is protected as it is protected and automatically calculated. Can be hidden under "isProtected()"
-        isProtected()
-        query = "",
-        isAlwaysVisible()
-        is
-    }
-
-    Stored data:
-        Stored per custom category:
-        * id
-        * name
-        * query
-        * alwaysVisible
-        * items
-            * itemid
-            * maxilvl ?
-            * item name ? [if we are able to check easily which items has a possiblity of alternative name]
-
-
-        Per container setttings:
-        stored [per category id]:
-        * collapsed
-        * column assignment
-
-        dynamically calculated:
-        * assigned items
-
-
-    Generic:
-    * items order
-    ```
-
 ## User focused
 
 ### DONE
@@ -113,45 +72,51 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ `Edit mode` badge next to the cog now acts as part of the config toggle (clicking the badge triggers the same edit-mode on/off behavior as the cog).
 * ✅ holding Shift while dragging a category now moves that category and all categories below it in the source column (applies to category-drop reorder and background column-drop).
 * ✅ reworked category drag tooltip for Shift-tail move guidance: improved readability/contrast, wrapped hint text, live Shift-state message updates, and final category-name/default-color formatting.
+* ✅ Unassigned should be a separate categorizer initialized at the end of all the others.
+* ✅ drag and drop triggering an action that an item was dropped onto a new category should be handled differently. First of all drop and down should be using reference to real categories. Each category should have function to handle OnItemAssigned and OnItemUnassigned. As example I believe that custom categorizer when exposing its categories would most likely create some kind of proxy functions for those functions. Categorizers should no longer listen to events about associating item with a category - instead there could be a separate handling function within categories.lua which will listen to those events, and then call OnItemAssigned and OnItemUnassigned accordingly. However draganddrop should not trigger that event if any of those categories is protected. This will allow us to create some additional dynamic, non protected categorizers which might want to perform some actions of their own during such reassignment and store information differently then the one in custom.
+* ✅ each categorizer should store a list of categories which could be retrieved when needed from categories store
+* ✅ Because of the above categoriesGUI should also by default work mostly with custom categorizer.
+* ✅ custom/query boundary step completed: query orchestration now goes through `CustomCategories` APIs; `Categorizers/custom/query.lua` no longer reads `CategoryStore`; query edit UI also uses `CustomCategories` directly.
+* ✅ categories store is no longer responsible for storing custom category saved-variable data (`items`, `query`, `alwaysVisible`, etc.); custom data is now owned/migrated by `CustomCategories` in `db.userCategories`.
+* ✅ custom.lua now handles persistence/bootstrap for custom category query/items data and migration, so CategoryStore is no longer aware of custom query/items state.
+* ✅ category move and custom-category GUI drag/drop flows now pass category references (wrappers) end-to-end; internal runtime no longer resolves categories by name in those paths.
+* ✅ selected category visibility in config flow is effectively covered: while categories config is open, custom categories are shown, selected category is highlighted (`>> `), and selecting from bag headers keeps that selection visible without persisting Always Visible state.
+* ✅ [DONE with differences] rewrite categorization [or rather where each piece is stored for a given category]
+  * ✅ custom/query/always-visible/manual-item data ownership moved to `CustomCategories`; `CategoryStore` now keeps wrappers/shared layout only.
+  * ✅ wrapped-id rename path preserves assignments (covered by integration test: `category rename accepts wrapped category id and preserves assignments`).
+  * ✅ manual assignment flow now de-duplicates entries and rebuilds assignment index from persisted data on load.
+  * ✅ custom/categories domain split and event/update responsibilities were reworked in the AI refactor section below.
+* ✅ item tooltip category diagnostics are now Shift-gated; without Shift it only shows a short hint, and full matched-category calculation runs only when Shift is held (commit `eb6c69f`).
+* ✅ removed/superseded: no automatic movement of categories between columns based on visual overflow; columns now follow persisted assignment + explicit column-count/resize behavior.
+* ✅ [superseded by layout policy] breaking of groups/overflow split behavior no longer applies after moving to explicit column assignment + resize-driven layout.
+  * note: this concern was tied to an older design where assignment tried to react to visual overflow. Current policy is to keep assignment/layout deterministic and handle visual fit via sizing/column controls.
+* ✅ query categorizer now uses explicit custom-category priority scores (defaulting to raw numeric category id), with deterministic tie-breaks and GUI editing.
+* ✅ item tooltip now supports MyBags match diagnostics with Shift-gated category list and reason tags (manual assignment vs query priority).
+* ✅ stack splitting support is enabled for MyBags empty-slot flow (hooked `C_Container.SplitContainerItem` to allow split-drop behavior; commit `af35368`).
+* ✅ highlight selected category in the bags and make it temporary visible via always visible or similar functionality. 
+* ✅ unassigned group should always be visible
 
 ### TODO
 
-* [!!!] rewrite categorization [or rather where each piece is stored for a given category]
-  * custom category for whatever reason disapears.
-  * there is a bug in custom categories making the assignments to custom categories list grow and grow.
-  * the rename I am quite certian does not work as it should ie. will loose some preassigned items
-  * TECH - categoriesColumnAssignment should be a part of a Mixin as it contains container specific setup.
-  * does it mean collapsed should also be a per container setting?
-  * The main error I made was to add new functionalities when I was supposed to in reality just extend custom categorizer. If I'd do that, then there wouldn't be issues.
-  * there is a lot of bad code, broken domains. Especially in the place of:
-    * custom categories and categories,
-    * which code [class/domain] should trigger visual updates as it is a random to an extent at this point
-* addon freezes when opening bags or changing categories - not something that was there before. As codex now modifies this addon most likely he did introduce some inefficiencies which i did not notice. One of the possible reasons is described below with all categories always checked for every item [althoguth 150 x even 200 is not that much].
-* the way ai changed the addon to show categories associated with each item, is that without shift it shows a list of categories. This is problematic as it
-  1. is pointless most of the time
-  2. calculates all categories instead of matching first during recalculation which takes a lot of time
-* remove the movement of categories to separate columns when overflow happens - it did not work, and now with proper scaling it is no longer an issue - the bag will just get smaller. Remove other tickets.
-* [!!!] position of the window should be changed to top if we are to be filtering.
-* [!!!] ~✅ [I think, as I no longer observe this]~ breaking of groups does not seem to work properly - looks like it calculates only the amount within a given group whether it goes above the limit, not the entire amount of items in the column
-  * (see todo-1) this should not be handled here. Currently i am thinking th9at it is a responsibility of the drawing layer to make sure everything fits. This should just assign columns as is defined by user, without splitting as at this stage we have no knowledge about size in pixels of the column or the screen size. So to resolve it we'd need to do split logic of the same thing in the drawin layer anyways.
-
-* make it so that when a category is selected, the custom category becomes always visible during that time (?). Alternative is also to allow for multiselect and those selected are always shown, even after categories menu close.
-* add support for other bags (well, bank?). This is not a priority. I am doing this for fun and I feel current implementation of handling of the main bag kinda of works, I want to be adjusting it to a point I will be happy with it's behaviour. when I will extend the support onto other bags. But clean up the code toward proper mixin that maybe could be put on top of other frames if that is even possible.
-* maybe if unassigned group is visible it should be added a bit more info to the tooltip what will happen if you move item over that group - that it will get unassigned from a custom group and can be picked by other categorizers
-* add the effect when dragging to indicate that a given cateogry is protected so you cannot assign to it - ie red background, shield pickture and some small text? And when howevering over a category to which you can assign indicate with text that it will be assigned to this one?
-* highlight selected category in the bags and make it temporary visible via always visible or similar functionality.
+* add boxes with explanations over categories when draggin an item
+  * the challange is that it should not hinder the ability to place item after/before another item
+  * maybe if unassigned group is visible it should be added a bit more info to the tooltip what will happen if you move item over that group - that it will get unassigned from a custom group and can be picked by other categorizers
+  * add the effect when dragging to indicate that a given cateogry is protected so you cannot assign to it - ie red background, shield pickture and some small text? And when howevering over a category to which you can assign indicate with text that it will be assigned to this one?
+* position of the window should be changed to top if we are to be filtering.
+  * could make search actually filter items without changing bag size. Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
 * show somewhere how many empty spaces are left
-* could make search actually filter items (without changing bag size). Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
-* display empty space if available to show how many items we can still add ~as well as allow for stack splits~.
-* add ability to disable category so it will stop catching items, but will exist. Items assigned by category will no longer be caught by this category. If they are moved to another category from unassigned, they will get removed from this category.
+* display empty space if available to show how many items we can still add.
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
-
 * create some nice default categories based on what I end up with as my query categories in TWW
+
+#### Low priority
+
+* [PARTIAL] addon freezes when opening bags or changing categories.
+  * ✅ added profiling for bag refresh, `ArrangeCategoriesIntoColumns`, `ItemsOrder:Sort`, and `CustomCategorizer:Categorize` to pinpoint hotspots.
+  * ✅ tooltip category diagnostics are now Shift-gated, so full match-list calculation is no longer done unless Shift is held.
+  * ⏳ still open: `CustomCategorizer:Categorize` query path still iterates query categories per item; verify with `PROFILE ...` output whether freeze is fully gone.
+* add support for other bags (well, bank?). This is not a priority. I am doing this for fun and I feel current implementation of handling of the main bag kinda of works, I want to be adjusting it to a point I will be happy with it's behaviour. when I will extend the support onto other bags. But clean up the code toward proper mixin that maybe could be put on top of other frames if that is even possible.
 * add colours to categories
-* ✅ query categorizer now uses explicit custom-category priority scores (defaulting to raw numeric category id), with deterministic tie-breaks and GUI editing.
-* ✅ item tooltip now supports MyBags match diagnostics with Shift-gated category list and reason tags (manual assignment vs query priority).
-* unassigned group should always be visible
-* add an ability to move categories on the list, so that categorization would not be based on the order of (well, currently random) alhabet
 
 ### DOUBTFUL - to check at later stages
 
@@ -159,33 +124,28 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * resizing via scrolling should work on all empty spaces
 * make collapsed a part of a mixin for container, not separate entity
 * [in progress] clearup the todos as I think there are duplicates and also these have become unordered due to that
-* if ther was a way to properly higlight that an item would have been categorized differentlty by QL if it was unassigned directly by id to a category, we maybe would not need protected categories(Although I think it always should be an option, and those categories would also work before assignment by id). In the menu there should be an option to "always show given category".
-  * categorize by QL if protected
-  * categorize by id assignment
-  * categorize by QL
-  * unassigned
+
 
 ### REJECTED
 
 * Add ability to hide category so it won't show, nor the items in it
   * I dont want to create this, items should be visible not cause confusion "where is my item, oh I have hidden it"
-* ~~consider actually adding some options - number of columns, items per column, always break category to new line.~~
-  * ✅ partial outcome: number of columns is now configurable (persisted, via `/script ChangeTheNumberOfColumns(count)`).
-  * ⏳ remaining decision: final UX is still intended to be resizing by dragging side of the bag rather than options UI.
 * I have decided to not include button for authenticator that is available in normal bags. Consider adding it via adding to layout update self:LayoutAddSlots(); as well as support for this button. Although I have no idea how I could test it
-* ~~[REJECTED - in order to keep simplicity and default behaviour ] consider making the number of columns configurable~~
-  * ✅ superseded: configurable columns are now implemented with persisted `layout.columnCount` (3..8, default 3) and temporary `/script ChangeTheNumberOfColumns(count)` control.
-  * ✅ resize behavior implemented: increasing adds empty rightmost columns; decreasing appends removed-column categories to the last visible column in order.
-
-### UNKNOWN what they were about, meaning lost in the ether
-
-* unassigned to junk was behaving weirdly
+* add ability to disable category so it will stop catching items, but will exist. Items assigned by category will no longer be caught by this category. If they are moved to another category from unassigned, they will get removed from this category.
+* add an ability to move categories on the list, so that categorization would not be based on the order of (well, currently random) alhabet
+  * this is done using priorities
+* [this was done differently] if ther was a way to properly higlight that an item would have been categorized differentlty by QL if it was unassigned directly by id to a category, we maybe would not need protected categories(Although I think it always should be an option, and those categories would also work before assignment by id). In the menu there should be an option to "always show given category".
+  * categorize by QL if protected
+  * categorize by id assignment
+  * categorize by QL
+  * unassigned
 
 ## Technical focused
 
-* the checks in drag and drop using pickedItemButton could be replaced with  C_Cursor.GetCursorItem() .
-* remove defensive silent-guard anti-patterns (e.g. `if not x then return end` in internal domain flow) and replace with fail-fast preconditions so bugs are surfaced instead of hidden.
-* normalize naming convention across codebase: standalone/local functions to lower camel case (e.g. `doSomething`), and table methods defined with `:` to UpperCamelCase (e.g. `SomeTable:DoSomething()`).
+Tasks which after implementation user will not see.
+
+### DONE
+
 * ✅ added explicit fail-fast load-order guard in `categoriesColumnAssignment.lua` so it errors clearly if `categories.lua` has not initialized `AddonNS.Categories` yet.
 * ✅ added opt-in performance probes for bag-open hotspots (main iteration/categorization/layout, custom categorizer query path, items sort path) plus debug toggles to enable/disable profiling in-game.
 * ✅ added detailed profiling breakdown inside `ArrangeCategoriesIntoColumns` to identify exact time split (constants/layout match/unmatched build-sort-insert/sort-only/add-category totals).
@@ -197,23 +157,16 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ added agent skill `.agent/skills/blizzard-code-explorer` to guide Blizzard UI source lookup (path resolution, targeted `rg` patterns, source-cited output contract).
 * ✅ updated `.agent/skills/blizzard-code-explorer` to default to `/mnt/c/Program Files (x86)/World of Warcraft/_retail_/BlizzardInterfaceCode`.
 * ✅ enabled `BankFrame_Open` override in `ContainerFrameMyBagsMixin.lua` (`OpenAllBags(BankFrame)` before calling original) as the current workaround that resolves the observed bank taint path.
-
-## Recently added ideas for reactoring witth ai
-
-### DONE
-
-* ✅ Unassigned should be a separate categorizer initialized at the end of all the others.
-* ✅ drag and drop triggering an action that an item was dropped onto a new category should be handled differently. First of all drop and down should be using reference to real categories. Each category should have function to handle OnItemAssigned and OnItemUnassigned. As example I believe that custom categorizer when exposing its categories would most likely create some kind of proxy functions for those functions. Categorizers should no longer listen to events about associating item with a category - instead there could be a separate handling function within categories.lua which will listen to those events, and then call OnItemAssigned and OnItemUnassigned accordingly. However draganddrop should not trigger that event if any of those categories is protected. This will allow us to create some additional dynamic, non protected categorizers which might want to perform some actions of their own during such reassignment and store information differently then the one in custom.
-* ✅ each categorizer should store a list of categories which could be retrieved when needed from categories store
-* ✅ Because of the above categoriesGUI should also by default work mostly with custom categorizer.
-* ✅ custom/query boundary step completed: query orchestration now goes through `CustomCategories` APIs; `Categorizers/custom/query.lua` no longer reads `CategoryStore`; query edit UI also uses `CustomCategories` directly.
-* ✅ categories store is no longer responsible for storing custom category saved-variable data (`items`, `query`, `alwaysVisible`, etc.); custom data is now owned/migrated by `CustomCategories` in `db.userCategories`.
-* ✅ custom.lua now handles persistence/bootstrap for custom category query/items data and migration, so CategoryStore is no longer aware of custom query/items state.
-* ✅ category move and custom-category GUI drag/drop flows now pass category references (wrappers) end-to-end; internal runtime no longer resolves categories by name in those paths.
+* ✅ hard separation between custom/user-managed categories and dynamic ones is now in place (CustomCategories owns custom persistence/query/manual assignment; CategoryStore owns wrappers/shared layout).
+* ✅ naming convention for categories/categorizers is now considered done (implemented convention differs from the original `sys:*`/`ext:*` proposal).
+  * chosen convention: categorizer ids are short stable tokens (`unassigned`, `new`, `cus`, `eq`) and runtime wrapper category ids are namespaced as `<categorizerId>-<rawId>` (with `unassigned` kept as a sentinel singleton id).
 
 ### TODO
 
-* [TODO] improve categorization performance path (`CustomCategorizer:Categorize`) after sort/layout fixes.
+* the checks in drag and drop using pickedItemButton could be replaced with  C_Cursor.GetCursorItem() .
+* remove defensive silent-guard anti-patterns (e.g. `if not x then return end` in internal domain flow) and replace with fail-fast preconditions so bugs are surfaced instead of hidden.
+* normalize naming convention across codebase: standalone/local functions to lower camel case (e.g. `doSomething`), and table methods defined with `:` to UpperCamelCase (e.g. `SomeTable:DoSomething()`).
+* improve categorization performance path (`CustomCategorizer:Categorize`) after sort/layout fixes.
   * use profiling before each optimization pass:
   * `/run GLOBAL_MyBagsEnableProfiling()`
   * reproduce with bag open/refresh and review `PROFILE ...` lines in chat
@@ -224,6 +177,5 @@ Some of the things are marked with [!] indicating their cruciallity before expos
   * ✅ completed: category column assignment now hydrates runtime layout state on load and serializes back on logout.
   * ✅ decision update: category move/layout event flow uses category ids in `categoriesColumnAssignment.lua` by design (stable persisted shape and lower load-order/wrapper coupling).
   * ⏳ remaining: continue reducing id-based handling where persistence/UI boundary still legitimately uses ids.
-* [PARTIAL] We are making hard separation between custom, user manager categories, and dynamic ones.
-* [NOT DONE] setting on collapsed and column assignment should be stored under another entity "bag", as in the future we will have another for "bank" where what is collapsed or to which column assigned will be stored separately.
-* [NOT DONE] Naming of categories should be as follows: sys:new, sys:cat for system categories like unassigned, new, custom. Equipment should be treated as external hence should be called "ext:equip" . Meaning that addon defined reside within "sys" namespace, then short name of a categorizer ie. "cat" or "new". Within that names space then categorizers can create a categories after ":".
+* setting on collapsed and column assignment should be stored under another entity "bag", as in the future we will have another for "bank" where what is collapsed or to which column assigned will be stored separately.
+
