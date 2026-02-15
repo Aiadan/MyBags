@@ -32,11 +32,25 @@ jobs:
       - name: Add .toc file to Git #workaround for the package to accept this file and not ignore it
         run: git add MyBags.toc
 
+      - name: Generate query help lua
+        run: lua tools/generate_query_help.lua
+
+      - name: Verify generated query help is up to date
+        run: |
+          if ! git diff --quiet -- generated/queryHelpDocs.lua; then
+            echo "generated/queryHelpDocs.lua is out of date with QUERY_ATTRIBUTES.md"
+            git --no-pager diff -- generated/queryHelpDocs.lua
+            exit 1
+          fi
+
       - name: Run tests
         run: lua tests/Categorizers/query_test.lua
 
       - name: Remove tests directory
         run: rm -rf tests
+
+      - name: Remove tools directory
+        run: rm -rf tools
 
       - name: Remove disallowed markdown files
         run: find . -type f -name '*.md' ! -name 'README.md' ! -name 'QUERY_ATTRIBUTES.md' -delete

@@ -36,3 +36,10 @@ Use it only during diagnostics. Keep profiling disabled during normal play.
 - Query-based matching inside custom categories is ordered by explicit per-category priority (higher score first).
 - If no explicit priority is stored for a custom category, runtime default priority is the numeric raw category id.
 - Priority ties are resolved deterministically by higher numeric raw id first, then raw id string order.
+
+## Generated Query Help Docs
+
+- Canonical source for query help content is `QUERY_ATTRIBUTES.md`.
+- Runtime file consumed by UI is `generated/queryHelpDocs.lua`.
+- Regenerate locally after query-doc changes: `lua tools/generate_query_help.lua`.
+- Release workflow always regenerates and verifies this file is up to date before packaging.

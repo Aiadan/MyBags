@@ -104,10 +104,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ delete-header tooltip now shows `Delete "{category name}" category` and supports Shift-click to skip confirmation prompt by running the same deletion accept path directly.
 * ✅ in edit mode category layout now always renders each category on its own full-width row, with follow-up `main.lua` cleanup to explicit flags (`isHeaderOnly`, `categoryRequiresNewLine`, `categoryRequiresFullRowWidth`) and simplified boundary expansion math.
 * ✅ refreshed query documentation in `QUERY_ATTRIBUTES.md` to match current parser/runtime behavior (including priority order, syntax, and case sensitivity) and added `README.md` link to the query reference.
+* ✅ added in-game query documentation panel opened by a `MainHelpPlateButton`-styled Help trigger next to `Save Priority`; content is sourced from generated Lua docs built from `QUERY_ATTRIBUTES.md`, rendered with WoW-style formatting (headings/bullets/table-to-list/inline-code coloring) and a refined softer color palette.
 
 ### TODO
 
-* add similiar documentation of queries into the game. Add button below next to "Save Priority"  called in game "HelpButton" or "Help" - can be for instance seen in encounterJournalMonthlyActivitiesFrame.  Click on this button opens an explanation on queries, what priority is for and afterwards we can scroll through details - the same as in QUERY_ATTRIBUTES.md . I am not sure if we could somehow use the same file in the game somehow?
 * allow quoted multi-word item names in queries (for example `itemName = \"Epic Sword\"`) so users do not need wildcard workarounds. Update query documentation accordingly.
 * Make queries non case sensitive and update query documentation accordingly.
 * Change the priority and match order in categorization to start with priority and then string name comparison (alphabetical). Update query documentation accordingly.
@@ -174,6 +174,7 @@ Tasks which after implementation user will not see.
 * ✅ addon freezes when opening bags or changing categories.
   * optimized item sorting, still CustomCategorizer:Categorize could be improved which was separated to another ticket
 * ✅ bag column resize handle is now always visible/usable while bags are open (not gated to edit mode; still hidden in combat lockdown).
+* ✅ release workflow now removes `tools/` before packager runs, so dev scripts are excluded from shipped addon archives.
 
 ### TODO
 

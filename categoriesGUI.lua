@@ -11,10 +11,67 @@ function AddonNS.createGUI()
     local COLOR_COG_NORMAL = { 0.78, 0.78, 0.78, 1 }
     local COLOR_COG_EDIT = { 1, 0.85, 0.2, 1 }
 
+    local isHelpPlateLoaded = C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("Blizzard_HelpPlate")
+    if not isHelpPlateLoaded then
+        local isLoaded, reason
+        if C_AddOns and C_AddOns.LoadAddOn then
+            isLoaded, reason = C_AddOns.LoadAddOn("Blizzard_HelpPlate")
+        else
+            isLoaded, reason = LoadAddOn("Blizzard_HelpPlate")
+        end
+        assert(isLoaded, "Failed to load Blizzard_HelpPlate: " .. tostring(reason))
+    end
+    local queryHelpText = assert(AddonNS.QueryHelpDocs and AddonNS.QueryHelpDocs.text,
+        "MyBags query help docs not loaded. Run: lua tools/generate_query_help.lua")
+
     local containerFrame = GS:CreateButtonFrame(addonName, 440, 620, true);
     containerFrame:SetPoint("TOPRIGHT", container, "TOPLEFT", 0, -30);
     containerFrame:EnableMouse(true)
     containerFrame:Hide();
+
+    local function createQueryHelpFrame()
+        local frame = GS:CreateButtonFrame(addonName .. "_queryHelp", 520, 620, true)
+        frame:SetPoint("TOPLEFT", containerFrame, "TOPRIGHT", 8, 0)
+        frame:EnableMouse(true)
+        frame:Hide()
+
+        local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        title:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", 4, -8)
+        title:SetText("Query Help")
+
+        local helpScrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+        helpScrollFrame:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+        helpScrollFrame:SetPoint("BOTTOMRIGHT", frame.Inset, "BOTTOMRIGHT", -28, 8)
+
+        local helpScrollContent = CreateFrame("Frame", nil, helpScrollFrame)
+        helpScrollFrame:SetScrollChild(helpScrollContent)
+
+        local helpText = helpScrollContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        helpText:SetPoint("TOPLEFT", helpScrollContent, "TOPLEFT", 0, 0)
+        helpText:SetJustifyH("LEFT")
+        helpText:SetJustifyV("TOP")
+        helpText:SetText(queryHelpText)
+
+        local function refreshQueryHelpFrameLayout()
+            local availableWidth = helpScrollFrame:GetWidth() - 16
+            if availableWidth <= 0 then
+                return
+            end
+            helpScrollContent:SetWidth(availableWidth)
+            helpText:SetWidth(availableWidth)
+            helpScrollContent:SetHeight(helpText:GetStringHeight() + 8)
+        end
+
+        helpScrollFrame:SetScript("OnSizeChanged", refreshQueryHelpFrameLayout)
+        frame:HookScript("OnShow", function()
+            refreshQueryHelpFrameLayout()
+            helpScrollFrame:SetVerticalScroll(0)
+        end)
+
+        return frame
+    end
+
+    local queryHelpFrame = createQueryHelpFrame()
 
     local settingsButton = CreateFrame("Button", nil, container, "UIPanelIconDropdownButtonTemplate")
     settingsButton:SetSize(20, 20)
@@ -78,6 +135,7 @@ function AddonNS.createGUI()
     container:HookScript("OnHide", function()
         AddonNS.BagViewState:SetMode("normal")
         containerFrame:Hide()
+        queryHelpFrame:Hide()
         StaticPopup_Hide("CREATE_CATEGORY_CONFIRM")
         StaticPopup_Hide("RENAME_CATEGORY_CONFIRM")
         StaticPopup_Hide("DELETE_CATEGORY_CONFIRM")
@@ -194,6 +252,7 @@ function AddonNS.createGUI()
 
     containerFrame:SetScript("OnHide", function()
         lastSelectedCategoryId = nil
+        queryHelpFrame:Hide()
         AddonNS.QueueContainerUpdateItemLayout();
     end)
 
@@ -329,6 +388,18 @@ function AddonNS.createGUI()
     savePriorityButton:SetPoint("LEFT", priorityEditBox, "RIGHT", 8, 0)
     savePriorityButton:SetSize(100, 20)
     savePriorityButton:SetText("Save Priority")
+    local helpButton = CreateFrame("Button", nil, containerFrame, "MainHelpPlateButton")
+    helpButton:SetPoint("LEFT", savePriorityButton, "RIGHT", 8, 0)
+    helpButton:SetSize(64, 64)
+    helpButton:SetScale(0.45)
+    helpButton.mainHelpPlateButtonTooltipText = "Open query syntax and priority help"
+    helpButton:SetScript("OnClick", function()
+        if queryHelpFrame:IsShown() then
+            queryHelpFrame:Hide()
+            return
+        end
+        queryHelpFrame:Show()
+    end)
     local function savePrioritySelection()
         local categoryId = getSelectedCategoryId()
         if not categoryId then

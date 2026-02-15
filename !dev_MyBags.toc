@@ -37,6 +37,7 @@ FrameParameters.lua
 dragndrop.lua
 columnResize.lua
 gui.lua
+generated/queryHelpDocs.lua
 categoriesGUI.lua
 itemsOrder.lua
 categories.lua
