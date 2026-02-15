@@ -167,6 +167,7 @@ Tasks which after implementation user will not see.
 
 * remove defensive silent-guard anti-patterns (e.g. `if not x then return end` in internal domain flow) and replace with fail-fast preconditions so bugs are surfaced instead of hidden.
 * normalize naming convention across codebase: standalone/local functions to lower camel case (e.g. `doSomething`), and table methods defined with `:` to UpperCamelCase (e.g. `SomeTable:DoSomething()`).
+* extract bag-search anchor-lock behavior into a dedicated module/file (separate from `ContainerFrameMyBagsMixin.lua`/`main.lua`) with a clear interface for state transitions and anchor reapply hooks.
 * improve categorization performance path (`CustomCategorizer:Categorize`) after sort/layout fixes.
   * use profiling before each optimization pass:
   * `/run GLOBAL_MyBagsEnableProfiling()`
