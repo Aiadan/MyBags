@@ -111,11 +111,11 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ finalized custom-category import/export: plain Lua payload with strict validation, create-only import of rules + manual item assignments (`items`) (no `externalId` upsert, no layout import/export), and completed UX polish (list sizing, Shift-range select fix in `MyLibrary_GUI` `WowList-1.5`, independent import/export windows, scrollable read-only import analysis, centered import window).
 * ✅ create some nice default categories with queries - purely using queries (seeded via built-in import payload on empty custom DB; includes default first-launch layout reset).
 * ✅ query syntax/help window now stays open when custom category GUI is closed (it still closes when the bag/container itself is hidden).
-* ✅ finalized search-query union feature: search now includes Blizzard default matches plus valid query-language matches from the same text (invalid query ignored), query-only matches are not dimmed, search text is captured via direct `OnTextChanged` wrappers on `BagItemSearchBox` and `BankItemSearchBox`, temporary debug/race-workaround code was removed, and `README.md` was updated.
+* ✅ finalized search-query union feature: search now includes Blizzard default matches plus valid query-language matches from the same text (invalid query ignored), query-only matches are not dimmed, search text is captured via direct `OnTextChanged` wrappers on `BagItemSearchBox` and `BankItemSearchBox`, custom GUI query-to-search sync stays local to `categoriesGUI.lua`, temporary debug/race-workaround code was removed, and `README.md` was updated.
+* ✅ custom query-edit preview flow finalized: editing/focusing query text in custom categories GUI mirrors into bag search for live results, search anchor lock stays active while query editor is focused in edit mode, and bag/bank search max length is 255.
 
 ### TODO
 
-* if the above is done we can during edit mode put the query user is typing in the query for a given category into the search to show all the time what a given query user uses would filter, "catch".
 * show somewhere how many empty spaces are left
 * display empty space if available to show how many items we can still add.
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.

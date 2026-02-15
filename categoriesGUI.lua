@@ -5,9 +5,14 @@ local GS = LibStub("MyLibrary_GUI");
 local WowList = LibStub("WowList-1.5");
 AddonNS.CategoriesGUI = AddonNS.CategoriesGUI or {}
 
+function AddonNS.CategoriesGUI:IsQueryEditorFocused()
+    return false
+end
+
 function AddonNS.createGUI()
     local container = AddonNS.container;
     local lastSelectedCategoryId = nil
+    local queryEditorFocused = false
     local COLOR_COG_NORMAL = { 0.78, 0.78, 0.78, 1 }
     local COLOR_COG_EDIT = { 1, 0.85, 0.2, 1 }
 
@@ -261,6 +266,8 @@ function AddonNS.createGUI()
 
     containerFrame:SetScript("OnHide", function()
         lastSelectedCategoryId = nil
+        queryEditorFocused = false
+        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, false)
         AddonNS.QueueContainerUpdateItemLayout();
     end)
 
@@ -599,6 +606,31 @@ function AddonNS.createGUI()
     end)
     textScrollFrame.EditBox:SetFontObject(NumberFont_Shadow_Tiny)
 
+    local function applyQueryTextToBagSearch(queryText)
+        queryText = queryText or ""
+        if BagItemSearchBox:GetText() ~= queryText then
+            BagItemSearchBox:SetText(queryText)
+            return
+        end
+    end
+
+    textScrollFrame.EditBox:HookScript("OnEditFocusGained", function(self)
+        queryEditorFocused = true
+        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, true)
+        applyQueryTextToBagSearch(self:GetText())
+    end)
+
+    textScrollFrame.EditBox:HookScript("OnEditFocusLost", function()
+        queryEditorFocused = false
+        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, false)
+    end)
+
+    textScrollFrame.EditBox:HookScript("OnTextChanged", function(self, userInput)
+        if userInput then
+            applyQueryTextToBagSearch(self:GetText())
+        end
+    end)
+
     containerFrame.textScrollFrame = textScrollFrame
     -- end
     -- containerFrame.textScrollFrame = createEditBox(containerFrame, 25, -60, 60)
@@ -838,6 +870,10 @@ function AddonNS.createGUI()
 
     function AddonNS.CategoriesGUI:ToggleImportFrame()
         toggleImportFrame()
+    end
+
+    function AddonNS.CategoriesGUI:IsQueryEditorFocused()
+        return queryEditorFocused
     end
 end
 

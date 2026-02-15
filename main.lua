@@ -2,6 +2,7 @@ local addonName, AddonNS = ...
 local isCollapsed = AddonNS.Collapsed.isCollapsed;
 
 local ITEM_SPACING = AddonNS.Const.ITEM_SPACING;
+local SEARCH_BOX_MAX_LETTERS = 255
 AddonNS.itemButtonPlaceholder = {}
 local refreshProfile = nil
 
@@ -167,7 +168,8 @@ hooksecurefunc("UpdateContainerFrameAnchors", function()
 end)
 
 local function refreshSearchAnchorLockState(searchBox)
-    local shouldLock = searchBox.anchorBag == container and (searchBox:HasFocus() or searchBox:GetText() ~= "")
+    local queryEditorFocused = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorFocused()
+    local shouldLock = searchBox.anchorBag == container and (searchBox:HasFocus() or searchBox:GetText() ~= "" or queryEditorFocused)
     local changed = container:SetSearchAnchorLockActive(shouldLock)
     if shouldLock then
         container:CaptureSearchAnchorLockPosition()
@@ -198,6 +200,10 @@ BagItemSearchBox:HookScript("OnTextChanged", function(searchBox)
     refreshSearchAnchorLockState(searchBox)
 end)
 
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, function()
+    refreshSearchAnchorLockState(BagItemSearchBox)
+end)
+
 local function installSearchBoxWrapper(searchBox)
     if not searchBox then
         return
@@ -216,6 +222,16 @@ local function installSearchBoxWrapper(searchBox)
     end)
     searchBox.MyBagsSearchWrapped = true
 end
+
+local function extendSearchBoxMaxLetters(searchBox)
+    if not searchBox then
+        return
+    end
+    searchBox:SetMaxLetters(SEARCH_BOX_MAX_LETTERS)
+end
+
+extendSearchBoxMaxLetters(BagItemSearchBox)
+extendSearchBoxMaxLetters(BankItemSearchBox)
 
 installSearchBoxWrapper(BagItemSearchBox)
 installSearchBoxWrapper(BankItemSearchBox)
