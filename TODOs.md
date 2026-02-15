@@ -107,6 +107,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ selected custom category in config mode now gets `>> ` prefix in bag headers via `GetDisplayName(itemsCount)`; selection change in categories GUI triggers layout refresh so highlight updates immediately.
 * ✅ AGENTS.md now has strict "Internal contracts" rules (mandatory wrapper interfaces, boundary-only defensive checks, fail-fast internal flows, and a review checklist to block defensive call-site guards).
 * ✅ in-bag category headers now render custom categories in grey when runtime-empty and not marked Always Visible.
+* ✅ fixed custom category rename/delete API paths to resolve wrapped ids (`cus-<id>`), so Categories GUI rename/delete works reliably and rename preserves assignments.
+* ✅ categories config rename/delete popups now pass category wrapper references (not ids) through UI flow, keeping internal interactions object-based.
 
 ### TODO
 

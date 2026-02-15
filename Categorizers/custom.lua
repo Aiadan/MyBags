@@ -591,37 +591,34 @@ function CustomCategories:NewCategory(name, opts)
 end
 
 function CustomCategories:RenameCategory(categoryOrId, newName)
-    local raw
-    if type(categoryOrId) == "table" and categoryOrId.GetId then
-        raw = find_by_id(categoryOrId:GetId():gsub("^" .. CATEGORIZER_ID .. "%-", ""))
-    else
-        raw = find_by_id(categoryOrId)
-    end
-    if not raw then
+    local rawId = resolve_raw_id(categoryOrId)
+    if not rawId then
         return
     end
     local db = get_db()
-    local previousName = raw:GetName()
-    db.categories[raw:GetId()].name = newName
+    local entry = db.categories[rawId]
+    if not entry then
+        return
+    end
+    local previousName = entry.name or ""
+    entry.name = newName
     fireUpdate()
-    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, raw:GetId(), newName, previousName)
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, rawId, newName, previousName)
 end
 
 function CustomCategories:DeleteCategory(categoryOrId)
-    local raw
-    if type(categoryOrId) == "table" and categoryOrId.GetId then
-        local stripped = categoryOrId:GetId():gsub("^" .. CATEGORIZER_ID .. "%-", "")
-        raw = find_by_id(stripped)
-    else
-        raw = find_by_id(categoryOrId)
+    local rawId = resolve_raw_id(categoryOrId)
+    if not rawId then
+        return
     end
+    local raw = find_by_id(rawId)
     if not raw or raw:IsProtected() then
         return
     end
     local db = get_db()
-    db.categories[raw:GetId()] = nil
+    db.categories[rawId] = nil
     fireUpdate()
-    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, CATEGORIZER_ID .. "-" .. raw:GetId())
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, CATEGORIZER_ID .. "-" .. rawId)
 end
 
 function CustomCategories:SetAlwaysVisible(categoryOrId, flag)

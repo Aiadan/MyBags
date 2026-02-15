@@ -104,6 +104,10 @@ function AddonNS.createGUI()
         end)
     end
 
+    local function selectCategory(category)
+        selectCategoryById(category and category:GetId() or nil)
+    end
+
     function list:RefreshList()
         list:RemoveAll()
         local entries = {}
@@ -166,7 +170,7 @@ function AddonNS.createGUI()
         end
         local dialog = StaticPopup_Show("RENAME_CATEGORY_CONFIRM", category:GetName() or "")
         if dialog then
-            dialog.data = category.id
+            dialog.data = category
         end
     end)
 
@@ -184,7 +188,7 @@ function AddonNS.createGUI()
         end
         local dialog = StaticPopup_Show("DELETE_CATEGORY_CONFIRM", category:GetName() or "")
         if dialog then
-            dialog.data = category.id
+            dialog.data = category
         end
     end)
 
@@ -345,14 +349,13 @@ function AddonNS.createGUI()
                 AddonNS.CustomCategories:RenameCategory(data, categoryName);
                 AddonNS.QueueContainerUpdateItemLayout();
                 list:RefreshList();
-                selectCategoryById(data)
+                selectCategory(data)
             else
                 AddonNS.printDebug("Please enter a category name.")
             end
         end,
         OnShow = function(self, data)
-            local category = AddonNS.CategoryStore:Get(data)
-            self:GetEditBox():SetText(category and category:GetName() or "")
+            self:GetEditBox():SetText(data and data:GetName() or "")
         end,
         enterClicksFirstButton = true,
         timeout = 0,

@@ -275,6 +275,24 @@ run("custom category query updates compiled cache via direct API", function()
     assert_true(ctx.AddonNS.QueryCategories:GetCompiled(category) == nil, "compiled query removed after clearing")
 end)
 
+run("category rename accepts wrapped category id and preserves assignments", function()
+    local ctx = harness.new()
+    local category = ctx.AddonNS.CustomCategories:NewCategory("BeforeRename")
+    local wrappedId = category:GetId()
+    local rawId = wrappedId:match("^[^%-]+%-(.+)$")
+    ctx.AddonNS.CustomCategories:AssignToCategory(category, 555)
+
+    ctx.AddonNS.CustomCategories:RenameCategory(wrappedId, "AfterRename")
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local snapshot = ctx:snapshot()
+    local custom = custom_snapshot(snapshot)
+    local entry = custom.categories[rawId]
+    assert_true(entry ~= nil, "renamed category still exists")
+    assert_true(entry.name == "AfterRename", "wrapped-id rename updates persisted name")
+    assert_equal({ 555 }, entry.items, "rename keeps existing item assignments")
+end)
+
 run("category move events use category ids for reorder and column move", function()
     local ctx = harness.new()
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
@@ -323,6 +341,19 @@ run("category delete removes layout entry via category id event", function()
             assert_true(id ~= catA:GetId(), "deleted category removed from all columns")
         end
     end
+end)
+
+run("category delete accepts wrapped category id", function()
+    local ctx = harness.new()
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("DeleteByWrappedId")
+    local wrappedId = catA:GetId()
+    local rawId = wrappedId:match("^[^%-]+%-(.+)$")
+    ctx.AddonNS.CustomCategories:DeleteCategory(wrappedId)
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local snapshot = ctx:snapshot()
+    local custom = custom_snapshot(snapshot)
+    assert_true(custom.categories[rawId] == nil, "category deleted when using wrapped id")
 end)
 
 run("migrates from db.categorizers.cus to userCategories", function()
