@@ -96,6 +96,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ stack splitting support is enabled for MyBags empty-slot flow (hooked `C_Container.SplitContainerItem` to allow split-drop behavior; commit `af35368`).
 * ✅ highlight selected category in the bags and make it temporary visible via always visible or similar functionality. 
 * ✅ unassigned group should always be visible
+* ✅ search focus now locks combined-bag top edge while typing in bag search (frame still resizes for filtered items, but top/search field stays visually fixed; default Blizzard anchoring resumes when search loses focus).
 
 ### TODO
 
@@ -104,7 +105,6 @@ Some of the things are marked with [!] indicating their cruciallity before expos
   * the challange is that it should not hinder the ability to place item after/before another item
   * maybe if unassigned group is visible it should be added a bit more info to the tooltip what will happen if you move item over that group - that it will get unassigned from a custom group and can be picked by other categorizers
   * add the effect when dragging to indicate that a given cateogry is protected so you cannot assign to it - ie red background, shield pickture and some small text? And when howevering over a category to which you can assign indicate with text that it will be assigned to this one?
-* ✅ search focus now locks combined-bag top edge while typing in bag search (frame still resizes for filtered items, but top/search field stays visually fixed; default Blizzard anchoring resumes when search loses focus).
 * show somewhere how many empty spaces are left
 * display empty space if available to show how many items we can still add.
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
