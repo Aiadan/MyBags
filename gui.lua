@@ -49,6 +49,8 @@ local unprotectedCategoryBackdrop = {
 AddonNS.gui = AddonNS.gui or {}
 AddonNS.gui.categoriesFrames = {};
 local hoveredCategoryFrame = nil
+local DELETE_CATEGORY_TOOLTIP = "Delete"
+local DELETE_CATEGORY_HINT = "Hold-shift to skip confirmation prompt"
 local HINT_TONE_STYLE = {
     unassigned = { 0.35, 0.58, 0.94, 0.24 },
     assign = { 0.20, 0.85, 0.35, 0.30 },
@@ -495,6 +497,7 @@ AddonNS.Events:RegisterEvent("PLAYER_REGEN_ENABLED", refreshResizeHandle)
 
 function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
     local moneyFrame = AddonNS.container.MoneyFrame;
+    local customCategories = AddonNS.CustomCategories:GetCategories()
     AddonNS.printDebug("money frame:", moneyFrame, AddonNS.container.MoneyFrame)
     backgroundFrame:SetPoint("TOPLEFT", moneyFrame, "TOPLEFT", 0, yFrameOffset)
     for i = 1, #categoriesGUIInfo, 1 do
@@ -512,10 +515,58 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             fs:SetJustifyV("TOP")
             fs:SetWordWrap(false);
 
+            local deleteButton = CreateFrame("Button", nil, f)
+            deleteButton:SetSize(16, 16)
+            deleteButton:SetPoint("TOPRIGHT", f, "TOPRIGHT", -6, -3)
+            deleteButton:SetFrameLevel(f:GetFrameLevel() + 25)
+            deleteButton:Hide()
+
+            deleteButton.Icon = deleteButton:CreateTexture(nil, "ARTWORK")
+            deleteButton.Icon:SetAllPoints()
+            deleteButton.Icon:SetAtlas("common-icon-delete")
+
+            deleteButton.Highlight = deleteButton:CreateTexture(nil, "HIGHLIGHT")
+            deleteButton.Highlight:SetAllPoints()
+            deleteButton.Highlight:SetAtlas("common-icon-delete")
+            deleteButton.Highlight:SetAlpha(0.45)
+            deleteButton.Highlight:SetBlendMode("ADD")
+
+            deleteButton:SetScript("OnEnter", function(self)
+                local category = self:GetParent().ItemCategory
+                GameTooltip:SetOwner(self, "ANCHOR_TOP")
+                GameTooltip:SetText(DELETE_CATEGORY_TOOLTIP .. " \"" .. category:GetName() .. "\" category")
+                GameTooltip:AddLine(DELETE_CATEGORY_HINT, 1, 0.82, 0, true)
+                GameTooltip:Show()
+            end)
+            deleteButton:SetScript("OnLeave", function()
+                GameTooltip:Hide()
+            end)
+
+            deleteButton:SetScript("OnClick", function(self)
+                local category = self:GetParent().ItemCategory
+                if IsShiftKeyDown() then
+                    StaticPopupDialogs["DELETE_CATEGORY_CONFIRM"].OnAccept(nil, category)
+                    return
+                end
+                local dialog = StaticPopup_Show("DELETE_CATEGORY_CONFIRM", category:GetName() or "")
+                if dialog then
+                    dialog.data = category
+                end
+            end)
+
             local function applyCategoryTextLayout()
                 fs:ClearAllPoints()
                 fs:SetPoint("TOPLEFT", f, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
                 fs:SetPoint("TOPRIGHT", f, "TOPRIGHT", -ITEM_SPACING / 2, -ITEM_SPACING / 2)
+                fs:SetJustifyH("LEFT")
+                fs:SetJustifyV("TOP")
+                fs:SetFontObject("GameFontNormal")
+            end
+
+            local function applyCategoryTextLayoutWithDeleteButton()
+                fs:ClearAllPoints()
+                fs:SetPoint("TOPLEFT", f, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
+                fs:SetPoint("TOPRIGHT", deleteButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
                 fs:SetJustifyH("LEFT")
                 fs:SetJustifyV("TOP")
                 fs:SetFontObject("GameFontNormal")
@@ -551,8 +602,10 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             AddonNS.gui.categoriesFrames[i] = f;
             function f:SetText(text) fs:SetText(text) end
             f.ApplyCategoryTextLayout = applyCategoryTextLayout
+            f.ApplyCategoryTextLayoutWithDeleteButton = applyCategoryTextLayoutWithDeleteButton
             f.ApplyAddControlTextLayout = applyAddControlTextLayout
             f.isAddCategoryControl = false
+            f.deleteButton = deleteButton
 
             f:EnableMouse(true)
             f:SetScript("OnEnter",
@@ -616,6 +669,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.isAddCategoryControl = true
             f.bg:Hide()
             f.addControlBackdrop:Show()
+            f.deleteButton:Hide()
             f:ApplyAddControlTextLayout()
             styleAddCategoryControl(f, false)
             f:RegisterForDrag("LeftButton")
@@ -633,7 +687,16 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.isAddCategoryControl = false
             f.bg:Hide()
             f.addControlBackdrop:Hide()
-            f:ApplyCategoryTextLayout()
+            local categoryId = f.ItemCategory:GetId()
+            local canDeleteCategory = AddonNS.BagViewState:IsCategoriesConfigMode() and
+                customCategories[categoryId] ~= nil and
+                not f.ItemCategory:IsProtected()
+            f.deleteButton:SetShown(canDeleteCategory)
+            if canDeleteCategory then
+                f:ApplyCategoryTextLayoutWithDeleteButton()
+            else
+                f:ApplyCategoryTextLayout()
+            end
             f:RegisterForDrag("LeftButton")
             f:SetScript("OnMouseUp", AddonNS.DragAndDrop.categoryOnMouseUp)
             f:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.categoryOnReceiveDrag)

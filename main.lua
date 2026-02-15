@@ -253,6 +253,7 @@ local function newIterator(container, index)
         container.MyBags.height = 0;
         container.MyBags.categoryPositions = {};
         local function placeItemsInGrid(categoriesObj, columnStartX)
+            local isCategoriesConfigMode = AddonNS.BagViewState:IsCategoriesConfigMode()
             local currentRow = {}
             local itemPlaceholder = AddonNS.itemButtonPlaceholder;
             local currentRowWidth = 0
@@ -282,9 +283,9 @@ local function newIterator(container, index)
             for i, categoryObj in ipairs(categoriesObj) do
                 local categoryItemsCount = categoryObj.itemsCount or #categoryObj.items;
                 local isCategoryCollapsed = isCollapsed(categoryObj.category);
-                local isCategoryHeaderOnly =categoryObj.itemsCount == 0;
-                local categoryRenderedAsRowHeader = isCategoryCollapsed or isCategoryHeaderOnly;
-                local categoryRequiresNewLine = categoryRenderedAsRowHeader or categoryObj.category.separateLine;
+                local isHeaderOnly = isCategoryCollapsed or categoryObj.itemsCount == 0;
+                local categoryRequiresNewLine = isCategoriesConfigMode or isHeaderOnly or categoryObj.category.separateLine;
+                local categoryRequiresFullRowWidth = isCategoriesConfigMode or isHeaderOnly;
                 local requiredNewLine =
                     categoryRequiresNewLine
                     or #currentRow == 0
@@ -299,35 +300,39 @@ local function newIterator(container, index)
                     end
                     currentRowY = currentRowY + AddonNS.Const.CATEGORY_HEIGHT + AddonNS.Const.COLUMN_SPACING;
                 end
-                local nextCategoryExists = categoriesObj[i + 1] and true or false; -- to be explict, for increased readability
+                local nextCategoryObj = categoriesObj[i + 1]
+                local nextCategoryExists = nextCategoryObj ~= nil
 
-                local expandCategoryToRightColumnBoundary =
-                    (#currentRow + categoryItemsCount < AddonNS.Const.ITEMS_PER_ROW and
-                        (
-                            categoryRenderedAsRowHeader
-                            or (not nextCategoryExists)
-                            or isCollapsed(categoriesObj[i + 1].category)
-                            or categoriesObj[i + 1].itemsCount == 0
-                            or categoriesObj[i + 1].category.separateLine
-                            or #currentRow + categoryItemsCount + #categoriesObj[i + 1].items > AddonNS.Const.ITEMS_PER_ROW
-                        )
-                    )
-                    and (AddonNS.Const.ITEMS_PER_ROW - #currentRow - categoryItemsCount) or 0
+                local expandCategoryToRightColumnBoundary = 0
+                if not categoryRequiresFullRowWidth and #currentRow + categoryItemsCount < AddonNS.Const.ITEMS_PER_ROW then
+                    local shouldExpandToBoundary =
+                        (not nextCategoryExists)
+                        or isCollapsed(nextCategoryObj.category)
+                        or nextCategoryObj.itemsCount == 0
+                        or nextCategoryObj.category.separateLine
+                        or #currentRow + categoryItemsCount + #nextCategoryObj.items > AddonNS.Const.ITEMS_PER_ROW
+                    if shouldExpandToBoundary then
+                        expandCategoryToRightColumnBoundary = AddonNS.Const.ITEMS_PER_ROW - #currentRow - categoryItemsCount
+                    end
+                end
+                local categoryWidthSlots = AddonNS.Const.ITEMS_PER_ROW
+                if not categoryRequiresFullRowWidth then
+                    categoryWidthSlots = math.min(AddonNS.Const.ITEMS_PER_ROW, categoryItemsCount + expandCategoryToRightColumnBoundary)
+                end
                 table.insert(container.MyBags.categoryPositions,
                     {
                         category = categoryObj.category,
                         itemsCount = categoryItemsCount,
                         x = columnStartX + itemSize * #currentRow - ITEM_SPACING / 2,
                         y = currentRowY - AddonNS.Const.CATEGORY_HEIGHT,
-                        width = itemSize *
-                            (categoryItemsCount > AddonNS.Const.ITEMS_PER_ROW and AddonNS.Const.ITEMS_PER_ROW or categoryItemsCount + expandCategoryToRightColumnBoundary),
-                        height = AddonNS.Const.CATEGORY_HEIGHT + ((not categoryRenderedAsRowHeader and
+                        width = itemSize * categoryWidthSlots,
+                        height = AddonNS.Const.CATEGORY_HEIGHT + ((not isHeaderOnly and
                             math.ceil(categoryItemsCount / AddonNS.Const.ITEMS_PER_ROW) *
                             itemSize) or 0),
                     });
                 rowWithNewCategory = true;
                 local items = categoryObj.items;
-                if (not categoryRenderedAsRowHeader) then
+                if (not isHeaderOnly) then
                     for j = #items, 1, -1 do
                         local item = items[j];
                         table.insert(currentRow, item)
