@@ -6,8 +6,8 @@ local addonEnv = {
       ITEM_MOVED = "ITEM_MOVED",
     },
     DEFAULT_NUM_COLUMNS = 3,
-    MIN_NUM_COLUMNS = 2,
-    MAX_NUM_COLUMNS = 5,
+    MIN_NUM_COLUMNS = 3,
+    MAX_NUM_COLUMNS = 8,
     UNASSIGNE_CATEGORY_DB_STORAGE_NAME = "UNASSIGNED",
   },
   Events = {

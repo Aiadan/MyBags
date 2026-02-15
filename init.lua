@@ -10,8 +10,8 @@ LibStub("MyLibrary_Events").embed(AddonNS.Events);
 AddonNS.Const ={
     ITEMS_PER_ROW = 4, -- Maximum items per row
     DEFAULT_NUM_COLUMNS = 3,
-    MIN_NUM_COLUMNS = 2,
-    MAX_NUM_COLUMNS = 5,
+    MIN_NUM_COLUMNS = 3,
+    MAX_NUM_COLUMNS = 8,
     ORIGINAL_SPACING = 5,
     COLUMN_SPACING = 2,
     CATEGORY_HEIGHT = 20,
@@ -81,7 +81,6 @@ function AddonNS:SetNumColumns(count)
     AddonNS.Categories:SetColumnCount(normalized)
     AddonNS.QueueContainerUpdateItemLayout()
     AddonNS.TriggerContainerOnTokenWatchChanged()
-    print("MyBags columns set to " .. normalized)
     return normalized
 end
 

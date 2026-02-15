@@ -171,7 +171,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
   * ⏳ remaining decision: final UX is still intended to be resizing by dragging side of the bag rather than options UI.
 * I have decided to not include button for authenticator that is available in normal bags. Consider adding it via adding to layout update self:LayoutAddSlots(); as well as support for this button. Although I have no idea how I could test it
 * ~~[REJECTED - in order to keep simplicity and default behaviour ] consider making the number of columns configurable~~
-  * ✅ superseded: configurable columns are now implemented with persisted `layout.columnCount` (2..5, default 3) and temporary `/script ChangeTheNumberOfColumns(count)` control.
+  * ✅ superseded: configurable columns are now implemented with persisted `layout.columnCount` (3..8, default 3) and temporary `/script ChangeTheNumberOfColumns(count)` control.
   * ✅ resize behavior implemented: increasing adds empty rightmost columns; decreasing appends removed-column categories to the last visible column in order.
 
 ### UNKNOWN what they were about, meaning lost in the ether
@@ -186,6 +186,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ added explicit fail-fast load-order guard in `categoriesColumnAssignment.lua` so it errors clearly if `categories.lua` has not initialized `AddonNS.Categories` yet.
 * ✅ added opt-in performance probes for bag-open hotspots (main iteration/categorization/layout, custom categorizer query path, items sort path) plus debug toggles to enable/disable profiling in-game.
 * ✅ added detailed profiling breakdown inside `ArrangeCategoriesIntoColumns` to identify exact time split (constants/layout match/unmatched build-sort-insert/sort-only/add-category totals).
+* ✅ added edit-mode bottom-left drag resize handle for bag columns (x-axis only), with release-time hysteresis mapping (`+0.5` grow / `-0.5` shrink) to persisted column count.
 * ✅ items sort now uses fail-fast cached item ids from main iterator (`itemButton._myBagsItemId`) and no longer calls `GetContainerItemInfo` inside `ItemsOrder:Sort`.
 * ✅ added deeper `ItemsOrder:Sort` profiling split (map/sort/append) and tiny-list fast paths (`<=1`, `==2`) to reduce sort overhead.
 * ✅ removed unnecessary `order_map_changed` invalidation in `ItemsOrder:Sort`; order-map rebuild now happens only after real order mutations.

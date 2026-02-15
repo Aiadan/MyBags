@@ -35,6 +35,7 @@ main.lua
 ContainerFrameMyBagsMixin.lua
 FrameParameters.lua
 dragndrop.lua
+columnResize.lua
 gui.lua
 categoriesGUI.lua
 itemsOrder.lua
