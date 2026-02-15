@@ -308,6 +308,51 @@ local function prune_old_custom_shapes(db)
     db.categories = nil
 end
 
+local function reset_layout_to_seed_defaults(db, storage)
+    local layout = db.layout or {}
+    local nameToWrappedId = {}
+    for rawId, data in pairs(storage.categories or {}) do
+        if data.name and data.name ~= "" then
+            nameToWrappedId[data.name] = CATEGORIZER_ID .. "-" .. tostring(rawId)
+        end
+    end
+
+    local function requireWrappedId(name)
+        local wrappedId = nameToWrappedId[name]
+        if not wrappedId then
+            error("Missing seeded custom category for layout: " .. tostring(name))
+        end
+        return wrappedId
+    end
+
+    local configuredColumns = AddonNS.CustomDefaultLayoutColumns
+    if type(configuredColumns) ~= "table" then
+        error("Custom default layout columns missing")
+    end
+
+    local resolvedColumns = {}
+    for columnIndex = 1, #configuredColumns do
+        local configuredColumn = configuredColumns[columnIndex]
+        if type(configuredColumn) ~= "table" then
+            error("Custom default layout column must be a table at index: " .. tostring(columnIndex))
+        end
+        resolvedColumns[columnIndex] = {}
+        for entryIndex = 1, #configuredColumn do
+            local entry = configuredColumn[entryIndex]
+            if entry == "new-singleton" or entry == "unassigned" then
+                table.insert(resolvedColumns[columnIndex], entry)
+            else
+                table.insert(resolvedColumns[columnIndex], requireWrappedId(entry))
+            end
+        end
+    end
+
+    layout.columnCount = #resolvedColumns
+    layout.columns = resolvedColumns
+    layout.collapsed = {}
+    db.layout = layout
+end
+
 function CustomCategories:LoadOrBootstrap(db, legacyDb)
     if not db then
         error("CustomCategories LoadOrBootstrap missing db")
@@ -325,6 +370,16 @@ function CustomCategories:LoadOrBootstrap(db, legacyDb)
     db[STORAGE_KEY] = storage
     normalize_layout_custom_ids(db, storage)
     prune_old_custom_shapes(db)
+    if next(storage.categories) == nil then
+        local payload = AddonNS.CustomDefaultImportPayload
+        if type(payload) ~= "table" then
+            error("Custom default import payload missing")
+        end
+        local preview = self:PreviewImport(payload)
+        self:ApplyImportPreview(preview)
+        reset_layout_to_seed_defaults(db, db[STORAGE_KEY])
+        AddonNS.Categories:ReloadRuntimeColumnsFromStore()
+    end
 end
 
 function CustomCategories:GetStorage()

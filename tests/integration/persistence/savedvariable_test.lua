@@ -114,6 +114,44 @@ local function count_layout_id(columns, targetId)
     return count
 end
 
+local EXPECTED_DEFAULT_QUERIES = {
+    ["Junk"] = { query = "quality = 0", alwaysVisible = true },
+    ["Quest"] = { query = "isQuestItem = true OR itemType = 12" },
+    ["Warbound"] = { query = "bindType = 9 AND isBound = false" },
+    ["BoE"] = { query = "bindType = 2 AND isBound = false" },
+    ["Reagents - Soulbound"] = { query = "isCraftingReagent = true AND isBound = true" },
+    ["Reagents"] = { query = "isCraftingReagent = true AND isBound = false" },
+    ["Recipes"] = { query = "itemType = 9" },
+    ["Gems"] = { query = "itemType = 3" },
+    ["Potions/Flasks/Food"] = { query = "itemType = 0 AND (itemSubType = 1 OR itemSubType = 3 OR itemSubType = 5)" },
+    ["Armor & Weapons"] = { query = "itemType = 2 OR itemType = 4" },
+    ["Teleport"] = { query = nil },
+    ["Mounts & Pets"] = { query = "itemType = 15 AND (itemSubType = 2 OR itemSubType = 5)" },
+    ["Curios"] = { query = "itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)" },
+    ["Decor"] = { query = "itemType = 20" },
+    ["Caches / One-time Use"] = { query = "hasLoot = true OR (itemType = 0 AND itemSubType = 8) OR (itemType = 4 AND itemSubType = 5)" },
+}
+
+local EXPECTED_TELEPORT_ITEMS = {
+    147869, 37863, 63207, 63353, 208066, 217956, 18149, 217930, 41255, 44655, 200613, 110560,
+    6948, 140192, 173373, 65274, 46874, 21711, 180817, 234389, 116413, 249699, 250411, 238727,
+}
+
+local function expected_default_layout(snapshot, configuredColumns)
+    local out = {}
+    for columnIndex = 1, #configuredColumns do
+        out[columnIndex] = {}
+        for _, entry in ipairs(configuredColumns[columnIndex]) do
+            if entry == "new-singleton" or entry == "unassigned" then
+                table.insert(out[columnIndex], entry)
+            else
+                table.insert(out[columnIndex], "cus-" .. assert(raw_by_name(snapshot, entry)))
+            end
+        end
+    end
+    return out
+end
+
 run("fresh install seeds defaults", function()
     local ctx = harness.new()
     ctx:events():fire_game("PLAYER_LOGOUT")
@@ -122,13 +160,117 @@ run("fresh install seeds defaults", function()
     local custom = custom_snapshot(snapshot)
     assert_true(custom.id == "cus", "custom bucket seeded")
     assert_true(custom.schemaVersion == 2, "custom schema version seeded")
-    assert_equal({}, custom.categories, "no user categories persisted")
-    assert_true(snapshot.layout.columnCount == 3, "layout column count defaults to 3")
-    assert_equal({ {}, {}, {} }, snapshot.layout.columns, "layout columns seeded")
+    local defaultsCount = 0
+    for name, metadata in pairs(EXPECTED_DEFAULT_QUERIES) do
+        local _, data = raw_by_name(snapshot, name)
+        assert_true(data ~= nil, "default category exists: " .. name)
+        assert_true(data.query == metadata.query, "default query persisted: " .. name)
+        if metadata.alwaysVisible == true then
+            assert_true(data.alwaysVisible == true, "alwaysVisible persisted: " .. name)
+        end
+        defaultsCount = defaultsCount + 1
+    end
+    local persistedCount = 0
+    for _ in pairs(custom.categories or {}) do
+        persistedCount = persistedCount + 1
+    end
+    assert_true(persistedCount == defaultsCount, "all persisted custom categories are seeded defaults")
+    local _, teleport = raw_by_name(snapshot, "Teleport")
+    assert_equal(EXPECTED_TELEPORT_ITEMS, teleport.items, "teleport category seeds manual items")
+    assert_true(snapshot.layout.columnCount == #ctx.AddonNS.CustomDefaultLayoutColumns, "layout column count defaults to configured count")
+    assert_equal(expected_default_layout(snapshot, ctx.AddonNS.CustomDefaultLayoutColumns), snapshot.layout.columns, "layout columns seeded")
     assert_equal({}, snapshot.layout.collapsed, "collapsed state empty")
     assert_equal({}, snapshot.itemOrder, "item order initialised")
     assert_true(snapshot.categorizers == nil or snapshot.categorizers.cus == nil, "legacy custom bucket removed")
     assert_true(snapshot.categories == nil, "old custom categories bucket removed")
+end)
+
+run("built-in default payload remains import-valid", function()
+    local ctx = harness.new()
+    local payload = ctx.AddonNS.CustomDefaultImportPayload
+    assert_true(type(payload) == "table", "default payload is available")
+    local preview = ctx.AddonNS.CustomCategories:PreviewImport(payload)
+    local expectedCount = 0
+    for _ in pairs(EXPECTED_DEFAULT_QUERIES) do
+        expectedCount = expectedCount + 1
+    end
+    assert_true(#preview.toCreate == expectedCount, "default payload contains expected category count")
+end)
+
+run("empty categories reseed defaults and reset layout", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 9,
+                categories = {},
+            },
+            layout = {
+                columnCount = 3,
+                columns = {
+                    { "cus-999", "eq-1" },
+                    { "cus-123" },
+                    { "unassigned" },
+                },
+                collapsed = { ["cus-999"] = true },
+            },
+        },
+    })
+    ctx:events():fire_game("PLAYER_LOGOUT")
+    local snapshot = ctx:snapshot()
+    assert_equal(expected_default_layout(snapshot, ctx.AddonNS.CustomDefaultLayoutColumns), snapshot.layout.columns, "empty custom categories trigger default layout reset")
+    assert_equal({}, snapshot.layout.collapsed, "collapsed entries cleared during reseed")
+    for name in pairs(EXPECTED_DEFAULT_QUERIES) do
+        local _, data = raw_by_name(snapshot, name)
+        assert_true(data ~= nil, "reseeded category exists: " .. name)
+    end
+end)
+
+run("non-empty categories do not auto-seed defaults or reset layout", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = {
+                        name = "KeepMe",
+                        query = "itemType = 4",
+                        items = {},
+                    },
+                },
+            },
+            layout = {
+                columnCount = 3,
+                columns = {
+                    { "cus-1", "eq-1" },
+                    {},
+                    { "unassigned" },
+                },
+                collapsed = { ["cus-1"] = true },
+            },
+        },
+    })
+    ctx:events():fire_game("PLAYER_LOGOUT")
+    local snapshot = ctx:snapshot()
+    local custom = custom_snapshot(snapshot)
+    local onlyRawId, onlyData = raw_by_name(snapshot, "KeepMe")
+    assert_true(onlyRawId ~= nil and onlyData ~= nil, "existing category preserved")
+    local categoryCount = 0
+    for _ in pairs(custom.categories or {}) do
+        categoryCount = categoryCount + 1
+    end
+    assert_true(categoryCount == 1, "defaults were not added when categories are non-empty")
+    assert_equal({
+        { "cus-1", "eq-1" },
+        {},
+        { "unassigned" },
+    }, snapshot.layout.columns, "existing layout preserved")
+    assert_equal({ ["cus-1"] = true }, snapshot.layout.collapsed, "collapsed state preserved")
 end)
 
 run("import parser accepts plain table payload text without return", function()
@@ -249,6 +391,19 @@ end)
 run("resize decrease appends removed columns to last visible", function()
     local ctx = harness.new({
         saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 5,
+                categories = {
+                    ["1"] = { name = "L1", items = {} },
+                    ["2"] = { name = "L2", items = {} },
+                    ["3"] = { name = "L3", items = {} },
+                    ["4"] = { name = "L4", items = {} },
+                    ["5"] = { name = "L5", items = {} },
+                },
+            },
             layout = {
                 columnCount = 4,
                 columns = {
@@ -356,7 +511,24 @@ run("new custom category appends to last column when layout already seeded", fun
 end)
 
 run("empty layout bootstrap keeps round-robin placement for new categories", function()
-    local ctx = harness.new()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+            layout = {
+                columnCount = 3,
+                columns = { {}, {}, {} },
+                collapsed = {},
+            },
+        },
+    })
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
     local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
     ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
@@ -396,7 +568,19 @@ run("custom category priority persists only for non-default overrides", function
 end)
 
 run("custom query matching uses priority order and manual assignment precedence", function()
-    local ctx = harness.new()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
     local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
 
@@ -574,7 +758,19 @@ run("category rename accepts wrapped category id and preserves assignments", fun
 end)
 
 run("category move events use category ids for reorder and column move", function()
-    local ctx = harness.new()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
     local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
     ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
@@ -607,7 +803,19 @@ run("category move events use category ids for reorder and column move", functio
 end)
 
 run("shift category move reorders source tail block and preserves relative order", function()
-    local ctx = harness.new()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
     local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
     local catC = ctx.AddonNS.CustomCategories:NewCategory("C")
@@ -630,7 +838,19 @@ run("shift category move reorders source tail block and preserves relative order
 end)
 
 run("shift background move sends source tail block to destination column", function()
-    local ctx = harness.new()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
     local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
     local catC = ctx.AddonNS.CustomCategories:NewCategory("C")

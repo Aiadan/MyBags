@@ -44,6 +44,7 @@ categories.lua
 categoriesColumnAssignment.lua
 Categorizers/new.lua
 Categorizers/EquipmentSet.lua
+Categorizers/custom/defaultImportPayload.lua
 Categorizers/custom.lua
 Categorizers/custom/query.lua
 Categorizers/unassigned.lua

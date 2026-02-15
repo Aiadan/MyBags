@@ -112,13 +112,15 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 ### TODO
 
-* [!] create some nice default categories based on what I end up with as my query categories in TWW
+* ✅ create some nice default categories with queries - purely using queries (seeded via built-in import payload on empty custom DB; includes default first-launch layout reset).
 * while using search box the itembuttons included in the results should both include items searched by default functionality, but also the functionality should try to use the text inserted into the search box as query. If query is valid, it should be used to expand results of the search. The result should be an union of standard functionality and what is accepted by the query.
 * if the above is done we can during edit mode put the query user is typing in the query for a given category into the search to show all the time what a given query user uses would filter, "catch".
 * show somewhere how many empty spaces are left
 * display empty space if available to show how many items we can still add.
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
 * [bug] when draggin an item an click right click on a column part, it moves entire cateogory in which a given itembutton was in
+* add info at the top, and in bright colour, of query expanation in game that this information is available also at https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md
+* remove the list from custom categories gui. This GUI should no longer open automatically when enabling edit mode. Add info about category name selected in the gui as now it is visible only through the list. When closing the custom category gui unmark selected category (so unselect it) in the bag so there would be no prefix ">>". Please also look for icon that is a cog, edit. From the similar look and feel as the thrash icon. Add it to the left of the thrash icon. It should also be a button which opens a config for a given category - just as clicking the category name. However once that is done, change the behaviour of clicking on the category - it will no longer open the config, but will now do the same it does in non edit mode - collapse or uncollapse.
 
 #### Low priority
 
