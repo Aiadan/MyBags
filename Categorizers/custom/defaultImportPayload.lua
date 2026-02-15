@@ -37,7 +37,7 @@ AddonNS.CustomDefaultImportPayload = {
 }
 
 AddonNS.CustomDefaultLayoutColumns = {
-    { "new-singleton", "Caches / One-time Use", "Mounts & Pets", "Quest", "Gems", "Recipes" },
-    { "Potions/Flasks/Food", "Curios", "Decor", "BoE", "Warbound", "Armor & Weapons", "Teleport" },
+    { "new-singleton", "Caches / One-time Use","Decor", "Mounts & Pets", "Quest", "Gems", "Recipes" },
+    { "Potions/Flasks/Food", "Teleport", "Curios",  "BoE", "Warbound", "Armor & Weapons" },
     { "Reagents", "Reagents - Soulbound", "unassigned", "Junk" },
 }
