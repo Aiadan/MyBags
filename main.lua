@@ -15,15 +15,21 @@ end
 
 local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
+local triggerContainerUpdateItemLayout
 
 local function triggerContainerOnTokenWatchChanged()
     AddonNS.printDebug("triggerContainerOnTokenWatchChanged fired")
+    if container:IsSearchAnchorLockActive() then
+        securecallfunction(container.UpdateTokenTracker, container)
+        triggerContainerUpdateItemLayout()
+        return
+    end
     securecallfunction(container.OnTokenWatchChanged, container);
 end
 
 AddonNS.TriggerContainerOnTokenWatchChanged = triggerContainerOnTokenWatchChanged;
 
-local function triggerContainerUpdateItemLayout()
+triggerContainerUpdateItemLayout = function()
     securecallfunction(container.UpdateItemLayout, container);
 end
 
@@ -138,6 +144,7 @@ end
 
 function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
     AddonNS.printDebug("INVENTORY_SEARCH_UPDATE", bagID)
+    container:MarkSearchAnchorLockPending()
     triggerContainerUpdateItemLayout();
 end
 
@@ -148,6 +155,40 @@ AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.COLLAPSED_CHANGED, updat
 AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE");
 
 AddonNS.Events:RegisterEvent("BAG_UPDATE");
+
+hooksecurefunc("UpdateContainerFrameAnchors", function()
+    if container:IsSearchAnchorLockActive() then
+        container:ApplyStoredSearchAnchorLock()
+    end
+end)
+
+local function refreshSearchAnchorLockState(searchBox)
+    local shouldLock = searchBox.anchorBag == container and (searchBox:HasFocus() or searchBox:GetText() ~= "")
+    local changed = container:SetSearchAnchorLockActive(shouldLock)
+    if shouldLock then
+        container:MarkSearchAnchorLockPending()
+    end
+    if changed and not shouldLock then
+        UpdateContainerFrameAnchors()
+    end
+end
+
+BagItemSearchBox:HookScript("OnEditFocusGained", function(searchBox)
+    refreshSearchAnchorLockState(searchBox)
+end)
+
+BagItemSearchBox:HookScript("OnEditFocusLost", function(searchBox)
+    refreshSearchAnchorLockState(searchBox)
+end)
+
+BagItemSearchBox:HookScript("OnTextChanged", function(searchBox)
+    refreshSearchAnchorLockState(searchBox)
+end)
+
+container:HookScript("OnHide", function()
+    container:SetSearchAnchorLockActive(false)
+end)
+
 function container:GetColumns()
     return AddonNS.Const.ITEMS_PER_ROW * AddonNS.CategoryStore:GetColumnCount()
 end

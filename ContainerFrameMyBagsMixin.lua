@@ -14,6 +14,53 @@ function ContainerFrameMyBagsMixin:MyBagsInit()
     self.MyBags.rows = 0;
     self.MyBags.height = 0;
     self.MyBags.updateItemLayoutCalledAtLeastOnce = false
+    self.MyBags.searchAnchorLockActive = false
+    self.MyBags.searchAnchorLockPending = false
+    self.MyBags.searchLockedTop = nil
+    self.MyBags.searchLockedRight = nil
+end
+
+function ContainerFrameMyBagsMixin:SetSearchAnchorLockActive(isActive)
+    local changed = self.MyBags.searchAnchorLockActive ~= isActive
+    self.MyBags.searchAnchorLockActive = isActive
+    if not isActive then
+        self.MyBags.searchAnchorLockPending = false
+        self.MyBags.searchLockedTop = nil
+        self.MyBags.searchLockedRight = nil
+    end
+    return changed
+end
+
+function ContainerFrameMyBagsMixin:IsSearchAnchorLockActive()
+    return self.MyBags.searchAnchorLockActive
+end
+
+function ContainerFrameMyBagsMixin:CaptureSearchAnchorLockPosition()
+    if not self.MyBags.searchAnchorLockActive then
+        return
+    end
+    self.MyBags.searchLockedTop = self:GetTop()
+    self.MyBags.searchLockedRight = self:GetRight()
+end
+
+function ContainerFrameMyBagsMixin:MarkSearchAnchorLockPending()
+    if not self.MyBags.searchAnchorLockActive then
+        return
+    end
+    self:CaptureSearchAnchorLockPosition()
+    self.MyBags.searchAnchorLockPending = true
+end
+
+function ContainerFrameMyBagsMixin:ApplyStoredSearchAnchorLock()
+    self:ApplySearchAnchorLock(self.MyBags.searchLockedTop, self.MyBags.searchLockedRight)
+end
+
+function ContainerFrameMyBagsMixin:ApplySearchAnchorLock(lockedTop, lockedRight)
+    if lockedTop == nil or lockedRight == nil then
+        return
+    end
+    self:ClearAllPoints()
+    self:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", lockedRight, lockedTop)
 end
 
 function ContainerFrameMyBagsMixin:UpdateItemLayout()
@@ -34,7 +81,19 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
     local point, relativeTo, relativePoint, x, y = anchor:Get();
     AddonNS.printDebug("Anchor", x, y)
 
+    local lockedTop = nil
+    local lockedRight = nil
+    if self:IsSearchAnchorLockActive() and self.MyBags.searchAnchorLockPending then
+        lockedTop = self:GetTop()
+        lockedRight = self:GetRight()
+        self.MyBags.searchLockedTop = lockedTop
+        self.MyBags.searchLockedRight = lockedRight
+    end
     self:UpdateFrameSize();
+    if self:IsSearchAnchorLockActive() and self.MyBags.searchAnchorLockPending then
+        self:ApplySearchAnchorLock(lockedTop, lockedRight)
+        self.MyBags.searchAnchorLockPending = false
+    end
     for i, itemButton in ipairs(itemButtons) do
         if (itemButton.ItemCategory and not isCollapsed(itemButton.ItemCategory)) then
             local newXOffset = self.MyBags.positionsInBags[itemButton:GetBagID()][itemButton:GetID()].x;

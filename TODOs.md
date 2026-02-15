@@ -70,6 +70,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ categories config rename/delete popups now pass category wrapper references (not ids) through UI flow, keeping internal interactions object-based.
 * ✅ added explicit in-bag edit-mode indicator (`Edit mode` badge + highlighted cog icon), and closing the bag now always exits edit mode and hides the custom categories config UI/popups.
 * ✅ `Edit mode` badge next to the cog now acts as part of the config toggle (clicking the badge triggers the same edit-mode on/off behavior as the cog).
+* ✅ resolved search-filter + edit-mode/category-move anchor conflicts without clearing search text/focus on mode toggles (lock now survives those flows).
 * ✅ holding Shift while dragging a category now moves that category and all categories below it in the source column (applies to category-drop reorder and background column-drop).
 * ✅ reworked category drag tooltip for Shift-tail move guidance: improved readability/contrast, wrapped hint text, live Shift-state message updates, and final category-name/default-color formatting.
 * ✅ Unassigned should be a separate categorizer initialized at the end of all the others.
@@ -103,8 +104,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
   * the challange is that it should not hinder the ability to place item after/before another item
   * maybe if unassigned group is visible it should be added a bit more info to the tooltip what will happen if you move item over that group - that it will get unassigned from a custom group and can be picked by other categorizers
   * add the effect when dragging to indicate that a given cateogry is protected so you cannot assign to it - ie red background, shield pickture and some small text? And when howevering over a category to which you can assign indicate with text that it will be assigned to this one?
-* [!] position of the window should be changed to top if we are to be filtering.
-  * could make search actually filter items without changing bag size. Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
+* ✅ search focus now locks combined-bag top edge while typing in bag search (frame still resizes for filtered items, but top/search field stays visually fixed; default Blizzard anchoring resumes when search loses focus).
 * show somewhere how many empty spaces are left
 * display empty space if available to show how many items we can still add.
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
@@ -152,6 +152,7 @@ Tasks which after implementation user will not see.
 * ✅ added agent skill `.agent/skills/blizzard-code-explorer` to guide Blizzard UI source lookup (path resolution, targeted `rg` patterns, source-cited output contract).
 * ✅ updated `.agent/skills/blizzard-code-explorer` to default to `/mnt/c/Program Files (x86)/World of Warcraft/_retail_/BlizzardInterfaceCode`.
 * ✅ enabled `BankFrame_Open` override in `ContainerFrameMyBagsMixin.lua` (`OpenAllBags(BankFrame)` before calling original) as the current workaround that resolves the observed bank taint path.
+* ✅ refactored search-lock ownership so `ContainerFrameMyBagsMixin` is the single owner/mutator of search lock runtime state; `main.lua` now calls mixin methods instead of writing lock fields directly.
 * ✅ hard separation between custom/user-managed categories and dynamic ones is now in place (CustomCategories owns custom persistence/query/manual assignment; CategoryStore owns wrappers/shared layout).
 * ✅ naming convention for categories/categorizers is now considered done (implemented convention differs from the original `sys:*`/`ext:*` proposal).
   * chosen convention: categorizer ids are short stable tokens (`unassigned`, `new`, `cus`, `eq`) and runtime wrapper category ids are namespaced as `<categorizerId>-<rawId>` (with `unassigned` kept as a sentinel singleton id).
