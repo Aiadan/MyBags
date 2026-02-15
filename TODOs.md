@@ -109,10 +109,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ query attribute names are now case-insensitive (`itemType`, `ItemType`, `ITEMTYPE` all work); docs updated while keeping canonical-case examples.
 * ✅ query match ordering now ties by alphabetical category name after priority (with deterministic id fallback); query docs updated accordingly.
 * ✅ finalized custom-category import/export: plain Lua payload with strict validation, create-only import of rules + manual item assignments (`items`) (no `externalId` upsert, no layout import/export), and completed UX polish (list sizing, Shift-range select fix in `MyLibrary_GUI` `WowList-1.5`, independent import/export windows, scrollable read-only import analysis, centered import window).
+* ✅ create some nice default categories with queries - purely using queries (seeded via built-in import payload on empty custom DB; includes default first-launch layout reset).
 
 ### TODO
 
-* ✅ create some nice default categories with queries - purely using queries (seeded via built-in import payload on empty custom DB; includes default first-launch layout reset).
 * while using search box the itembuttons included in the results should both include items searched by default functionality, but also the functionality should try to use the text inserted into the search box as query. If query is valid, it should be used to expand results of the search. The result should be an union of standard functionality and what is accepted by the query.
 * if the above is done we can during edit mode put the query user is typing in the query for a given category into the search to show all the time what a given query user uses would filter, "catch".
 * show somewhere how many empty spaces are left
