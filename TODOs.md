@@ -98,25 +98,20 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 ### TODO
 
-* add boxes with explanations over categories when draggin an item
+* [!] create some nice default categories based on what I end up with as my query categories in TWW
+* [!] add boxes with explanations over categories when draggin an item
   * the challange is that it should not hinder the ability to place item after/before another item
   * maybe if unassigned group is visible it should be added a bit more info to the tooltip what will happen if you move item over that group - that it will get unassigned from a custom group and can be picked by other categorizers
   * add the effect when dragging to indicate that a given cateogry is protected so you cannot assign to it - ie red background, shield pickture and some small text? And when howevering over a category to which you can assign indicate with text that it will be assigned to this one?
-* position of the window should be changed to top if we are to be filtering.
+* [!] position of the window should be changed to top if we are to be filtering.
   * could make search actually filter items without changing bag size. Still not convinved that is a proper way to do that. Maybe there should be a check box whether to filter or not? Also while filtering is turned on, that is the only moment resizing is not in effect. As soon as filtering is empty, the bags should resize to original size. Best would be if the size was calculated as if those items were not filtered. Not sure how to do that, maybe rewriting the categorization would help.
 * show somewhere how many empty spaces are left
 * display empty space if available to show how many items we can still add.
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
-* create some nice default categories based on what I end up with as my query categories in TWW
 
 #### Low priority
 
-* [PARTIAL] addon freezes when opening bags or changing categories.
-  * ✅ added profiling for bag refresh, `ArrangeCategoriesIntoColumns`, `ItemsOrder:Sort`, and `CustomCategorizer:Categorize` to pinpoint hotspots.
-  * ✅ tooltip category diagnostics are now Shift-gated, so full match-list calculation is no longer done unless Shift is held.
-  * ⏳ still open: `CustomCategorizer:Categorize` query path still iterates query categories per item; verify with `PROFILE ...` output whether freeze is fully gone.
 * add support for other bags (well, bank?). This is not a priority. I am doing this for fun and I feel current implementation of handling of the main bag kinda of works, I want to be adjusting it to a point I will be happy with it's behaviour. when I will extend the support onto other bags. But clean up the code toward proper mixin that maybe could be put on top of other frames if that is even possible.
-* add colours to categories
 
 ### DOUBTFUL - to check at later stages
 
@@ -160,10 +155,13 @@ Tasks which after implementation user will not see.
 * ✅ hard separation between custom/user-managed categories and dynamic ones is now in place (CustomCategories owns custom persistence/query/manual assignment; CategoryStore owns wrappers/shared layout).
 * ✅ naming convention for categories/categorizers is now considered done (implemented convention differs from the original `sys:*`/`ext:*` proposal).
   * chosen convention: categorizer ids are short stable tokens (`unassigned`, `new`, `cus`, `eq`) and runtime wrapper category ids are namespaced as `<categorizerId>-<rawId>` (with `unassigned` kept as a sentinel singleton id).
+* ✅ tooltip category diagnostics are now Shift-gated, so full match-list calculation is no longer done unless Shift is held.
+* ✅ added profiling for bag refresh, `ArrangeCategoriesIntoColumns`, `ItemsOrder:Sort`, and `CustomCategorizer:Categorize` to pinpoint hotspots.
+* ✅ addon freezes when opening bags or changing categories.
+  * optimized item sorting, still CustomCategorizer:Categorize could be improved which was separated to another ticket
 
 ### TODO
 
-* the checks in drag and drop using pickedItemButton could be replaced with  C_Cursor.GetCursorItem() .
 * remove defensive silent-guard anti-patterns (e.g. `if not x then return end` in internal domain flow) and replace with fail-fast preconditions so bugs are surfaced instead of hidden.
 * normalize naming convention across codebase: standalone/local functions to lower camel case (e.g. `doSomething`), and table methods defined with `:` to UpperCamelCase (e.g. `SomeTable:DoSomething()`).
 * improve categorization performance path (`CustomCategorizer:Categorize`) after sort/layout fixes.
@@ -177,5 +175,9 @@ Tasks which after implementation user will not see.
   * ✅ completed: category column assignment now hydrates runtime layout state on load and serializes back on logout.
   * ✅ decision update: category move/layout event flow uses category ids in `categoriesColumnAssignment.lua` by design (stable persisted shape and lower load-order/wrapper coupling).
   * ⏳ remaining: continue reducing id-based handling where persistence/UI boundary still legitimately uses ids.
+
+#### Low priority
+
 * setting on collapsed and column assignment should be stored under another entity "bag", as in the future we will have another for "bank" where what is collapsed or to which column assigned will be stored separately.
+* the checks in drag and drop using pickedItemButton could be replaced with  C_Cursor.GetCursorItem() .
 
