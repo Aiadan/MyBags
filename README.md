@@ -46,6 +46,7 @@ Some other worth mentioning:
 * hold `Shift` while dropping a dragged category to move that category and the full tail below it
 * searching works as a filter (to be verify whether this is helpful or not)
 * custom query categories support explicit priority scores (higher score wins first)
+* query syntax/attributes reference: see [QUERY_ATTRIBUTES.md](QUERY_ATTRIBUTES.md)
 * item tooltip diagnostics are Shift-gated: hold `Shift` to show matched categories and reason tags (`manual assignment` or query priority)
 
 ## Q&A
