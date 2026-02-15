@@ -8,6 +8,8 @@ AddonNS.CategoriesGUI = AddonNS.CategoriesGUI or {}
 function AddonNS.createGUI()
     local container = AddonNS.container;
     local lastSelectedCategoryId = nil
+    local COLOR_COG_NORMAL = { 0.78, 0.78, 0.78, 1 }
+    local COLOR_COG_EDIT = { 1, 0.85, 0.2, 1 }
 
     local containerFrame = GS:CreateButtonFrame(addonName, 360, 580, true);
     containerFrame:SetPoint("TOPRIGHT", container, "TOPLEFT", 0, -30);
@@ -17,6 +19,41 @@ function AddonNS.createGUI()
     local settingsButton = CreateFrame("Button", nil, container, "UIPanelIconDropdownButtonTemplate")
     settingsButton:SetSize(20, 20)
     settingsButton:SetPoint("TOPRIGHT", container, "TOPRIGHT", -9, -34)
+
+    local editModeBadge = CreateFrame("Button", nil, container, "BackdropTemplate")
+    editModeBadge:SetPoint("RIGHT", settingsButton, "LEFT", -4, 0)
+    editModeBadge:SetSize(72, 18)
+    editModeBadge:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+    editModeBadge:SetBackdropColor(1, 0.78, 0.1, 0.85)
+    editModeBadge:SetBackdropBorderColor(1, 0.9, 0.4, 1)
+    editModeBadge:Hide()
+    editModeBadge:SetScript("OnClick", function()
+        settingsButton:Click()
+    end)
+
+    local editModeBadgeText = editModeBadge:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    editModeBadgeText:SetPoint("CENTER", editModeBadge, "CENTER", 0, 0)
+    editModeBadgeText:SetText("Edit mode")
+
+    local function setCogColor(color)
+        settingsButton.Icon:SetVertexColor(color[1], color[2], color[3], color[4])
+    end
+
+    local function refreshEditModeVisuals()
+        if AddonNS.BagViewState:IsCategoriesConfigMode() then
+            editModeBadge:Show()
+            setCogColor(COLOR_COG_EDIT)
+            return
+        end
+        editModeBadge:Hide()
+        setCogColor(COLOR_COG_NORMAL)
+    end
+
     settingsButton:SetScript("OnClick", function(self, button)
         if AddonNS.BagViewState:IsCategoriesConfigMode() then
             AddonNS.BagViewState:SetMode("normal")
@@ -38,6 +75,15 @@ function AddonNS.createGUI()
 
     container:HookScript("OnShow", updateTopRightButtons)
     hooksecurefunc(container, "UpdateSearchBox", updateTopRightButtons)
+    container:HookScript("OnHide", function()
+        AddonNS.BagViewState:SetMode("normal")
+        containerFrame:Hide()
+        StaticPopup_Hide("CREATE_CATEGORY_CONFIRM")
+        StaticPopup_Hide("RENAME_CATEGORY_CONFIRM")
+        StaticPopup_Hide("DELETE_CATEGORY_CONFIRM")
+    end)
+    AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, refreshEditModeVisuals)
+    refreshEditModeVisuals()
 
     containerFrame.Inset:SetPoint("BOTTOMRIGHT", -6, 106)
     containerFrame.categoriesContainer = CreateFrame("Frame", addonName .. "-reagentsContainer", containerFrame)

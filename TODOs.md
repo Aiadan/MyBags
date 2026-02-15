@@ -109,6 +109,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ in-bag category headers now render custom categories in grey when runtime-empty and not marked Always Visible.
 * ✅ fixed custom category rename/delete API paths to resolve wrapped ids (`cus-<id>`), so Categories GUI rename/delete works reliably and rename preserves assignments.
 * ✅ categories config rename/delete popups now pass category wrapper references (not ids) through UI flow, keeping internal interactions object-based.
+* ✅ added explicit in-bag edit-mode indicator (`Edit mode` badge + highlighted cog icon), and closing the bag now always exits edit mode and hides the custom categories config UI/popups.
+* ✅ `Edit mode` badge next to the cog now acts as part of the config toggle (clicking the badge triggers the same edit-mode on/off behavior as the cog).
 
 ### TODO
 
