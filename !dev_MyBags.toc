@@ -4,10 +4,10 @@
 ### AddonCompartmentFunc: MyTestsAddon_MinimapOnClick
 
 #@non-debug@
-# ## Title: |cffff2459My|r Bags
+# ## Title: |cffff2459My|r|cffffffffBags|r
 #@end-non-debug@
 #@debug@
-## Title: |cffff2459My|r Bags  |cffff0000[DEVELOPMENT VERSION]
+## Title: |cffff2459My|r|cffffffffBags|r |cffff0000[DEVELOPMENT VERSION]
 #@end-debug@
 
 #@non-debug@
