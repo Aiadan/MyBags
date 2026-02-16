@@ -118,6 +118,7 @@ This policy also applies to generic or reusable components such as utility funct
   - if it does, update that item's status/details and prefix completed entries with a checkmark icon as appropriate.
   - if it does not, add a short new entry describing the completed change in the appropriate section.
   - when adding a new completed entry to a `DONE` list, append it at the end of that list (do not insert it by topic in the middle).
+  - if unrelated `TODOs.md` entries were added/edited concurrently for other tasks, leave them as-is and update only the entry for the task you are closing.
 - For iterative work on the same feature/thread, prefer updating one existing `TODOs.md` entry (expand/refine its text) instead of appending multiple near-duplicate entries for each intermediate step.
 - If multiple temporary entries were created for the same feature, consolidate them into one final entry before closing the task.
 - Modify `README.md` only when explicitly asked, or when resolving a `TODOs.md` item that requires it.

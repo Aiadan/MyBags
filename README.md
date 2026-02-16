@@ -48,6 +48,7 @@ Some other worth mentioning:
 * search results use a union: Blizzard default search matches plus valid query-language matches from the same search text; invalid query text is ignored
 * bag/bank search boxes now allow longer text to support practical query input
 * custom category query editing mirrors text into bag search for live preview of what the query matches
+* custom category editor opens as a centered Blizzard-style movable panel with staged editing: changes apply only on `Save`, `Revert Changes` restores current drafts to the selected category baseline, and closing with pending edits prompts `Save and Exit` or `Exit`
 * custom query categories support explicit priority scores (higher score wins first)
 * query syntax/attributes reference: see [QUERY_ATTRIBUTES.md](QUERY_ATTRIBUTES.md)
 * query editor now includes an in-game `Help` button with a scrollable query syntax/priority reference panel

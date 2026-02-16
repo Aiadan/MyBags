@@ -37,6 +37,15 @@ Use it only during diagnostics. Keep profiling disabled during normal play.
 - If no explicit priority is stored for a custom category, runtime default priority is the numeric raw category id.
 - Priority ties are resolved by alphabetical category name, then internal deterministic fallback.
 
+## Category Editor Runtime Notes
+
+- The custom category editor is a centered movable `DefaultPanelFlatTemplate` frame (not bag-anchored).
+- Selection captures a per-category baseline snapshot (`name`, `query`, effective `priority`, `alwaysShow`) used by `Revert Changes`.
+- Editor fields are staged in UI state; persistence updates only when `Save` is pressed.
+- Name field `Escape` discards in-field draft text and restores the baseline category name.
+- Revert scope is per selected category at selection time (switching category resets baseline).
+- Closing the editor with pending changes opens a two-action confirmation (`Save and Exit` / `Exit`).
+
 ## Import/Export Notes
 
 - Import/export payloads are plain Lua table literals (no leading `return`).
