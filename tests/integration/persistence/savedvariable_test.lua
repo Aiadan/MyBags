@@ -669,6 +669,26 @@ run("categories config mode makes all custom categories visible without persisti
     assert_true(custom.categories[rawB].alwaysVisible ~= true, "B alwaysVisible remains not persisted as enabled")
 end)
 
+run("selected custom category prefix clears when selection is cleared", function()
+    local ctx = harness.new()
+    local category = ctx.AddonNS.CustomCategories:NewCategory("Selected")
+    local selectedCategoryId = nil
+    ctx.AddonNS.CategoriesGUI = {
+        GetSelectedCategoryId = function()
+            return selectedCategoryId
+        end,
+    }
+
+    ctx.AddonNS.BagViewState:SetMode("categories_config")
+    selectedCategoryId = category:GetId()
+    local selectedLabel = category:GetDisplayName(0)
+    assert_true(string.find(selectedLabel, ">>", 1, true) ~= nil, "selected custom category gets prefix")
+
+    selectedCategoryId = nil
+    local clearedLabel = category:GetDisplayName(0)
+    assert_true(string.find(clearedLabel, ">>", 1, true) == nil, "prefix removed after selection is cleared")
+end)
+
 run("item move reassigns through hooks and respects protected target", function()
     local ctx = harness.new()
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")

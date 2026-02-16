@@ -11,7 +11,7 @@ end
 
 function AddonNS.createGUI()
     local container = AddonNS.container;
-    local lastSelectedCategoryId = nil
+    local selectedCategoryId = nil
     local queryEditorFocused = false
     local COLOR_COG_NORMAL = { 0.78, 0.78, 0.78, 1 }
     local COLOR_COG_EDIT = { 1, 0.85, 0.2, 1 }
@@ -125,7 +125,6 @@ function AddonNS.createGUI()
             return
         end
         AddonNS.BagViewState:SetMode("categories_config")
-        containerFrame:Show()
     end)
 
     local function updateTopRightButtons()
@@ -158,122 +157,39 @@ function AddonNS.createGUI()
     refreshEditModeVisuals()
 
     containerFrame.Inset:SetPoint("BOTTOMRIGHT", -6, 126)
-    containerFrame.categoriesContainer = CreateFrame("Frame", addonName .. "-reagentsContainer", containerFrame)
-    local categoriesContainter = containerFrame.categoriesContainer;
-    categoriesContainter:SetPoint("TOPLEFT", 16, -65)
-    categoriesContainter:SetPoint("BOTTOMRIGHT")
-
-    local list
-    do
-        categoriesContainter.list = WowList:CreateNew(addonName .. "_categoriesList",
-            {
-                height = 400,
-                rows = 20,
-                columns = {
-                    {
-                        name = "Name",
-                        width = 230,
-                        displayFunction = function(cellData, rowData)
-                            local displayName = rowData.name or "(unnamed)"
-                            return displayName, { 1, 1, 1, 1 }
-                        end,
-                    },
-                    {
-                        name = "Show",
-                        width = 90,
-                        displayFunction = function(cellData, rowData)
-                            if rowData.alwaysVisible then
-                                return "Always", { 0, 1, 0, 1 }
-                            end
-                            return "With items", { 1, 1, 0, 1 }
-                        end,
-                    },
-                },
-            }, categoriesContainter)
-
-        list = categoriesContainter.list;
-        list:SetPoint('TOPLEFT', categoriesContainter, 'TOPLEFT', 0, 0)
-        list:SetMultiSelection(false)
-        list:SetButtonOnMouseDownFunction(function(rowData, button)
-            AddonNS.DragAndDrop.customCategoryGUIOnMouseUp(rowData.id, button)
-        end, true)
-
-        list:SetButtonOnReceiveDragFunction(function(rowData)
-            AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(rowData.id)
-        end)
-    end
-
-    local function getSelectedRow()
-        local selection = list:GetSelected()
-        return selection and selection[1] or nil
-    end
+    local selectedCategoryTitle = containerFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    selectedCategoryTitle:SetPoint("TOPLEFT", containerFrame.Inset, "TOPLEFT", 4, -8)
+    selectedCategoryTitle:SetText("Category: (none)")
 
     local function getSelectedCategory()
-        local row = getSelectedRow()
-        if not row then
+        if not selectedCategoryId then
             return nil
         end
-        return AddonNS.CategoryStore:Get(row.id)
+        return AddonNS.CategoryStore:Get(selectedCategoryId)
     end
 
-    local function selectCategoryById(categoryId)
-        list:SelectRowByPredicate(function(row)
-            return row.id == categoryId
-        end)
+    local function getSelectedCategoryId()
+        return selectedCategoryId
     end
 
-    local function selectCategory(category)
-        selectCategoryById(category and category:GetId() or nil)
+    local function resolveValidSelectedCategoryId(categoryId)
+        if not categoryId then
+            return nil
+        end
+        local category = AddonNS.CategoryStore:Get(categoryId)
+        if not category then
+            return nil
+        end
+        local customCategories = AddonNS.CustomCategories:GetCategories()
+        if customCategories[category:GetId()] == nil then
+            return nil
+        end
+        return category:GetId()
     end
-
-    function list:RefreshList()
-        list:RemoveAll()
-        local entries = {}
-        for _, category in pairs(AddonNS.CustomCategories:GetCategories()) do
-            table.insert(entries, category)
-        end
-        table.sort(entries, function(left, right)
-            local leftName = left:GetName() or ""
-            local rightName = right:GetName() or ""
-            leftName = string.lower(leftName)
-            rightName = string.lower(rightName)
-            if leftName == rightName then
-                return left.id < right.id
-            end
-            return leftName < rightName
-        end)
-        for _, category in ipairs(entries) do
-            list:AddData({
-                id = category.id,
-                name = category:GetName(),
-                alwaysVisible = category.alwaysVisible or false,
-            })
-        end
-        list:UpdateView()
-        return entries
-    end
-
-    containerFrame:SetScript("OnShow", function()
-        local entries = list:RefreshList()
-        if lastSelectedCategoryId then
-            selectCategoryById(lastSelectedCategoryId)
-        end
-        if not getSelectedRow() and entries[1] then
-            selectCategory(entries[1])
-        end
-        AddonNS.QueueContainerUpdateItemLayout();
-    end)
-
-    containerFrame:SetScript("OnHide", function()
-        lastSelectedCategoryId = nil
-        queryEditorFocused = false
-        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, false)
-        AddonNS.QueueContainerUpdateItemLayout();
-    end)
 
     --- [[ save button]]
     local renameButton = CreateFrame("Button", nil, containerFrame, "UIPanelButtonTemplate")
-    renameButton:SetPoint("TOPLEFT", containerFrame.Inset, "BOTTOMLEFT", 0, -6);
+    renameButton:SetPoint("TOPLEFT", selectedCategoryTitle, "BOTTOMLEFT", -4, -8);
 
     renameButton:SetSize(60, 20)
     renameButton:SetText("Rename")
@@ -306,11 +222,6 @@ function AddonNS.createGUI()
             dialog.data = category
         end
     end)
-
-    local function getSelectedCategoryId()
-        local category = getSelectedCategory()
-        return category and category.id or nil
-    end
 
     local function collectSortedCustomCategories()
         local entries = {}
@@ -678,8 +589,6 @@ function AddonNS.createGUI()
         else
             AddonNS.CustomCategories:SetPriority(categoryId, tonumber(rawText))
         end
-        list:RefreshList()
-        selectCategoryById(categoryId)
         AddonNS.QueueContainerUpdateItemLayout();
     end
     savePriorityButton:SetScript("OnClick", function(self, button)
@@ -695,17 +604,10 @@ function AddonNS.createGUI()
         self:ClearFocus()
     end)
 
-
-    renameButton:Disable()
-    deleteButton:Disable()
-    alwaysShowCheckbox:Disable()
-    saveQueryButton:Disable()
-    savePriorityButton:Disable()
-    priorityEditBox:Disable()
-    list:RegisterCallback("SelectionChanged", function()
+    local function refreshSelectedCategoryControls()
         local category = getSelectedCategory()
-        local selectedCategoryId = category and category.id or nil
         if category then
+            selectedCategoryTitle:SetText("|cffffd34fCategory:|r " .. (category:GetName() or "(unnamed)"))
             renameButton:Enable()
             alwaysShowCheckbox:Enable()
             alwaysShowCheckbox:SetChecked(AddonNS.CategorShowAlways:ShouldAlwaysShow(category))
@@ -715,22 +617,51 @@ function AddonNS.createGUI()
             priorityEditBox:Enable()
             containerFrame.textScrollFrame.EditBox:SetText(AddonNS.CustomCategories:GetQuery(category))
             containerFrame.priorityEditBox:SetText(tostring(AddonNS.CustomCategories:GetEffectivePriority(category)))
-        else
-            alwaysShowCheckbox:SetChecked(false)
-            alwaysShowCheckbox:Disable()
-            renameButton:Disable()
-            deleteButton:Disable()
-            saveQueryButton:Disable()
-            savePriorityButton:Disable()
-            priorityEditBox:Disable()
-            containerFrame.textScrollFrame.EditBox:SetText("")
-            containerFrame.priorityEditBox:SetText("")
+            return
         end
-        if lastSelectedCategoryId ~= selectedCategoryId then
-            lastSelectedCategoryId = selectedCategoryId
-            AddonNS.QueueContainerUpdateItemLayout();
+
+        selectedCategoryTitle:SetText("|cffffd34fCategory:|r |cffbbbbbb(none)|r")
+        alwaysShowCheckbox:SetChecked(false)
+        alwaysShowCheckbox:Disable()
+        renameButton:Disable()
+        deleteButton:Disable()
+        saveQueryButton:Disable()
+        savePriorityButton:Disable()
+        priorityEditBox:Disable()
+        containerFrame.textScrollFrame.EditBox:SetText("")
+        containerFrame.priorityEditBox:SetText("")
+    end
+
+    local function setSelectedCategoryById(categoryId)
+        local resolvedId = resolveValidSelectedCategoryId(categoryId)
+        if selectedCategoryId == resolvedId then
+            refreshSelectedCategoryControls()
+            return
         end
+        selectedCategoryId = resolvedId
+        refreshSelectedCategoryControls()
+        AddonNS.QueueContainerUpdateItemLayout()
+    end
+
+    containerFrame:SetScript("OnShow", function()
+        setSelectedCategoryById(selectedCategoryId)
     end)
+
+    containerFrame:SetScript("OnHide", function()
+        selectedCategoryId = nil
+        refreshSelectedCategoryControls()
+        queryEditorFocused = false
+        AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, false)
+        AddonNS.QueueContainerUpdateItemLayout();
+    end)
+
+    renameButton:Disable()
+    deleteButton:Disable()
+    alwaysShowCheckbox:Disable()
+    saveQueryButton:Disable()
+    savePriorityButton:Disable()
+    priorityEditBox:Disable()
+    refreshSelectedCategoryControls()
 
 
 
@@ -748,9 +679,8 @@ function AddonNS.createGUI()
             local categoryName = self:GetEditBox():GetText()
             if categoryName and categoryName ~= "" then
                 local category = AddonNS.CustomCategories:NewCategory(categoryName)
-                list:RefreshList()
-                if category then
-                    selectCategoryById(category.id)
+                if category and containerFrame:IsShown() then
+                    setSelectedCategoryById(category:GetId())
                 end
             else
                 AddonNS.printDebug("Please enter a category name.")
@@ -780,8 +710,7 @@ function AddonNS.createGUI()
                 AddonNS.printDebug("Category renamed: ", data, categoryName)
                 AddonNS.CustomCategories:RenameCategory(data, categoryName);
                 AddonNS.QueueContainerUpdateItemLayout();
-                list:RefreshList();
-                selectCategory(data)
+                refreshSelectedCategoryControls()
             else
                 AddonNS.printDebug("Please enter a category name.")
             end
@@ -808,18 +737,14 @@ function AddonNS.createGUI()
         button2 = "Cancel",
         OnAccept = function(self, data)
             AddonNS.printDebug("Category deleted: ", data)
+            local deletedCategoryId = data and data.GetId and data:GetId() or nil
             AddonNS.CustomCategories:DeleteCategory(data);
-            AddonNS.QueueContainerUpdateItemLayout();
-            list:RefreshList();
-            renameButton:Disable()
-            deleteButton:Disable()
-            alwaysShowCheckbox:SetChecked(false)
-            alwaysShowCheckbox:Disable()
-            saveQueryButton:Disable()
-            savePriorityButton:Disable()
-            priorityEditBox:Disable()
-            containerFrame.textScrollFrame.EditBox:SetText("")
-            containerFrame.priorityEditBox:SetText("")
+            if deletedCategoryId and getSelectedCategoryId() == deletedCategoryId then
+                setSelectedCategoryById(nil)
+            else
+                refreshSelectedCategoryControls()
+                AddonNS.QueueContainerUpdateItemLayout();
+            end
         end,
         enterClicksFirstButton = true,
         timeout = 0,
@@ -840,7 +765,7 @@ function AddonNS.createGUI()
                 AddonNS.printDebug("Import failed:", err)
                 return
             end
-            list:RefreshList()
+            refreshSelectedCategoryControls()
             AddonNS.QueueContainerUpdateItemLayout()
         end,
         timeout = 0,
@@ -853,7 +778,11 @@ function AddonNS.createGUI()
         if not containerFrame:IsShown() then
             containerFrame:Show()
         end
-        selectCategoryById(categoryId)
+        setSelectedCategoryById(categoryId)
+    end
+
+    function AddonNS.CategoriesGUI:ClearSelection()
+        setSelectedCategoryById(nil)
     end
 
     function AddonNS.CategoriesGUI:IsShown()

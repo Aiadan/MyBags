@@ -72,7 +72,6 @@ local assigned = 0
 local unassigned = 0
 local targetSeen = nil
 local rightClicks = 0
-local configLeftClicks = 0
 local catA = {
   GetId = function() return "hook:a" end,
   GetName = function() return "A" end,
@@ -84,10 +83,6 @@ local catA = {
   OnRightClick = function()
     rightClicks = rightClicks + 1
     return true
-  end,
-  OnLeftClickConfigMode = function()
-    configLeftClicks = configLeftClicks + 1
-    return "ok"
   end,
 }
 local catB = {
@@ -108,7 +103,6 @@ assert(assigned == 10, "assignment hook fires for the target category")
 assert(unassigned == 1, "unassign hook fires for source category")
 assert(targetSeen == catB, "target category is passed through")
 assert(wrappedA:OnRightClick() == true and rightClicks == 1, "right-click passes through to raw category")
-assert(wrappedA:OnLeftClickConfigMode() == "ok" and configLeftClicks == 1, "config-mode left-click passes through to raw category")
 assert(wrappedA:GetDisplayName(3) == "A[3]", "display-name formatter passes through to raw category")
 
 local protectedTrigger = {

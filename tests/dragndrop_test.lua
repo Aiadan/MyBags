@@ -146,7 +146,7 @@ local function frameForColumn(columnIndex)
     }
 end
 
-run("config mode custom category click selects and does not collapse", function()
+run("config mode custom category click collapses and does not select", function()
     collapsedCalls = 0
     selectedCategoryId = nil
     configModeClickCalls = 0
@@ -154,12 +154,12 @@ run("config mode custom category click selects and does not collapse", function(
 
     addonEnv.DragAndDrop.categoryOnMouseUp({ ItemCategory = category("cus-11", { configModeHandler = true }) }, "LeftButton")
 
-    assertTrue(collapsedCalls == 0, "collapse should not be triggered in config mode")
-    assertTrue(configModeClickCalls == 1, "config mode hook should be called")
-    assertTrue(selectedCategoryId == "cus-11", "custom category should be selected in config mode")
+    assertTrue(collapsedCalls == 1, "collapse should be triggered in config mode")
+    assertTrue(configModeClickCalls == 0, "config mode hook should not be called")
+    assertTrue(selectedCategoryId == nil, "config mode click should not select in config GUI")
 end)
 
-run("config mode non-custom category click is a no-op", function()
+run("config mode non-custom category click collapses", function()
     collapsedCalls = 0
     selectedCategoryId = nil
     configModeClickCalls = 0
@@ -167,9 +167,9 @@ run("config mode non-custom category click is a no-op", function()
 
     addonEnv.DragAndDrop.categoryOnMouseUp({ ItemCategory = category("unassigned") }, "LeftButton")
 
-    assertTrue(collapsedCalls == 0, "non-custom category should not collapse in config mode")
+    assertTrue(collapsedCalls == 1, "non-custom category should collapse in config mode")
     assertTrue(configModeClickCalls == 0, "category without config mode hook should do nothing")
-    assertTrue(selectedCategoryId == nil, "non-custom category should not be selected in config mode")
+    assertTrue(selectedCategoryId == nil, "config mode click should not select in config GUI")
 end)
 
 run("normal mode category click still toggles collapse", function()

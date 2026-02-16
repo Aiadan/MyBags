@@ -49,6 +49,7 @@ local unprotectedCategoryBackdrop = {
 AddonNS.gui = AddonNS.gui or {}
 AddonNS.gui.categoriesFrames = {};
 local hoveredCategoryFrame = nil
+local EDIT_CATEGORY_TOOLTIP = "Edit"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Hold-shift to skip confirmation prompt"
 local HINT_TONE_STYLE = {
@@ -591,6 +592,40 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             deleteButton.Highlight:SetAlpha(0.45)
             deleteButton.Highlight:SetBlendMode("ADD")
 
+            local editButton = CreateFrame("Button", nil, f)
+            editButton:SetSize(16, 16)
+            editButton:SetPoint("TOPRIGHT", deleteButton, "TOPLEFT", -2, 0)
+            editButton:SetFrameLevel(f:GetFrameLevel() + 25)
+            editButton:Hide()
+
+            editButton.Icon = editButton:CreateTexture(nil, "ARTWORK")
+            editButton.Icon:SetPoint("TOPLEFT", editButton, "TOPLEFT", -4, 4)
+            editButton.Icon:SetPoint("BOTTOMRIGHT", editButton, "BOTTOMRIGHT", 4, -4)
+            editButton.Icon:SetAtlas("GM-icon-settings")
+            editButton.Icon:SetVertexColor(1, 0.85, 0.2, 1)
+
+            editButton.Highlight = editButton:CreateTexture(nil, "HIGHLIGHT")
+            editButton.Highlight:SetPoint("TOPLEFT", editButton, "TOPLEFT", -2, 2)
+            editButton.Highlight:SetPoint("BOTTOMRIGHT", editButton, "BOTTOMRIGHT", 2, -2)
+            editButton.Highlight:SetAtlas("GM-icon-settings")
+            editButton.Highlight:SetVertexColor(1, 0.85, 0.2, 1)
+            editButton.Highlight:SetAlpha(0.45)
+            editButton.Highlight:SetBlendMode("ADD")
+
+            editButton:SetScript("OnEnter", function(self)
+                local category = self:GetParent().ItemCategory
+                GameTooltip:SetOwner(self, "ANCHOR_TOP")
+                GameTooltip:SetText(EDIT_CATEGORY_TOOLTIP .. " \"" .. category:GetName() .. "\" category")
+                GameTooltip:Show()
+            end)
+            editButton:SetScript("OnLeave", function()
+                GameTooltip:Hide()
+            end)
+            editButton:SetScript("OnClick", function(self)
+                local category = self:GetParent().ItemCategory
+                AddonNS.CategoriesGUI:SelectCategoryById(category:GetId())
+            end)
+
             deleteButton:SetScript("OnEnter", function(self)
                 local category = self:GetParent().ItemCategory
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -632,6 +667,24 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                 fs:SetFontObject("GameFontNormal")
             end
 
+            local function applyCategoryTextLayoutWithEditButton()
+                fs:ClearAllPoints()
+                fs:SetPoint("TOPLEFT", f, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
+                fs:SetPoint("TOPRIGHT", editButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
+                fs:SetJustifyH("LEFT")
+                fs:SetJustifyV("TOP")
+                fs:SetFontObject("GameFontNormal")
+            end
+
+            local function applyCategoryTextLayoutWithEditAndDeleteButtons()
+                fs:ClearAllPoints()
+                fs:SetPoint("TOPLEFT", f, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
+                fs:SetPoint("TOPRIGHT", editButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
+                fs:SetJustifyH("LEFT")
+                fs:SetJustifyV("TOP")
+                fs:SetFontObject("GameFontNormal")
+            end
+
             local function applyAddControlTextLayout()
                 fs:ClearAllPoints()
                 fs:SetPoint("LEFT", f, "LEFT", 6, 0)
@@ -663,9 +716,12 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             function f:SetText(text) fs:SetText(text) end
             f.ApplyCategoryTextLayout = applyCategoryTextLayout
             f.ApplyCategoryTextLayoutWithDeleteButton = applyCategoryTextLayoutWithDeleteButton
+            f.ApplyCategoryTextLayoutWithEditButton = applyCategoryTextLayoutWithEditButton
+            f.ApplyCategoryTextLayoutWithEditAndDeleteButtons = applyCategoryTextLayoutWithEditAndDeleteButtons
             f.ApplyAddControlTextLayout = applyAddControlTextLayout
             f.isAddCategoryControl = false
             f.deleteButton = deleteButton
+            f.editButton = editButton
 
             f:EnableMouse(true)
             f:SetScript("OnEnter",
@@ -736,6 +792,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             end
             f.bg:Hide()
             f.addControlBackdrop:Show()
+            f.editButton:Hide()
             f.deleteButton:Hide()
             f:ApplyAddControlTextLayout()
             styleCategoryControl(f, false)
@@ -762,11 +819,17 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.bg:Hide()
             f.addControlBackdrop:Hide()
             local categoryId = f.ItemCategory:GetId()
-            local canDeleteCategory = AddonNS.BagViewState:IsCategoriesConfigMode() and
-                customCategories[categoryId] ~= nil and
+            local canEditCategory = AddonNS.BagViewState:IsCategoriesConfigMode() and
+                customCategories[categoryId] ~= nil
+            local canDeleteCategory = canEditCategory and
                 not f.ItemCategory:IsProtected()
+            f.editButton:SetShown(canEditCategory)
             f.deleteButton:SetShown(canDeleteCategory)
-            if canDeleteCategory then
+            if canEditCategory and canDeleteCategory then
+                f:ApplyCategoryTextLayoutWithEditAndDeleteButtons()
+            elseif canEditCategory then
+                f:ApplyCategoryTextLayoutWithEditButton()
+            elseif canDeleteCategory then
                 f:ApplyCategoryTextLayoutWithDeleteButton()
             else
                 f:ApplyCategoryTextLayout()

@@ -243,11 +243,6 @@ function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)
     else
         local refreshView = false
         if button == "LeftButton" then
-            if AddonNS.BagViewState:IsCategoriesConfigMode() then
-                local category = self.ItemCategory
-                category:OnLeftClickConfigMode(container)
-                return
-            end
             toggleCollapsed(self.ItemCategory);
         elseif button == "RightButton" then
             local category = self.ItemCategory

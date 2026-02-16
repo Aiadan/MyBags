@@ -114,13 +114,14 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ finalized search-query union feature: search now includes Blizzard default matches plus valid query-language matches from the same text (invalid query ignored), query-only matches are not dimmed, search text is captured via direct `OnTextChanged` wrappers on `BagItemSearchBox` and `BankItemSearchBox`, custom GUI query-to-search sync stays local to `categoriesGUI.lua`, temporary debug/race-workaround code was removed, and `README.md` was updated.
 * ✅ custom query-edit preview flow finalized: editing/focusing query text in custom categories GUI mirrors into bag search for live results, search anchor lock stays active while query editor is focused in edit mode, and bag/bank search max length is 255.
 * ✅ added in-bag free-space text in the money/footer strip showing remaining generic bag slots and reagent-bag slots.
+* ✅ custom-category editor flow is now decoupled from edit-mode toggle: the panel no longer auto-opens, its in-panel category list was removed and replaced by an explicit selected-category header (`Category: ...`), closing the panel clears selected-category highlight (`>>`), in-bag custom headers gained a yellow `GM-icon-settings` edit button (left of trash) that opens/selects category config, and header left-click in edit mode now collapses/uncollapses like normal mode.
 
 ### TODO
 
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
 * [bug] when draggin an item an click right click on a column part, it moves entire cateogory in which a given itembutton was in
 * add info at the top, and in bright colour, of query expanation in game that this information is available also at https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md
-* remove the list from custom categories gui. This GUI should no longer open automatically when enabling edit mode. Add info about category name selected in the gui as now it is visible only through the list. When closing the custom category gui unmark selected category (so unselect it) in the bag so there would be no prefix ">>". Please also look for icon that is a cog, edit. From the similar look and feel as the thrash icon. Add it to the left of the thrash icon. It should also be a button which opens a config for a given category - just as clicking the category name. However once that is done, change the behaviour of clicking on the category - it will no longer open the config, but will now do the same it does in non edit mode - collapse or uncollapse.
+* the column tooltip on mouse hover should be as wide as column, not as wide as category that is being hovered.
 
 #### Low priority
 
