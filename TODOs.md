@@ -123,6 +123,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * [bug] when draggin an item an click right click on a column part, it moves entire cateogory in which a given itembutton was in
 * add info at the top, and in bright colour, of query expanation in game that this information is available also at https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md
 * the column tooltip on mouse hover should be as wide as column, not as wide as category that is being hovered.
+* When query is not valid, make the box red with some note underneath that it is not valud.
 
 #### Low priority
 
