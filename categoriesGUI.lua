@@ -74,33 +74,172 @@ function AddonNS.createGUI()
         title:SetPoint("TOPLEFT", frame.Inset, "TOPLEFT", 4, -8)
         title:SetText("Query Help")
 
-        local helpScrollFrame = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
-        helpScrollFrame:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
-        helpScrollFrame:SetPoint("BOTTOMRIGHT", frame.Inset, "BOTTOMRIGHT", -28, 8)
+        local searchEditBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
+        searchEditBox:SetAutoFocus(false)
+        searchEditBox:SetSize(220, 20)
+        searchEditBox:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 4, -10)
 
-        local helpScrollContent = CreateFrame("Frame", nil, helpScrollFrame)
-        helpScrollFrame:SetScrollChild(helpScrollContent)
+        local searchPrevButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        searchPrevButton:SetSize(44, 20)
+        searchPrevButton:SetPoint("LEFT", searchEditBox, "RIGHT", 6, 0)
+        searchPrevButton:SetText("Prev")
 
-        local helpText = helpScrollContent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-        helpText:SetPoint("TOPLEFT", helpScrollContent, "TOPLEFT", 0, 0)
-        helpText:SetJustifyH("LEFT")
-        helpText:SetJustifyV("TOP")
-        helpText:SetText(queryHelpText)
+        local searchNextButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        searchNextButton:SetSize(44, 20)
+        searchNextButton:SetPoint("LEFT", searchPrevButton, "RIGHT", 4, 0)
+        searchNextButton:SetText("Next")
 
-        local function refreshQueryHelpFrameLayout()
-            local availableWidth = helpScrollFrame:GetWidth() - 16
-            if availableWidth <= 0 then
-                return
+        local searchStatus = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+        searchStatus:SetPoint("LEFT", searchNextButton, "RIGHT", 8, 0)
+        searchStatus:SetJustifyH("LEFT")
+        searchStatus:SetText("")
+
+        local helpScrollFrame = CreateFrame("ScrollFrame", nil, frame, "InputScrollFrameTemplate")
+        helpScrollFrame.hideCharCount = true
+        helpScrollFrame:SetPoint("TOPLEFT", searchEditBox, "BOTTOMLEFT", 0, -8)
+        helpScrollFrame:SetPoint("BOTTOMRIGHT", frame.Inset, "BOTTOMRIGHT", -10, 8)
+
+        local lineStarts = {}
+        local matches = {}
+        local selectedMatchIndex = 0
+
+        local function buildLineStarts(text)
+            local starts = { 1 }
+            local cursor = 1
+            while true do
+                local _, lineEnd = string.find(text, "\n", cursor, true)
+                if not lineEnd then
+                    break
+                end
+                table.insert(starts, lineEnd + 1)
+                cursor = lineEnd + 1
             end
-            helpScrollContent:SetWidth(availableWidth)
-            helpText:SetWidth(availableWidth)
-            helpScrollContent:SetHeight(helpText:GetStringHeight() + 8)
+            return starts
         end
 
-        helpScrollFrame:SetScript("OnSizeChanged", refreshQueryHelpFrameLayout)
-        frame:HookScript("OnShow", function()
-            refreshQueryHelpFrameLayout()
-            helpScrollFrame:SetVerticalScroll(0)
+        local function collectMatches(text, query)
+            local foundMatches = {}
+            if query == "" then
+                return foundMatches
+            end
+            local searchFrom = 1
+            while true do
+                local startIndex, endIndex = string.find(text, query, searchFrom, true)
+                if not startIndex then
+                    break
+                end
+                table.insert(foundMatches, {
+                    startIndex = startIndex,
+                    endIndex = endIndex,
+                })
+                searchFrom = startIndex + 1
+            end
+            return foundMatches
+        end
+
+        local function findLineIndexForChar(charIndex)
+            for index = #lineStarts, 1, -1 do
+                if charIndex >= lineStarts[index] then
+                    return index
+                end
+            end
+            return 1
+        end
+
+        local function scrollToMatch(match)
+            local lineIndex = findLineIndexForChar(match.startIndex)
+            local _, fontHeight = helpScrollFrame.EditBox:GetFont()
+            local lineHeight = fontHeight or 12
+            local targetScroll = (lineIndex - 1) * lineHeight
+            local maxScroll = math.max(0, helpScrollFrame.EditBox:GetHeight() - helpScrollFrame:GetHeight())
+            if targetScroll > maxScroll then
+                targetScroll = maxScroll
+            end
+            helpScrollFrame:SetVerticalScroll(targetScroll)
+            helpScrollFrame.EditBox:HighlightText(match.startIndex - 1, match.endIndex)
+        end
+
+        local function refreshSearchStatus()
+            if #matches == 0 then
+                if searchEditBox:GetText() == "" then
+                    searchStatus:SetText("")
+                else
+                    searchStatus:SetText("No matches")
+                end
+                return
+            end
+            searchStatus:SetText(selectedMatchIndex .. "/" .. #matches)
+        end
+
+        local function runSearch(resetSelection)
+            local query = string.lower(searchEditBox:GetText() or "")
+            local searchableText = string.lower(queryHelpText)
+            matches = collectMatches(searchableText, query)
+            if #matches == 0 then
+                selectedMatchIndex = 0
+                helpScrollFrame.EditBox:HighlightText(0, 0)
+                refreshSearchStatus()
+                return
+            end
+
+            if resetSelection or selectedMatchIndex <= 0 or selectedMatchIndex > #matches then
+                selectedMatchIndex = 1
+            end
+            scrollToMatch(matches[selectedMatchIndex])
+            refreshSearchStatus()
+        end
+
+        local function stepSearch(offset)
+            if #matches == 0 then
+                runSearch(true)
+                return
+            end
+            selectedMatchIndex = selectedMatchIndex + offset
+            if selectedMatchIndex < 1 then
+                selectedMatchIndex = #matches
+            elseif selectedMatchIndex > #matches then
+                selectedMatchIndex = 1
+            end
+            scrollToMatch(matches[selectedMatchIndex])
+            refreshSearchStatus()
+        end
+
+        local helpLoaded = false
+        helpScrollFrame:SetScript("OnShow", function()
+            if not helpLoaded then
+                helpLoaded = true
+                InputScrollFrame_OnLoad(helpScrollFrame)
+                helpScrollFrame.EditBox:SetFontObject(GameFontHighlightSmall)
+                helpScrollFrame.EditBox:SetAutoFocus(false)
+            end
+            helpScrollFrame.EditBox:SetText(queryHelpText)
+            helpScrollFrame.EditBox:SetCursorPosition(0)
+            helpScrollFrame.EditBox:HighlightText(0, 0)
+            lineStarts = buildLineStarts(queryHelpText)
+            runSearch(true)
+            if (searchEditBox:GetText() or "") == "" then
+                helpScrollFrame.EditBox:SetCursorPosition(0)
+                helpScrollFrame.EditBox:HighlightText(0, 0)
+                helpScrollFrame:SetVerticalScroll(0)
+            end
+        end)
+        searchEditBox:SetScript("OnTextChanged", function(_, userInput)
+            if not userInput then
+                return
+            end
+            runSearch(true)
+        end)
+        searchEditBox:SetScript("OnEnterPressed", function()
+            stepSearch(1)
+        end)
+        searchEditBox:SetScript("OnEscapePressed", function(self)
+            self:ClearFocus()
+        end)
+        searchPrevButton:SetScript("OnClick", function()
+            stepSearch(-1)
+        end)
+        searchNextButton:SetScript("OnClick", function()
+            stepSearch(1)
         end)
 
         return frame
