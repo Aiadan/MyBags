@@ -237,9 +237,9 @@ local function forEachCategoryHintFrame(self, visitor)
     for i = 1, #self.categoriesFrames do
         visitor(self.categoriesFrames[i])
     end
-    if AddonNS.BankView and AddonNS.BankView.headerFrames then
-        for i = 1, #AddonNS.BankView.headerFrames do
-            visitor(AddonNS.BankView.headerFrames[i])
+    if AddonNS.BankView and AddonNS.BankView.dropFrames then
+        for i = 1, #AddonNS.BankView.dropFrames do
+            visitor(AddonNS.BankView.dropFrames[i])
         end
     end
 end

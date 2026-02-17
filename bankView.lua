@@ -9,6 +9,7 @@ local BANK_ACCOUNT_SCOPE = "bank-account"
 
 local BankView = {
     headerFrames = {},
+    dropFrames = {},
     currentScope = BANK_CHARACTER_SCOPE,
     refreshQueued = false,
     hooksInstalled = false,
@@ -111,6 +112,9 @@ end
 local function hideHeaders(self)
     for index = 1, #self.headerFrames do
         self.headerFrames[index]:Hide()
+    end
+    for index = 1, #self.dropFrames do
+        self.dropFrames[index]:Hide()
     end
 end
 
@@ -326,6 +330,46 @@ local function ensureHeaderFrame(self, index)
     return headerFrame
 end
 
+local function ensureDropFrame(self, index)
+    if self.dropFrames[index] then
+        return self.dropFrames[index]
+    end
+
+    local dropFrame = CreateFrame("Frame", nil, self.backgroundFrame, "BackdropTemplate")
+    local dropFrameLevel = self.backgroundFrame:GetFrameLevel() - 1
+    if dropFrameLevel < 0 then
+        dropFrameLevel = 0
+    end
+    dropFrame:SetFrameLevel(dropFrameLevel)
+
+    local hintOverlay = CreateFrame("Frame", nil, dropFrame, "BackdropTemplate")
+    hintOverlay:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
+    hintOverlay:SetAllPoints(dropFrame)
+    hintOverlay:EnableMouse(false)
+    hintOverlay:Hide()
+
+    dropFrame:EnableMouse(true)
+    dropFrame:SetScript("OnEnter", function(frame)
+        AddonNS.gui:SetHoveredCategoryFrame(frame)
+    end)
+    dropFrame:SetScript("OnLeave", function(frame)
+        AddonNS.gui:ClearHoveredCategoryFrame(frame)
+    end)
+    dropFrame:HookScript("OnHide", function(frame)
+        AddonNS.gui:ClearHoveredCategoryFrame(frame)
+    end)
+    dropFrame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.categoryOnReceiveDrag)
+    dropFrame:SetScript("OnMouseUp", function(frame, button)
+        if button == "LeftButton" and GetCursorInfo() then
+            AddonNS.DragAndDrop.categoryOnReceiveDrag(frame)
+        end
+    end)
+
+    dropFrame.hintOverlay = hintOverlay
+    self.dropFrames[index] = dropFrame
+    return dropFrame
+end
+
 local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, itemSize)
     local categoryPositions = {}
     local positions = {}
@@ -343,6 +387,7 @@ local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, item
             local items = categoryObj.items
             local itemsCount = categoryObj.itemsCount or #items
             local collapsed = AddonNS.Collapsed.isCollapsed(category, scope)
+            local rowCount = collapsed and 0 or math.ceil(itemsCount / ITEMS_PER_ROW)
 
             if index > 1 then
                 currentY = currentY + CATEGORY_HEIGHT + AddonNS.Const.COLUMN_SPACING
@@ -355,6 +400,7 @@ local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, item
                 y = currentY - CATEGORY_HEIGHT,
                 width = itemSize * ITEMS_PER_ROW,
                 height = CATEGORY_HEIGHT,
+                blockHeight = CATEGORY_HEIGHT + rowCount * itemSize,
                 scope = scope,
             })
 
@@ -374,7 +420,6 @@ local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, item
                         rowIndex = rowIndex + 1
                     end
                 end
-                local rowCount = math.ceil(itemsCount / ITEMS_PER_ROW)
                 currentY = currentY + rowCount * itemSize
             end
         end
@@ -447,13 +492,23 @@ local function renderHeaders(self, scope, panel, categoryPositions)
     for index = 1, #categoryPositions do
         local categoryPosition = categoryPositions[index]
         local frame = ensureHeaderFrame(self, index)
+        local dropFrame = ensureDropFrame(self, index)
         frame.ItemCategory = categoryPosition.category
         frame.MyBagsScope = scope
         frame.MyBagsContainerRef = panel
         frame.MyBagsHintAnchorFrame = self.backgroundFrame
         frame.MyBagsHintAlignToFrame = true
         frame:SetPoint("TOPLEFT", self.backgroundFrame, "TOPLEFT", categoryPosition.x, -categoryPosition.y)
-        frame:SetSize(categoryPosition.width, categoryPosition.height)
+        frame:SetSize(categoryPosition.width, CATEGORY_HEIGHT)
+
+        dropFrame.ItemCategory = categoryPosition.category
+        dropFrame.MyBagsScope = scope
+        dropFrame.MyBagsContainerRef = panel
+        dropFrame.MyBagsHintAnchorFrame = self.backgroundFrame
+        dropFrame.MyBagsHintAlignToFrame = true
+        dropFrame:SetPoint("TOPLEFT", self.backgroundFrame, "TOPLEFT", categoryPosition.x, -categoryPosition.y)
+        dropFrame:SetSize(categoryPosition.width, categoryPosition.blockHeight)
+        dropFrame:Show()
 
         local label = categoryPosition.category:GetDisplayName(categoryPosition.itemsCount) or categoryPosition.category:GetName()
         if AddonNS.Collapsed.isCollapsed(categoryPosition.category, scope) then
@@ -465,6 +520,9 @@ local function renderHeaders(self, scope, panel, categoryPositions)
 
     for index = #categoryPositions + 1, #self.headerFrames do
         self.headerFrames[index]:Hide()
+    end
+    for index = #categoryPositions + 1, #self.dropFrames do
+        self.dropFrames[index]:Hide()
     end
 end
 
