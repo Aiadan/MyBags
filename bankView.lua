@@ -90,8 +90,8 @@ local function ensureItemButtonHooks(itemButton)
         itemButton:EnableMouseWheel(true)
         itemButton:HookScript("OnMouseWheel", function(_, delta)
             local view = AddonNS.BankView
-            if view and view.scrollFrame then
-                ScrollFrameTemplate_OnMouseWheel(view.scrollFrame, delta)
+            if view and view.scrollBar then
+                view.scrollBar:ScrollStepInDirection(-delta)
             end
         end)
         itemButton.myBagAddonMouseWheelHooked = true
@@ -226,7 +226,7 @@ local function ensureHeaderFrame(self, index)
     headerFrame:SetScript("OnDragStop", function() end)
     headerFrame:EnableMouseWheel(true)
     headerFrame:SetScript("OnMouseWheel", function(_, delta)
-        ScrollFrameTemplate_OnMouseWheel(self.scrollFrame, delta)
+        self.scrollBar:ScrollStepInDirection(-delta)
     end)
 
     function headerFrame:SetText(text)
