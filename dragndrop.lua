@@ -12,6 +12,7 @@ local height = 0;
 local pickedItemID = nil;
 local pickedItemCategory = nil;
 local pickedItemButton = nil;
+local pickedScope = "bag";
 local isCategoryDragActive = false;
 local container = AddonNS.container;
 
@@ -28,6 +29,49 @@ local function getCachedCursorInfo()
         recentAt = now;
     end
     return cachedInfoType, cachedItemID, cachedItemLink;
+end
+
+local function getScopeByBagId(bagId)
+    if bagId == nil then
+        return "bag"
+    end
+    if bagId >= Enum.BagIndex.CharacterBankTab_1 and bagId <= Enum.BagIndex.CharacterBankTab_6 then
+        return "bank-character"
+    end
+    if bagId >= Enum.BagIndex.AccountBankTab_1 and bagId <= Enum.BagIndex.AccountBankTab_5 then
+        return "bank-account"
+    end
+    return "bag"
+end
+
+local function getScopeFromButton(button)
+    if button and button.MyBagsScope then
+        return button.MyBagsScope
+    end
+    if button and button.GetBagID then
+        return getScopeByBagId(button:GetBagID())
+    end
+    return pickedScope or "bag"
+end
+
+local function queueRefreshForScope(scope)
+    if scope == "bag" then
+        AddonNS.QueueContainerUpdateItemLayout()
+        return
+    end
+    if AddonNS.BankView and AddonNS.BankView.QueueRefresh then
+        AddonNS.BankView:QueueRefresh(scope)
+    end
+end
+
+local function triggerRefreshForScope(scope)
+    if scope == "bag" then
+        AddonNS.TriggerContainerOnTokenWatchChanged()
+        return
+    end
+    if AddonNS.BankView and AddonNS.BankView.QueueRefresh then
+        AddonNS.BankView:QueueRefresh(scope)
+    end
 end
 
 local function hasActiveItemDrag()
@@ -105,6 +149,7 @@ function AddonNS.DragAndDrop.cleanUp()
     pickedItemButton = nil;
     pickedItemID = nil
     pickedItemCategory = nil;
+    pickedScope = "bag"
     isCategoryDragActive = false;
     recentAt = 0
     cachedInfoType, cachedItemID, cachedItemLink = nil, nil, nil
@@ -183,6 +228,7 @@ function AddonNS.DragAndDrop.itemStartDrag(self)
     AddonNS.DragAndDrop.cleanUp()
     AddonNS.printDebug("itemStartDrag")
     isCategoryDragActive = false;
+    pickedScope = getScopeFromButton(self)
     local itemID = getItemIdFromButton(self)
     if (itemID) then
         pickedItemButton = self;
@@ -196,6 +242,7 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
     AddonNS.printDebug("itemOnReceiveDrag")
 
     local targetItemCategory = self.ItemCategory;
+    local targetScope = getScopeFromButton(self)
 
     local infoType, itemID, itemLink = getCachedCursorInfo()
     if (infoType == "merchant") then
@@ -222,9 +269,9 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
         triggerItemMoved(itemID, targetedItemID, pickedItemCategory, targetItemCategory, pickedItemButton, self);
     elseif pickedItemCategory then -- category frame
         AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED,
-            getCategoryId(pickedItemCategory), getCategoryId(targetItemCategory));
+            getCategoryId(pickedItemCategory), getCategoryId(targetItemCategory), nil, targetScope);
     end
-    AddonNS.QueueContainerUpdateItemLayout();
+    queueRefreshForScope(targetScope);
     AddonNS.DragAndDrop.cleanUp()
 end
 
@@ -232,6 +279,7 @@ function AddonNS.DragAndDrop.categoryStartDrag(self)
     AddonNS.DragAndDrop.cleanUp()
     AddonNS.printDebug("categoryStartDrag")
     pickedItemCategory = self.ItemCategory;
+    pickedScope = getScopeFromButton(self)
     isCategoryDragActive = true;
     AddonNS.printDebug("categoryStartDrag", pickedItemCategory)
     AddonNS.gui:RefreshCategoryDragHints()
@@ -247,16 +295,17 @@ function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)
     else
         local refreshView = false
         if button == "LeftButton" then
-            toggleCollapsed(self.ItemCategory);
+            toggleCollapsed(self.ItemCategory, getScopeFromButton(self));
         elseif button == "RightButton" then
             local category = self.ItemCategory
+            local categoryContainer = self.MyBagsContainerRef or container
             if category and category.OnRightClick then
-                refreshView = category:OnRightClick(container)
+                refreshView = category:OnRightClick(categoryContainer)
             end
         end
 
         if (refreshView) then
-            AddonNS.QueueContainerUpdateItemLayout();
+            queueRefreshForScope(getScopeFromButton(self));
         end
     end
 end
@@ -265,6 +314,7 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
     AddonNS.printDebug("categoryOnReceiveDrag")
 
     local targetItemCategory = self.ItemCategory;
+    local targetScope = getScopeFromButton(self)
 
     AddonNS.printDebug("categoryOnReceiveDrag", targetItemCategory)
 
@@ -282,14 +332,14 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
         end
         triggerItemMoved(itemID, nil, pickedItemCategory, targetItemCategory, pickedItemButton, nil);
         ClearCursor();
-        AddonNS.QueueContainerUpdateItemLayout();
+        queueRefreshForScope(targetScope);
     elseif isCategoryDragActive and pickedItemCategory and (pickedItemCategory ~= targetItemCategory) then -- category frame
         local moveTail = IsShiftKeyDown()
         AddonNS.printDebug("sending CATEGORY_MOVED", AddonNS.Const.Events.CATEGORY_MOVED)
         AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED,
-            getCategoryId(pickedItemCategory), getCategoryId(targetItemCategory), moveTail);
+            getCategoryId(pickedItemCategory), getCategoryId(targetItemCategory), moveTail, targetScope);
         RunNextFrame(function() -- todo: maybe these actually should be triggered at the point where action is processed... hmm
-            AddonNS.TriggerContainerOnTokenWatchChanged();
+            triggerRefreshForScope(targetScope);
             -- container:UpdateContainerFrameAnchors();
         end);
     end
@@ -325,7 +375,8 @@ local function GetMouseSectionRelativeToFrame(frame)
 
     -- Determine which section (column) the mouse is in
 
-    return math.floor(relativeX * AddonNS.CategoryStore:GetColumnCount() / frameWidth) + 1
+    local scope = frame.MyBagsScope or getScopeFromButton(frame)
+    return math.floor(relativeX * AddonNS.CategoryStore:GetColumnCount(scope) / frameWidth) + 1
 end
 
 
@@ -349,18 +400,20 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self, mouseButtonName)
             if not pickedItemButton and AddonNS.emptyItemButton then
                 ContainerFrameItemButton_OnClick(AddonNS.emptyItemButton, "LeftButton")
             end
-            local targetCategory = AddonNS.Categories:GetLastCategoryInColumn(columnNo);
+            local scope = self.MyBagsScope or pickedScope
+            local targetCategory = AddonNS.Categories:GetLastCategoryInColumn(columnNo, scope);
             triggerItemMoved(itemID, nil, pickedItemCategory, targetCategory, pickedItemButton, nil);
             ClearCursor();
-            AddonNS.QueueContainerUpdateItemLayout();
+            queueRefreshForScope(scope);
         elseif isCategoryDragActive and pickedItemCategory then -- category frame
             local moveTail = IsShiftKeyDown()
             AddonNS.printDebug("sending CATEGORY_MOVED_TO_COLUMN", AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN)
+            local scope = self.MyBagsScope or pickedScope
             AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN,
-                getCategoryId(pickedItemCategory), columnNo, moveTail);
+                getCategoryId(pickedItemCategory), columnNo, moveTail, scope);
             -- ClearCursor();
             RunNextFrame(function()
-                AddonNS.TriggerContainerOnTokenWatchChanged();
+                triggerRefreshForScope(scope);
             end);
         end
         AddonNS.DragAndDrop.cleanUp()
@@ -383,7 +436,7 @@ function AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetCategoryId)
             local targetCategory = AddonNS.CategoryStore:Get(targetCategoryId)
             triggerItemMoved(itemID, nil, pickedItemCategory, targetCategory, pickedItemButton, nil);
             ClearCursor();
-            AddonNS.QueueContainerUpdateItemLayout();
+            queueRefreshForScope(pickedScope);
         end
     end
 

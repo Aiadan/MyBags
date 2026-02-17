@@ -256,6 +256,10 @@ local function normalize_layout_custom_ids(db, storage)
     if type(layout) ~= "table" then
         return
     end
+    local bagLayout = layout.bag
+    if type(bagLayout) == "table" then
+        layout = bagLayout
+    end
     layout.columns = layout.columns or {}
     layout.collapsed = layout.collapsed or {}
     local nameIndex = index_names(storage)
@@ -299,6 +303,11 @@ local function normalize_layout_custom_ids(db, storage)
         end
     end
     layout.collapsed = normalizedCollapsed
+    if type(db.layout) == "table" and type(db.layout.bag) == "table" then
+        db.layout.columnCount = db.layout.bag.columnCount
+        db.layout.columns = db.layout.bag.columns
+        db.layout.collapsed = db.layout.bag.collapsed
+    end
 end
 
 local function prune_old_custom_shapes(db)
@@ -310,6 +319,8 @@ end
 
 local function reset_layout_to_seed_defaults(db, storage)
     local layout = db.layout or {}
+    layout.bag = layout.bag or {}
+    local bagLayout = layout.bag
     local nameToWrappedId = {}
     for rawId, data in pairs(storage.categories or {}) do
         if data.name and data.name ~= "" then
@@ -347,9 +358,12 @@ local function reset_layout_to_seed_defaults(db, storage)
         end
     end
 
-    layout.columnCount = #resolvedColumns
-    layout.columns = resolvedColumns
-    layout.collapsed = {}
+    bagLayout.columnCount = #resolvedColumns
+    bagLayout.columns = resolvedColumns
+    bagLayout.collapsed = {}
+    layout.columnCount = bagLayout.columnCount
+    layout.columns = bagLayout.columns
+    layout.collapsed = bagLayout.collapsed
     db.layout = layout
 end
 

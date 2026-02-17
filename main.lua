@@ -130,6 +130,9 @@ AddonNS.GetFreeSlotCounts = getFreeSlotCounts
 
 function AddonNS.Events:BAG_UPDATE(event, bagID)
     AddonNS.printDebug("BAG_UPDATE", bagID)
+    if bagID and bagID > Enum.BagIndex.ReagentBag then
+        return
+    end
 
     if (container.MyBags.updateItemLayoutCalledAtLeastOnce) then -- todo: reading this after a while - what the hell is this :D once i know i have to add here proper comments lol
         local newFreeBagSlots = CalculateTotalNumberOfFreeBagSlots()
@@ -255,11 +258,14 @@ installSearchBoxWrapper(BankItemSearchBox)
 container:HookScript("OnHide", function()
     container:SetSearchAnchorLockActive(false)
 end)
+container:HookScript("OnShow", function()
+    AddonNS:SetCurrentLayoutScope("bag")
+end)
 
 refreshSearchQueryState(BagItemSearchBox:GetText())
 
 function container:GetColumns()
-    return AddonNS.Const.ITEMS_PER_ROW * AddonNS.CategoryStore:GetColumnCount()
+    return AddonNS.Const.ITEMS_PER_ROW * AddonNS.CategoryStore:GetColumnCount("bag")
 end
 
 local it = container:EnumerateValidItems()
@@ -366,7 +372,7 @@ local function newIterator(container, index)
 
             for i, categoryObj in ipairs(categoriesObj) do
                 local categoryItemsCount = categoryObj.itemsCount or #categoryObj.items;
-                local isCategoryCollapsed = isCollapsed(categoryObj.category);
+                local isCategoryCollapsed = isCollapsed(categoryObj.category, "bag");
                 local isHeaderOnly = isCategoryCollapsed or categoryObj.itemsCount == 0;
                 local categoryRequiresNewLine = isCategoriesConfigMode or isHeaderOnly or categoryObj.category.separateLine;
                 local categoryRequiresFullRowWidth = isCategoriesConfigMode or isHeaderOnly;
@@ -391,7 +397,7 @@ local function newIterator(container, index)
                 if not categoryRequiresFullRowWidth and #currentRow + categoryItemsCount < AddonNS.Const.ITEMS_PER_ROW then
                     local shouldExpandToBoundary =
                         (not nextCategoryExists)
-                        or isCollapsed(nextCategoryObj.category)
+                        or isCollapsed(nextCategoryObj.category, "bag")
                         or nextCategoryObj.itemsCount == 0
                         or nextCategoryObj.category.separateLine
                         or #currentRow + categoryItemsCount + #nextCategoryObj.items > AddonNS.Const.ITEMS_PER_ROW
@@ -407,6 +413,7 @@ local function newIterator(container, index)
                     {
                         category = categoryObj.category,
                         itemsCount = categoryItemsCount,
+                        scope = "bag",
                         x = columnStartX + itemSize * #currentRow - ITEM_SPACING / 2,
                         y = currentRowY - AddonNS.Const.CATEGORY_HEIGHT,
                         width = itemSize * categoryWidthSlots,
@@ -441,7 +448,7 @@ local function newIterator(container, index)
         -- Calculate positions for each column
         local categoryAssignments = {}
         local arrangeStartedAt = refreshProfile and profileNowMs() or nil
-        categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems) -- todo: this object is quite weird. Why is it a local global used among two functions :/
+        categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, "bag") -- todo: this object is quite weird. Why is it a local global used among two functions :/
         if refreshProfile then
             refreshProfile.arrangeMs = refreshProfile.arrangeMs + (profileNowMs() - arrangeStartedAt)
         end

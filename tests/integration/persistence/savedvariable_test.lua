@@ -450,6 +450,30 @@ run("column count round trips via saved variables", function()
     assert_true(#columns == 8, "eight layout columns restored")
 end)
 
+run("layout and collapsed state are isolated by scope", function()
+    local ctx = harness.new()
+    local category = ctx.AddonNS.CustomCategories:NewCategory("Scoped")
+    local wrappedId = category:GetId()
+
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [category] = {},
+    }, "bag")
+    ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({
+        [category] = {},
+    }, "bank-character")
+    ctx.AddonNS.Categories:SetColumnCount(4, "bank-character")
+    ctx.AddonNS.CategoryStore:SetCollapsed(wrappedId, true, "bank-character")
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local snapshot = ctx:snapshot()
+    assert_true(snapshot.layout.bag ~= nil, "bag scope is persisted")
+    assert_true(snapshot.layout["bank-character"] ~= nil, "bank-character scope is persisted")
+    assert_true(snapshot.layout["bank-character"].columnCount == 4, "bank-character column count persisted")
+    assert_true(snapshot.layout.bag.columnCount ~= snapshot.layout["bank-character"].columnCount, "bag column count remains independent")
+    assert_true(snapshot.layout["bank-character"].collapsed[wrappedId] == true, "bank-character collapsed persisted")
+    assert_true((snapshot.layout.bag.collapsed or {})[wrappedId] == nil, "bag collapsed map unaffected")
+end)
+
 run("custom categories persist with namespaced layout", function()
     local ctx = harness.new()
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")

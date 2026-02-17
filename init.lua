@@ -46,6 +46,7 @@ AddonNS.LegacyDB = nil;
 AddonNS.Profiling = AddonNS.Profiling or {
     enabled = false,
 }
+AddonNS.currentLayoutScope = "bag"
 AddonNS.init = function()
     AddonNS.LegacyDB = _G[legacyGlobalDbName];
     _G[globalDbName] = _G[globalDbName] or {};
@@ -75,14 +76,31 @@ local function normalizeColumnCount(value)
 end
 
 function AddonNS:GetNumColumns()
-    return AddonNS.CategoryStore:GetColumnCount()
+    return AddonNS.CategoryStore:GetColumnCount(AddonNS.currentLayoutScope)
 end
 
-function AddonNS:SetNumColumns(count)
+function AddonNS:GetCurrentLayoutScope()
+    return AddonNS.currentLayoutScope or "bag"
+end
+
+function AddonNS:SetCurrentLayoutScope(scope)
+    if not scope or scope == "" then
+        AddonNS.currentLayoutScope = "bag"
+        return
+    end
+    AddonNS.currentLayoutScope = scope
+end
+
+function AddonNS:SetNumColumns(count, scope)
+    local layoutScope = scope or AddonNS:GetCurrentLayoutScope()
     local normalized = normalizeColumnCount(count)
-    AddonNS.Categories:SetColumnCount(normalized)
-    AddonNS.QueueContainerUpdateItemLayout()
-    AddonNS.TriggerContainerOnTokenWatchChanged()
+    AddonNS.Categories:SetColumnCount(normalized, layoutScope)
+    if layoutScope == "bag" then
+        AddonNS.QueueContainerUpdateItemLayout()
+        AddonNS.TriggerContainerOnTokenWatchChanged()
+    elseif AddonNS.BankView and AddonNS.BankView.QueueRefresh then
+        AddonNS.BankView:QueueRefresh(layoutScope)
+    end
     return normalized
 end
 

@@ -9,6 +9,7 @@ CategoryStore.__index = CategoryStore
 
 local UNASSIGNED_ID = "unassigned"
 local SINGLETON_SUFFIX = "singleton"
+local DEFAULT_LAYOUT_SCOPE = "bag"
 
 local function defaultIsProtected()
     return false
@@ -153,7 +154,59 @@ local function ensure_layout_shape(layout)
     layout.collapsed = layout.collapsed or {}
 end
 
-local function normalize_columns_to_count(columns, targetCount)
+local function normalize_layout_scope(scope)
+    if scope == nil or scope == "" then
+        return DEFAULT_LAYOUT_SCOPE
+    end
+    return scope
+end
+
+local function migrate_legacy_layout_root_to_scopes(layout)
+    if layout.columnCount == nil and layout.columns == nil and layout.collapsed == nil then
+        return
+    end
+    if layout[DEFAULT_LAYOUT_SCOPE] then
+        layout.columnCount = nil
+        layout.columns = nil
+        layout.collapsed = nil
+        return
+    end
+    layout[DEFAULT_LAYOUT_SCOPE] = {
+        columnCount = layout.columnCount,
+        columns = layout.columns,
+        collapsed = layout.collapsed,
+    }
+    layout.columnCount = nil
+    layout.columns = nil
+    layout.collapsed = nil
+end
+
+local function sync_legacy_layout_root(layoutRoot)
+    local bagLayout = layoutRoot[DEFAULT_LAYOUT_SCOPE]
+    if not bagLayout then
+        layoutRoot.columnCount = nil
+        layoutRoot.columns = nil
+        layoutRoot.collapsed = nil
+        return
+    end
+    layoutRoot.columnCount = bagLayout.columnCount
+    layoutRoot.columns = bagLayout.columns
+    layoutRoot.collapsed = bagLayout.collapsed
+end
+
+local normalize_columns_to_count
+
+local function get_scope_layout(layoutRoot, scope)
+    local normalizedScope = normalize_layout_scope(scope)
+    layoutRoot[normalizedScope] = layoutRoot[normalizedScope] or {}
+    local scopedLayout = layoutRoot[normalizedScope]
+    ensure_layout_shape(scopedLayout)
+    scopedLayout.columnCount = sanitizeColumnCount(scopedLayout.columnCount)
+    scopedLayout.columns = normalize_columns_to_count(scopedLayout.columns, scopedLayout.columnCount)
+    return scopedLayout
+end
+
+normalize_columns_to_count = function(columns, targetCount)
     columns = columns or {}
     for columnIndex = 1, targetCount do
         columns[columnIndex] = columns[columnIndex] or {}
@@ -175,14 +228,15 @@ function CategoryStore:LoadOrBootstrap(db, legacyDb)
     self.db.categorizers = self.db.categorizers or {}
     self.db.itemOrder = self.db.itemOrder or {}
     self.db.layout = self.db.layout or {}
-    ensure_layout_shape(self.db.layout)
-    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
-    self:EnsureLayoutColumnsCount()
+    migrate_legacy_layout_root_to_scopes(self.db.layout)
+    get_scope_layout(self.db.layout, DEFAULT_LAYOUT_SCOPE)
+    sync_legacy_layout_root(self.db.layout)
     self:_migrateFromLegacy(legacyDb)
     self:_migrateFromOldDb()
-    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
-    self:EnsureLayoutColumnsCount()
+    get_scope_layout(self.db.layout, DEFAULT_LAYOUT_SCOPE)
+    sync_legacy_layout_root(self.db.layout)
     self:_normalizeUnassignedLayout()
+    sync_legacy_layout_root(self.db.layout)
     return self
 end
 
@@ -199,13 +253,14 @@ local function has_layout_or_item_order_data(db)
         return false
     end
     local layout = db.layout or {}
-    local columns = layout.columns or {}
+    local bagLayout = layout[DEFAULT_LAYOUT_SCOPE] or layout
+    local columns = bagLayout.columns or {}
     for index = 1, #columns do
         if #(columns[index] or {}) > 0 then
             return true
         end
     end
-    local collapsed = layout.collapsed or {}
+    local collapsed = bagLayout.collapsed or {}
     for _, flag in pairs(collapsed) do
         if flag then
             return true
@@ -226,22 +281,23 @@ function CategoryStore:_migrateFromLegacy(legacyDb)
     -- Layout: preserve legacy layout values as-is. Custom category specific ID/name
     -- conversion is handled by CustomCategories migration.
     local legacyColumns = legacyDb.categoriesColumnAssignments or {}
-    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
-    self.db.layout.columns = self.db.layout.columns or {}
-    for columnIndex = 1, self.db.layout.columnCount do
-        self.db.layout.columns[columnIndex] = {}
+    local bagLayout = get_scope_layout(self.db.layout, DEFAULT_LAYOUT_SCOPE)
+    bagLayout.columnCount = sanitizeColumnCount(bagLayout.columnCount)
+    bagLayout.columns = bagLayout.columns or {}
+    for columnIndex = 1, bagLayout.columnCount do
+        bagLayout.columns[columnIndex] = {}
         local sourceColumn = legacyColumns[columnIndex] or {}
         for _, id in ipairs(sourceColumn) do
-            table.insert(self.db.layout.columns[columnIndex], id)
+            table.insert(bagLayout.columns[columnIndex], id)
         end
     end
 
     -- Collapsed: preserve raw legacy keys. Custom conversion is handled elsewhere.
     local legacyCollapsed = legacyDb.collapsedCategories or {}
-    self.db.layout.collapsed = self.db.layout.collapsed or {}
+    bagLayout.collapsed = bagLayout.collapsed or {}
     for id, flag in pairs(legacyCollapsed) do
         if flag then
-            self.db.layout.collapsed[id] = true
+            bagLayout.collapsed[id] = true
         end
     end
 
@@ -270,34 +326,39 @@ end
 
 function CategoryStore:_normalizeUnassignedLayout()
     self.db.layout = self.db.layout or {}
-    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
-    self:EnsureLayoutColumnsCount()
-    for columnIndex = 1, #self.db.layout.columns do
-        local column = self.db.layout.columns[columnIndex]
-        local seen = {}
-        for idx = #column, 1, -1 do
-            local normalized = normalize_unassigned_id(column[idx])
-            column[idx] = normalized
-            if normalized == UNASSIGNED_ID then
-                if seen[UNASSIGNED_ID] then
-                    table.remove(column, idx)
-                else
-                    seen[UNASSIGNED_ID] = true
+    migrate_legacy_layout_root_to_scopes(self.db.layout)
+    for scope, scopedLayout in pairs(self.db.layout) do
+        if type(scopedLayout) == "table" and scope ~= "columns" and scope ~= "collapsed" then
+            local normalizedLayout = get_scope_layout(self.db.layout, scope)
+            for columnIndex = 1, #normalizedLayout.columns do
+                local column = normalizedLayout.columns[columnIndex]
+                local seen = {}
+                for idx = #column, 1, -1 do
+                    local normalized = normalize_unassigned_id(column[idx])
+                    column[idx] = normalized
+                    if normalized == UNASSIGNED_ID then
+                        if seen[UNASSIGNED_ID] then
+                            table.remove(column, idx)
+                        else
+                            seen[UNASSIGNED_ID] = true
+                        end
+                    end
                 end
             end
-        end
-    end
-    local collapsed = self.db.layout.collapsed or {}
-    local normalizedCollapsed = {}
-    for id, flag in pairs(collapsed) do
-        if flag then
-            local normalized = normalize_unassigned_id(id)
-            if normalized then
-                normalizedCollapsed[normalized] = true
+            local collapsed = normalizedLayout.collapsed or {}
+            local normalizedCollapsed = {}
+            for id, flag in pairs(collapsed) do
+                if flag then
+                    local normalized = normalize_unassigned_id(id)
+                    if normalized then
+                        normalizedCollapsed[normalized] = true
+                    end
+                end
             end
+            normalizedLayout.collapsed = normalizedCollapsed
         end
     end
-    self.db.layout.collapsed = normalizedCollapsed
+    sync_legacy_layout_root(self.db.layout)
 end
 
 function CategoryStore:GetCategorizerDb(categorizerId)
@@ -414,52 +475,64 @@ function CategoryStore:GetByCategorizer(categorizerId)
     return self._wrappersByCategorizer[categorizerId] or {}
 end
 
-function CategoryStore:GetLayoutColumns()
+function CategoryStore:GetLayoutColumns(scope)
     ensure_db(self)
-    return self.db.layout.columns
+    migrate_legacy_layout_root_to_scopes(self.db.layout)
+    return get_scope_layout(self.db.layout, scope).columns
 end
 
-function CategoryStore:SetLayoutColumns(columns)
+function CategoryStore:SetLayoutColumns(columns, scope)
     ensure_db(self)
-    self.db.layout.columns = columns
-    self:EnsureLayoutColumnsCount()
+    migrate_legacy_layout_root_to_scopes(self.db.layout)
+    local scopedLayout = get_scope_layout(self.db.layout, scope)
+    scopedLayout.columns = columns
+    self:EnsureLayoutColumnsCount(scope)
+    sync_legacy_layout_root(self.db.layout)
 end
 
-function CategoryStore:EnsureLayoutColumnsCount()
+function CategoryStore:EnsureLayoutColumnsCount(scope)
     ensure_db(self)
     self.db.layout = self.db.layout or {}
-    ensure_layout_shape(self.db.layout)
-    self.db.layout.columnCount = sanitizeColumnCount(self.db.layout.columnCount)
-    self.db.layout.columns = normalize_columns_to_count(self.db.layout.columns, self.db.layout.columnCount)
+    migrate_legacy_layout_root_to_scopes(self.db.layout)
+    get_scope_layout(self.db.layout, scope)
+    sync_legacy_layout_root(self.db.layout)
 end
 
-function CategoryStore:GetColumnCount()
+function CategoryStore:GetColumnCount(scope)
     ensure_db(self)
-    self:EnsureLayoutColumnsCount()
-    return self.db.layout.columnCount
+    self:EnsureLayoutColumnsCount(scope)
+    return get_scope_layout(self.db.layout, scope).columnCount
 end
 
-function CategoryStore:SetColumnCount(count)
+function CategoryStore:SetColumnCount(count, scope)
     ensure_db(self)
-    self.db.layout.columnCount = sanitizeColumnCount(count)
-    self:EnsureLayoutColumnsCount()
+    migrate_legacy_layout_root_to_scopes(self.db.layout)
+    local scopedLayout = get_scope_layout(self.db.layout, scope)
+    scopedLayout.columnCount = sanitizeColumnCount(count)
+    self:EnsureLayoutColumnsCount(scope)
+    sync_legacy_layout_root(self.db.layout)
 end
 
-function CategoryStore:SetCollapsed(id, collapsed)
+function CategoryStore:SetCollapsed(id, collapsed, scope)
     ensure_db(self)
     if not id then
         return
     end
+    migrate_legacy_layout_root_to_scopes(self.db.layout)
+    local scopedLayout = get_scope_layout(self.db.layout, scope)
     if collapsed then
-        self.db.layout.collapsed[id] = true
+        scopedLayout.collapsed[id] = true
     else
-        self.db.layout.collapsed[id] = nil
+        scopedLayout.collapsed[id] = nil
     end
+    sync_legacy_layout_root(self.db.layout)
 end
 
-function CategoryStore:IsCollapsed(id)
+function CategoryStore:IsCollapsed(id, scope)
     ensure_db(self)
-    return self.db.layout.collapsed[id] or false
+    migrate_legacy_layout_root_to_scopes(self.db.layout)
+    local scopedLayout = get_scope_layout(self.db.layout, scope)
+    return scopedLayout.collapsed[id] or false
 end
 
 function CategoryStore:GetUnassigned()

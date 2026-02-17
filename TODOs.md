@@ -121,6 +121,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ column hover tooltip now uses the full column width (instead of the hovered category frame width).
 * ✅ [bug] fixed right-click on bag-column background during drag: it no longer triggers category move for the dragged item's category.
 * ✅ [bug] `CATEGORIZER_CATEGORIES_UPDATED` handler now skips `TriggerContainerOnTokenWatchChanged()` when the bag container is hidden, avoiding needless refreshes.
+* ✅ bank now has MyBags category rendering/assignment support with separate layout scopes (`bag`, `bank-character`, `bank-account`), and account/warband bank remains a separate tab/scope (no forced merge); bag edit-mode controls remain bag-only.
 
 ### TODO
 
@@ -128,7 +129,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 #### Low priority
 
-* add support for other bags (well, bank?). This is not a priority. I am doing this for fun and I feel current implementation of handling of the main bag kinda of works, I want to be adjusting it to a point I will be happy with it's behaviour. when I will extend the support onto other bags. But clean up the code toward proper mixin that maybe could be put on top of other frames if that is even possible.
+*
 
 ### DOUBTFUL - to check at later stages
 

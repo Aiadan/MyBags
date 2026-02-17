@@ -83,7 +83,7 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
         self:ApplyStoredSearchAnchorLock()
     end
     for i, itemButton in ipairs(itemButtons) do
-        if (itemButton.ItemCategory and not isCollapsed(itemButton.ItemCategory)) then
+        if (itemButton.ItemCategory and not isCollapsed(itemButton.ItemCategory, "bag")) then
             local newXOffset = self.MyBags.positionsInBags[itemButton:GetBagID()][itemButton:GetID()].x;
             local newYOffset = -self.MyBags.positionsInBags[itemButton:GetBagID()][itemButton:GetID()].y + yFrameOffset;
             itemButton:ClearAllPoints();

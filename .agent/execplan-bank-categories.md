@@ -19,12 +19,12 @@ If a merged character-bank view (multiple bank tabs shown as one categorized pan
 ## Progress
 
 - [x] (2026-02-17 00:30Z) Researched current MyBags bag-only architecture and Blizzard bank/container implementations; drafted this ExecPlan with file-level implementation steps.
-- [ ] Implement a reusable container-surface abstraction so categorization/layout logic can target both `ContainerFrameCombinedBags` and bank item surfaces.
-- [ ] Implement character-bank MyBags categorization for selected bank tab item buttons.
-- [ ] Add isolated bank layout/collapsed persistence scope (separate from bag layout/collapsed state).
-- [ ] Implement optional character-bank merged-tab mode only if feasibility checks pass without taint/regression risk.
-- [ ] Validate in-game behavior and run automated tests.
-- [ ] Update `TODOs.md` with completed implementation entry when code work is finished.
+- [x] (2026-02-17 01:35Z) Implemented scoped layout/collapsed storage (`bag`, `bank-character`, `bank-account`) with migration from legacy root layout fields and bag-root compatibility mirroring.
+- [x] (2026-02-17 01:35Z) Implemented bank category rendering and item placement for active bank tab via new `bankView.lua`, with character/account bank scope separation and no bag edit-mode controls in bank.
+- [x] (2026-02-17 01:35Z) Threaded layout scope through category movement/collapse flows so drag/drop + collapsed state updates apply to the active bag/bank scope.
+- [x] (2026-02-17 01:36Z) Validation complete: `lua tests/categories_test.lua`, `lua tests/Categorizers/query_test.lua`, and `lua tests/integration/persistence/savedvariable_test.lua` all pass.
+- [x] (2026-02-17 01:36Z) Updated `TODOs.md` to mark bank support as completed.
+- [ ] Manual in-game verification pending (bank NPC interaction flows and visual polish).
 
 ## Surprises & Discoveries
 
@@ -53,7 +53,17 @@ If a merged character-bank view (multiple bank tabs shown as one categorized pan
 
 ## Outcomes & Retrospective
 
-Initial planning outcome: a concrete implementation map exists, including Blizzard API constraints, storage split requirements, and validation targets. No code changes are implemented yet.
+Implemented outcome:
+
+- Bank tabs now get MyBags category grouping/rendering and item placement in active tab view.
+- Account/warband bank remains separate from character bank through explicit scope separation.
+- Bag and bank now persist layout/collapsed independently while preserving backward compatibility for existing bag data.
+- Bag edit-mode controls remain bag-only.
+
+Gap remaining:
+
+- Optional merged character-bank tab view was intentionally not implemented in this pass.
+- In-game manual verification is still required to confirm final UX and taint behavior under real bank interactions.
 
 ## Context and Orientation
 
@@ -79,7 +89,7 @@ Important inferred constraint for implementation in this repo: logic currently a
 
 ## Plan of Work
 
-### Milestone 1: Introduce a container surface abstraction (bags + bank)
+### Milestone 1: Introduce a container surface abstraction (bags + bank) (Partially Replaced)
 
 Create a narrow runtime interface (a “surface”) representing a render target for categorization. This avoids spreading `if bag then ... else bank ...` checks everywhere.
 
@@ -137,7 +147,7 @@ Implementation notes:
 
 Acceptance for milestone 3: bag layout/collapse data remains intact after migration; bank has isolated layout/collapse persistence.
 
-### Milestone 4: Optional merged character-bank view spike
+### Milestone 4: Optional merged character-bank view spike (Deferred)
 
 Run a bounded feasibility spike for merged character-bank tabs into one categorized panel:
 
@@ -267,3 +277,4 @@ Dependency constraints:
 ## Plan Revision Note
 
 - 2026-02-17 / Codex: Initial plan created from current repo state plus Blizzard source review, to define an implementation path for bank categorization support with account-bank separation and optional merged-character-bank feasibility gate.
+- 2026-02-17 / Codex: Updated after implementation. Delivered scoped layout/collapsed persistence plus active-tab bank categorization rendering (`bankView.lua`) and deferred optional merged-tab spike; recorded full test-pass evidence and remaining manual in-game verification task.

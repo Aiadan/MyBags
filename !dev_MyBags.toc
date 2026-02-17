@@ -42,6 +42,7 @@ categoriesGUI.lua
 itemsOrder.lua
 categories.lua
 categoriesColumnAssignment.lua
+bankView.lua
 Categorizers/new.lua
 Categorizers/EquipmentSet.lua
 Categorizers/custom/defaultImportPayload.lua

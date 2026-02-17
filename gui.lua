@@ -330,6 +330,7 @@ function draggableFrame:StopDragging()
 end
 
 backgroundFrame = CreateFrame("Frame", nil, AddonNS.container, "BackdropTemplate")     -- todo: does it need to be some frame with bg, or pure frame would sufficie? I think I was testing it and it didnt work for some reason.
+backgroundFrame.MyBagsScope = "bag"
 backgroundFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
 backgroundFrame:SetBackdropColor(0, 1, 0, 0)
 backgroundFrame:EnableMouse(true)
@@ -476,7 +477,7 @@ local function stopColumnResize(applyChange)
         AddonNS.Const.MIN_NUM_COLUMNS,
         AddonNS.Const.MAX_NUM_COLUMNS
     )
-    AddonNS:SetNumColumns(target)
+    AddonNS:SetNumColumns(target, "bag")
 end
 
 local function updateColumnResize()
@@ -730,6 +731,8 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.ApplyCategoryTextLayoutWithEditAndDeleteButtons = applyCategoryTextLayoutWithEditAndDeleteButtons
             f.ApplyAddControlTextLayout = applyAddControlTextLayout
             f.isAddCategoryControl = false
+            f.MyBagsScope = "bag"
+            f.MyBagsContainerRef = AddonNS.container
             f.deleteButton = deleteButton
             f.editButton = editButton
 
@@ -793,6 +796,8 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         if categoryGUIInfo.isAddCategoryControl or categoryGUIInfo.isExportCategoryControl or categoryGUIInfo.isImportCategoryControl then
             f.ItemCategory = nil
             f.isAddCategoryControl = true
+            f.MyBagsScope = categoryGUIInfo.scope or "bag"
+            f.MyBagsContainerRef = AddonNS.container
             if categoryGUIInfo.isExportCategoryControl then
                 f.controlKind = "export"
             elseif categoryGUIInfo.isImportCategoryControl then
@@ -825,6 +830,8 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         else
             f.ItemCategory = categoryGUIInfo.category;
             f.isAddCategoryControl = false
+            f.MyBagsScope = categoryGUIInfo.scope or "bag"
+            f.MyBagsContainerRef = AddonNS.container
             f.controlKind = nil
             f.bg:Hide()
             f.addControlBackdrop:Hide()

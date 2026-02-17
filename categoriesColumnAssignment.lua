@@ -11,10 +11,9 @@ local addonName, AddonNS = ...
 AddonNS.Categories = AddonNS.Categories or {}
 
 local isCollapsed = AddonNS.Collapsed.isCollapsed
-local runtimeColumns = {}
-local runtimeColumnsLoaded = false
-
-local categoryAssignments
+local runtimeColumnsByScope = {}
+local runtimeColumnsLoadedByScope = {}
+local categoryAssignmentsByScope = {}
 
 local function profilingEnabled()
     return AddonNS.Profiling and AddonNS.Profiling.enabled
@@ -24,37 +23,51 @@ local function profileNowMs()
     return debugprofilestop()
 end
 
-local function getNumColumns()
-    return AddonNS.CategoryStore:GetColumnCount()
+local function getLayoutScope(scope)
+    if scope and scope ~= "" then
+        return scope
+    end
+    if AddonNS.GetCurrentLayoutScope then
+        return AddonNS.GetCurrentLayoutScope()
+    end
+    return "bag"
 end
 
-local function ensureRuntimeColumns()
-    if runtimeColumnsLoaded then
+local function getNumColumns(scope)
+    return AddonNS.CategoryStore:GetColumnCount(getLayoutScope(scope))
+end
+
+local function ensureRuntimeColumns(scope)
+    local normalizedScope = getLayoutScope(scope)
+    if runtimeColumnsLoadedByScope[normalizedScope] then
         return
     end
-    local persistedColumns = AddonNS.CategoryStore:GetLayoutColumns()
-    local numColumns = getNumColumns()
-    runtimeColumns = {}
+    local persistedColumns = AddonNS.CategoryStore:GetLayoutColumns(normalizedScope)
+    local numColumns = getNumColumns(normalizedScope)
+    runtimeColumnsByScope[normalizedScope] = {}
     for index = 1, numColumns do
-        runtimeColumns[index] = {}
+        runtimeColumnsByScope[normalizedScope][index] = {}
         for _, categoryId in ipairs(persistedColumns[index] or {}) do
-            table.insert(runtimeColumns[index], categoryId)
+            table.insert(runtimeColumnsByScope[normalizedScope][index], categoryId)
         end
     end
-    runtimeColumnsLoaded = true
+    runtimeColumnsLoadedByScope[normalizedScope] = true
 end
 
-function AddonNS.Categories:ReloadRuntimeColumnsFromStore()
-    runtimeColumns = {}
-    runtimeColumnsLoaded = false
-    ensureRuntimeColumns()
+function AddonNS.Categories:ReloadRuntimeColumnsFromStore(scope)
+    local normalizedScope = getLayoutScope(scope)
+    runtimeColumnsByScope[normalizedScope] = nil
+    runtimeColumnsLoadedByScope[normalizedScope] = false
+    ensureRuntimeColumns(normalizedScope)
 end
 
-local function persistRuntimeColumns()
-    if not runtimeColumnsLoaded then
+local function persistRuntimeColumns(scope)
+    local normalizedScope = getLayoutScope(scope)
+    if not runtimeColumnsLoadedByScope[normalizedScope] then
         return
     end
-    local numColumns = getNumColumns()
+    local runtimeColumns = runtimeColumnsByScope[normalizedScope]
+    local numColumns = getNumColumns(normalizedScope)
     local serialized = {}
     for index = 1, numColumns do
         serialized[index] = {}
@@ -62,7 +75,7 @@ local function persistRuntimeColumns()
             table.insert(serialized[index], categoryId)
         end
     end
-    AddonNS.CategoryStore:SetLayoutColumns(serialized)
+    AddonNS.CategoryStore:SetLayoutColumns(serialized, normalizedScope)
 end
 
 local function categoryId(input)
@@ -83,11 +96,11 @@ local function categoryId(input)
     return nil
 end
 
-local function addCategoryToColumn(categoryAssignmentsForColumn, category, items, profile)
+local function addCategoryToColumn(categoryAssignmentsForColumn, category, items, profile, scope)
     local startedAt = profile and profileNowMs() or nil
     local itemCount = #items
     local displayItems = items
-    if isCollapsed(category) then
+    if isCollapsed(category, scope) then
         displayItems = { AddonNS.itemButtonPlaceholder }
     end
     local sortStartedAt = profile and profileNowMs() or nil
@@ -95,7 +108,7 @@ local function addCategoryToColumn(categoryAssignmentsForColumn, category, items
     if profile then
         profile.sortMs = profile.sortMs + (profileNowMs() - sortStartedAt)
     end
-    table.insert(categoryAssignmentsForColumn, { category = category, items = displayItems, itemsCount = itemCount })
+    table.insert(categoryAssignmentsForColumn, { category = category, items = displayItems, itemsCount = itemCount, scope = scope })
     if profile then
         profile.addCategoryCalls = profile.addCategoryCalls + 1
         profile.addCategoryMs = profile.addCategoryMs + (profileNowMs() - startedAt)
@@ -103,8 +116,10 @@ local function addCategoryToColumn(categoryAssignmentsForColumn, category, items
     end
 end
 
-function AddonNS.Categories:GetLastCategoryInColumn(columnNo)
-    ensureRuntimeColumns()
+function AddonNS.Categories:GetLastCategoryInColumn(columnNo, scope)
+    local normalizedScope = getLayoutScope(scope)
+    ensureRuntimeColumns(normalizedScope)
+    local categoryAssignments = categoryAssignmentsByScope[normalizedScope]
     local column = categoryAssignments and categoryAssignments[columnNo]
     if not column or #column == 0 then
         return AddonNS.CategoryStore:GetUnassigned()
@@ -112,12 +127,14 @@ function AddonNS.Categories:GetLastCategoryInColumn(columnNo)
     return column[#column].category
 end
 
-local function appendToLayout(columnIndex, categoryIdValue)
-    ensureRuntimeColumns()
+local function appendToLayout(columnIndex, categoryIdValue, scope)
+    local normalizedScope = getLayoutScope(scope)
+    ensureRuntimeColumns(normalizedScope)
     local id = categoryId(categoryIdValue)
     if not id then
         return
     end
+    local runtimeColumns = runtimeColumnsByScope[normalizedScope]
     local column = runtimeColumns[columnIndex]
     for _, existing in ipairs(column) do
         if existing == id then
@@ -127,9 +144,11 @@ local function appendToLayout(columnIndex, categoryIdValue)
     table.insert(column, id)
 end
 
-local function isLayoutEmpty()
-    ensureRuntimeColumns()
-    local numColumns = getNumColumns()
+local function isLayoutEmpty(scope)
+    local normalizedScope = getLayoutScope(scope)
+    ensureRuntimeColumns(normalizedScope)
+    local runtimeColumns = runtimeColumnsByScope[normalizedScope]
+    local numColumns = getNumColumns(normalizedScope)
     for columnIndex = 1, numColumns do
         if #(runtimeColumns[columnIndex] or {}) > 0 then
             return false
@@ -138,7 +157,8 @@ local function isLayoutEmpty()
     return true
 end
 
-function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
+function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, scope)
+    local normalizedScope = getLayoutScope(scope)
     local profile = nil
     if profilingEnabled() then
         profile = {
@@ -156,7 +176,8 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         }
     end
 
-    ensureRuntimeColumns()
+    ensureRuntimeColumns(normalizedScope)
+    local runtimeColumns = runtimeColumnsByScope[normalizedScope]
     local constantsStartedAt = profile and profileNowMs() or nil
     local constantCategories = AddonNS.Categories:GetConstantCategories()
     if profile then
@@ -172,8 +193,8 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         profile.ensureConstantsMs = profileNowMs() - ensureConstantsStartedAt
     end
 
-    local numColumns = getNumColumns()
-    categoryAssignments = {}
+    local numColumns = getNumColumns(normalizedScope)
+    local categoryAssignments = {}
     for index = 1, numColumns do
         categoryAssignments[index] = {}
     end
@@ -186,7 +207,7 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         for _, id in ipairs(ids) do
             local category = AddonNS.CategoryStore:Get(id)
             if category and arrangedItems[category] then
-                addCategoryToColumn(assignmentsForColumn, category, arrangedItems[category], profile)
+                addCategoryToColumn(assignmentsForColumn, category, arrangedItems[category], profile, normalizedScope)
                 known[category] = true
             end
         end
@@ -225,8 +246,8 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
     local targetColumn = 1
     local unmatchedInsertStartedAt = profile and profileNowMs() or nil
     for _, category in ipairs(unmatched) do
-        addCategoryToColumn(categoryAssignments[targetColumn], category, arrangedItems[category] or {}, profile)
-        appendToLayout(targetColumn, category:GetId())
+        addCategoryToColumn(categoryAssignments[targetColumn], category, arrangedItems[category] or {}, profile, normalizedScope)
+        appendToLayout(targetColumn, category:GetId(), normalizedScope)
         targetColumn = targetColumn % numColumns + 1
     end
     if profile then
@@ -234,6 +255,7 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         local totalMs = profileNowMs() - profile.startedAt
         AddonNS.printDebug(
             "PROFILE ArrangeCategoriesIntoColumns",
+            "scope=" .. normalizedScope,
             string.format("constants=%.2fms", profile.constantsMs),
             string.format("ensureConstants=%.2fms", profile.ensureConstantsMs),
             string.format("layoutMatch=%.2fms", profile.layoutMatchMs),
@@ -248,16 +270,19 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems)
         )
     end
 
+    categoryAssignmentsByScope[normalizedScope] = categoryAssignments
     return categoryAssignments
 end
 
-local function findCategoryPosition(categoryIdValue)
-    ensureRuntimeColumns()
+local function findCategoryPosition(categoryIdValue, scope)
+    local normalizedScope = getLayoutScope(scope)
+    ensureRuntimeColumns(normalizedScope)
+    local runtimeColumns = runtimeColumnsByScope[normalizedScope]
     local id = categoryId(categoryIdValue)
     if not id then
         return nil
     end
-    local numColumns = getNumColumns()
+    local numColumns = getNumColumns(normalizedScope)
     for columnIndex = 1, numColumns do
         local column = runtimeColumns[columnIndex]
         for rowIndex = 1, #column do
@@ -269,15 +294,16 @@ local function findCategoryPosition(categoryIdValue)
     return nil
 end
 
-local function categoryMoved(eventName, pickedCategory, targetCategory, moveTail)
+local function categoryMoved(eventName, pickedCategory, targetCategory, moveTail, scope)
     AddonNS.printDebug(eventName)
+    local normalizedScope = getLayoutScope(scope)
     local pickedCategoryId = categoryId(pickedCategory)
     local targetCategoryId = categoryId(targetCategory)
     if not pickedCategoryId or not targetCategoryId or pickedCategoryId == targetCategoryId then
         return
     end
-    local pickedColumn, pickedRow, pickedColumnRef = findCategoryPosition(pickedCategoryId)
-    local targetColumn, targetRow = findCategoryPosition(targetCategoryId)
+    local pickedColumn, pickedRow, pickedColumnRef = findCategoryPosition(pickedCategoryId, normalizedScope)
+    local targetColumn, targetRow = findCategoryPosition(targetCategoryId, normalizedScope)
     if not targetColumn then
         return
     end
@@ -303,20 +329,22 @@ local function categoryMoved(eventName, pickedCategory, targetCategory, moveTail
         table.insert(movedCategoryIds, pickedCategoryId)
     end
 
-    local targetColumnRef = runtimeColumns[targetColumn]
+    local targetColumnRef = runtimeColumnsByScope[normalizedScope][targetColumn]
     for offset, id in ipairs(movedCategoryIds) do
         table.insert(targetColumnRef, targetRow + offset - 1, id)
     end
 end
 
-local function categoryMovedToColumn(eventName, pickedCategory, columnIndex, moveTail)
+local function categoryMovedToColumn(eventName, pickedCategory, columnIndex, moveTail, scope)
     AddonNS.printDebug(eventName)
+    local normalizedScope = getLayoutScope(scope)
     local pickedCategoryId = categoryId(pickedCategory)
     if not pickedCategoryId or not columnIndex then
         return
     end
-    ensureRuntimeColumns()
-    local pickedColumn, pickedRow, pickedColumnRef = findCategoryPosition(pickedCategoryId)
+    ensureRuntimeColumns(normalizedScope)
+    local runtimeColumns = runtimeColumnsByScope[normalizedScope]
+    local pickedColumn, pickedRow, pickedColumnRef = findCategoryPosition(pickedCategoryId, normalizedScope)
     local movedCategoryIds = {}
     if pickedColumn and pickedColumnRef then
         if moveTail then
@@ -338,32 +366,36 @@ local function categoryMovedToColumn(eventName, pickedCategory, columnIndex, mov
     end
 end
 
-local function categoryDeleted(eventName, category)
+local function categoryDeleted(eventName, category, scope)
     AddonNS.printDebug(eventName)
+    local normalizedScope = getLayoutScope(scope)
     local categoryIdValue = categoryId(category)
     if not categoryIdValue then
         return
     end
-    local columnIndex, rowIndex, column = findCategoryPosition(categoryIdValue)
+    local columnIndex, rowIndex, column = findCategoryPosition(categoryIdValue, normalizedScope)
     if columnIndex and column then
         table.remove(column, rowIndex)
     end
 end
 
-local function customCategoryCreated(eventName, category)
+local function customCategoryCreated(eventName, category, scope)
     AddonNS.printDebug(eventName)
-    if isLayoutEmpty() then
+    local normalizedScope = getLayoutScope(scope)
+    if isLayoutEmpty(normalizedScope) then
         return
     end
-    local lastColumnIndex = getNumColumns()
-    appendToLayout(lastColumnIndex, category)
+    local lastColumnIndex = getNumColumns(normalizedScope)
+    appendToLayout(lastColumnIndex, category, normalizedScope)
 end
 
-function AddonNS.Categories:SetColumnCount(columnCount)
-    ensureRuntimeColumns()
-    local previousCount = getNumColumns()
-    AddonNS.CategoryStore:SetColumnCount(columnCount)
-    local currentCount = getNumColumns()
+function AddonNS.Categories:SetColumnCount(columnCount, scope)
+    local normalizedScope = getLayoutScope(scope)
+    ensureRuntimeColumns(normalizedScope)
+    local runtimeColumns = runtimeColumnsByScope[normalizedScope]
+    local previousCount = getNumColumns(normalizedScope)
+    AddonNS.CategoryStore:SetColumnCount(columnCount, normalizedScope)
+    local currentCount = getNumColumns(normalizedScope)
     if currentCount == previousCount then
         return
     end
@@ -380,15 +412,17 @@ function AddonNS.Categories:SetColumnCount(columnCount)
             runtimeColumns[columnIndex] = nil
         end
     end
-    persistRuntimeColumns()
+    persistRuntimeColumns(normalizedScope)
 end
 
 AddonNS.Events:OnInitialize(function()
-    ensureRuntimeColumns()
+    ensureRuntimeColumns("bag")
 end)
 
 AddonNS.Events:RegisterEvent("PLAYER_LOGOUT", function()
-    persistRuntimeColumns()
+    for scope in pairs(runtimeColumnsLoadedByScope) do
+        persistRuntimeColumns(scope)
+    end
 end)
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, categoryDeleted)

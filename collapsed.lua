@@ -2,19 +2,19 @@ local addonName, AddonNS = ...
 
 local COLLAPSED_CHANGED = AddonNS.Const.Events.COLLAPSED_CHANGED;
 AddonNS.Collapsed ={}
-function AddonNS.Collapsed.isCollapsed(category)
+function AddonNS.Collapsed.isCollapsed(category, scope)
     if not category then
         return false
     end
-    return AddonNS.CategoryStore:IsCollapsed(category.id);
+    return AddonNS.CategoryStore:IsCollapsed(category.id, scope);
 end
 
-function AddonNS.Collapsed.toggleCollapsed(category)
+function AddonNS.Collapsed.toggleCollapsed(category, scope)
     if not category then
         return
     end
-    local collapsed = AddonNS.CategoryStore:IsCollapsed(category.id);
-    AddonNS.CategoryStore:SetCollapsed(category.id, not collapsed);
+    local collapsed = AddonNS.CategoryStore:IsCollapsed(category.id, scope);
+    AddonNS.CategoryStore:SetCollapsed(category.id, not collapsed, scope);
     AddonNS.printDebug("toggleCollapsed", category.id);
-    AddonNS.Events:TriggerCustomEvent(COLLAPSED_CHANGED, category);
+    AddonNS.Events:TriggerCustomEvent(COLLAPSED_CHANGED, category, scope);
 end
