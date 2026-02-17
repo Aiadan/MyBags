@@ -121,6 +121,9 @@ local function styleCategoryControl(frame, isHovered)
 end
 
 local function applyCategoryHint(frame, hint)
+    if not frame.hintOverlay then
+        return
+    end
     if not hint then
         frame.hintOverlay:Hide()
         return
@@ -160,14 +163,21 @@ local function layoutHintTextFrame(anchorFrame, text)
     local itemSize = AddonNS.container.Items[1]:GetHeight() + ITEM_SPACING
     local columnPixelWidth = itemSize * AddonNS.Const.ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
     local columnWidth = columnPixelWidth - AddonNS.Const.COLUMN_SPACING
-    local backgroundLeft = backgroundFrame:GetLeft()
-    local anchorLeft = anchorFrame:GetLeft()
-    local relativeLeft = anchorLeft - backgroundLeft + ITEM_SPACING / 2
-    local columnIndex = math.floor(relativeLeft / columnPixelWidth)
-    local columnLeft = backgroundLeft + columnIndex * columnPixelWidth - ITEM_SPACING / 2
-    local offsetX = columnLeft - anchorLeft
+    local offsetX = 0
+    local hintWidth = columnWidth
+    if not anchorFrame.MyBagsHintAlignToFrame then
+        local anchorBackground = anchorFrame.MyBagsHintAnchorFrame or backgroundFrame
+        local backgroundLeft = anchorBackground:GetLeft()
+        local anchorLeft = anchorFrame:GetLeft()
+        local relativeLeft = anchorLeft - backgroundLeft + ITEM_SPACING / 2
+        local columnIndex = math.floor(relativeLeft / columnPixelWidth)
+        local columnLeft = backgroundLeft + columnIndex * columnPixelWidth - ITEM_SPACING / 2
+        offsetX = columnLeft - anchorLeft
+    else
+        hintWidth = anchorFrame:GetWidth()
+    end
 
-    hintTextFrame:SetWidth(columnWidth)
+    hintTextFrame:SetWidth(hintWidth)
     hintTextFrame.label:SetText(text)
 
     local textHeight = math.ceil(hintTextFrame.label:GetStringHeight() or 0)
@@ -197,11 +207,11 @@ local function getCategoryHoverText(frame)
     return title
 end
 
-local function findFocusedCategory(frame)
+local function findFocusedCategoryFrame(frame)
     local current = frame
     while current do
         if current.ItemCategory then
-            return current.ItemCategory
+            return current
         end
         if not current.GetParent then
             return nil
@@ -211,31 +221,49 @@ local function findFocusedCategory(frame)
     return nil
 end
 
-local function getHoveredCategoryIdForHints()
+local function getHoveredCategoryFrameForHints()
     if hoveredCategoryFrame and hoveredCategoryFrame:IsShown() and hoveredCategoryFrame.ItemCategory then
-        return hoveredCategoryFrame.ItemCategory:GetId()
+        return hoveredCategoryFrame
     end
     if not AddonNS.DragAndDrop:IsItemDragActive() then
         return nil
     end
     local mouseFoci = GetMouseFoci()
     local focus = mouseFoci and mouseFoci[1] or nil
-    local focusedCategory = findFocusedCategory(focus)
-    if focusedCategory then
-        return focusedCategory:GetId()
+    return findFocusedCategoryFrame(focus)
+end
+
+local function forEachCategoryHintFrame(self, visitor)
+    for i = 1, #self.categoriesFrames do
+        visitor(self.categoriesFrames[i])
     end
-    return nil
+    if AddonNS.BankView and AddonNS.BankView.headerFrames then
+        for i = 1, #AddonNS.BankView.headerFrames do
+            visitor(AddonNS.BankView.headerFrames[i])
+        end
+    end
+end
+
+function AddonNS.gui:SetHoveredCategoryFrame(frame)
+    hoveredCategoryFrame = frame
+    self:RefreshCategoryDragHints()
+end
+
+function AddonNS.gui:ClearHoveredCategoryFrame(frame)
+    if hoveredCategoryFrame == frame then
+        hoveredCategoryFrame = nil
+    end
+    self:RefreshCategoryDragHints()
 end
 
 function AddonNS.gui:RefreshCategoryDragHints()
-    local hoveredCategoryId = getHoveredCategoryIdForHints()
+    local hoveredFrame = getHoveredCategoryFrameForHints()
     local shownTextFrame = nil
     local shownText = nil
-    for i = 1, #self.categoriesFrames do
-        local frame = self.categoriesFrames[i]
+    forEachCategoryHintFrame(self, function(frame)
         if frame:IsShown() then
             if frame.ItemCategory then
-                local isHovered = frame.ItemCategory:GetId() == hoveredCategoryId
+                local isHovered = frame == hoveredFrame
                 local hint = AddonNS.DragAndDrop:GetCategoryDropHint(frame.ItemCategory, isHovered)
                 applyCategoryHint(frame, hint)
                 if isHovered then
@@ -250,7 +278,7 @@ function AddonNS.gui:RefreshCategoryDragHints()
                 applyCategoryHint(frame, nil)
             end
         end
-    end
+    end)
     if shownTextFrame and shownText then
         layoutHintTextFrame(shownTextFrame, shownText)
         hintTextFrame:Show()

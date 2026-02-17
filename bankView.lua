@@ -18,7 +18,7 @@ local BankView = {
 
 local BANK_VIEWPORT_TOP = -58
 local BANK_VIEWPORT_BOTTOM = 40
-local BANK_VIEWPORT_LEFT = 16
+local BANK_VIEWPORT_LEFT = 26
 local BANK_VIEWPORT_RIGHT = -28
 local BANK_CONTENT_PADDING_BOTTOM = 8
 
@@ -220,8 +220,23 @@ local function ensureHeaderFrame(self, index)
     label:SetJustifyV("TOP")
     label:SetWordWrap(false)
 
+    local hintOverlay = CreateFrame("Frame", nil, headerFrame, "BackdropTemplate")
+    hintOverlay:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
+    hintOverlay:SetAllPoints(headerFrame)
+    hintOverlay:EnableMouse(false)
+    hintOverlay:Hide()
+
     headerFrame:EnableMouse(true)
     headerFrame:RegisterForDrag("LeftButton")
+    headerFrame:SetScript("OnEnter", function(frame)
+        AddonNS.gui:SetHoveredCategoryFrame(frame)
+    end)
+    headerFrame:SetScript("OnLeave", function(frame)
+        AddonNS.gui:ClearHoveredCategoryFrame(frame)
+    end)
+    headerFrame:HookScript("OnHide", function(frame)
+        AddonNS.gui:ClearHoveredCategoryFrame(frame)
+    end)
     headerFrame:SetScript("OnMouseUp", AddonNS.DragAndDrop.categoryOnMouseUp)
     headerFrame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.categoryOnReceiveDrag)
     headerFrame:SetScript("OnDragStart", function(frame)
@@ -243,6 +258,7 @@ local function ensureHeaderFrame(self, index)
     end
 
     headerFrame.label = label
+    headerFrame.hintOverlay = hintOverlay
     self.headerFrames[index] = headerFrame
     return headerFrame
 end
@@ -343,6 +359,8 @@ local function renderHeaders(self, scope, panel, categoryPositions)
         frame.ItemCategory = categoryPosition.category
         frame.MyBagsScope = scope
         frame.MyBagsContainerRef = panel
+        frame.MyBagsHintAnchorFrame = self.backgroundFrame
+        frame.MyBagsHintAlignToFrame = true
         frame:SetPoint("TOPLEFT", self.backgroundFrame, "TOPLEFT", categoryPosition.x, -categoryPosition.y)
         frame:SetSize(categoryPosition.width, categoryPosition.height)
 
