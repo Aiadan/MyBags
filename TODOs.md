@@ -119,11 +119,12 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ query help panel content is now selectable/copyable, includes in-panel search with `Prev`/`Next` navigation that scrolls to and highlights each match without stealing search-box focus, and opens scrolled to the top (when no active search query).
 * ✅ invalid query syntax in the custom-category editor now shows inline validation (red query box styling + red note under the field) using the same query compiler path as runtime, and save is blocked with an explicit inline error when query syntax is invalid (including `Save and Exit` flow) without force-changing focus/lock state; search-anchor lock now also stays requested while query editor text is non-empty (not only while query field has focus) to avoid anchor drift/rescale jumps.
 * ✅ column hover tooltip now uses the full column width (instead of the hovered category frame width).
+* ✅ [bug] fixed right-click on bag-column background during drag: it no longer triggers category move for the dragged item's category.
+* ✅ [bug] `CATEGORIZER_CATEGORIES_UPDATED` handler now skips `TriggerContainerOnTokenWatchChanged()` when the bag container is hidden, avoiding needless refreshes.
 
 ### TODO
 
-* BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
-* [bug] when draggin an item an click right click on a column part, it moves entire cateogory in which a given itembutton was in
+*
 
 #### Low priority
 

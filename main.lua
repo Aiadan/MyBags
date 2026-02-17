@@ -147,6 +147,9 @@ function AddonNS.Events:BAG_UPDATE(event, bagID)
 end
 
 local function updateOnTokenWatchChangedOnNextFrame(event) -- todo: i just copied and modified the function from above - but it needs comments or fixing following the comments I just added there above
+    if not container:IsShown() then
+        return
+    end
     AddonNS.printDebug("updateOnTokenWatchChangedOnNextFrame and locked: ", lockedUpdates)
     if not lockedUpdates then
         RunNextFrame(function()

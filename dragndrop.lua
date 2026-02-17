@@ -12,6 +12,7 @@ local height = 0;
 local pickedItemID = nil;
 local pickedItemCategory = nil;
 local pickedItemButton = nil;
+local isCategoryDragActive = false;
 local container = AddonNS.container;
 
 local recentAt = 0
@@ -104,6 +105,7 @@ function AddonNS.DragAndDrop.cleanUp()
     pickedItemButton = nil;
     pickedItemID = nil
     pickedItemCategory = nil;
+    isCategoryDragActive = false;
     recentAt = 0
     cachedInfoType, cachedItemID, cachedItemLink = nil, nil, nil
     AddonNS.gui:RefreshCategoryDragHints()
@@ -180,6 +182,7 @@ end
 function AddonNS.DragAndDrop.itemStartDrag(self)
     AddonNS.DragAndDrop.cleanUp()
     AddonNS.printDebug("itemStartDrag")
+    isCategoryDragActive = false;
     local itemID = getItemIdFromButton(self)
     if (itemID) then
         pickedItemButton = self;
@@ -229,6 +232,7 @@ function AddonNS.DragAndDrop.categoryStartDrag(self)
     AddonNS.DragAndDrop.cleanUp()
     AddonNS.printDebug("categoryStartDrag")
     pickedItemCategory = self.ItemCategory;
+    isCategoryDragActive = true;
     AddonNS.printDebug("categoryStartDrag", pickedItemCategory)
     AddonNS.gui:RefreshCategoryDragHints()
 end
@@ -279,7 +283,7 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
         triggerItemMoved(itemID, nil, pickedItemCategory, targetItemCategory, pickedItemButton, nil);
         ClearCursor();
         AddonNS.QueueContainerUpdateItemLayout();
-    elseif pickedItemCategory and (pickedItemCategory ~= targetItemCategory) then -- category frame
+    elseif isCategoryDragActive and pickedItemCategory and (pickedItemCategory ~= targetItemCategory) then -- category frame
         local moveTail = IsShiftKeyDown()
         AddonNS.printDebug("sending CATEGORY_MOVED", AddonNS.Const.Events.CATEGORY_MOVED)
         AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED,
@@ -326,8 +330,11 @@ end
 
 
 
-function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self)
+function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self, mouseButtonName)
     AddonNS.printDebug("backgroundOnReceiveDrag")
+    if mouseButtonName and mouseButtonName ~= "LeftButton" then
+        return
+    end
     local columnNo = GetMouseSectionRelativeToFrame(self)
     if (columnNo) then
         local infoType, itemID, itemLink = getCachedCursorInfo()
@@ -346,7 +353,7 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self)
             triggerItemMoved(itemID, nil, pickedItemCategory, targetCategory, pickedItemButton, nil);
             ClearCursor();
             AddonNS.QueueContainerUpdateItemLayout();
-        elseif pickedItemCategory then -- category frame
+        elseif isCategoryDragActive and pickedItemCategory then -- category frame
             local moveTail = IsShiftKeyDown()
             AddonNS.printDebug("sending CATEGORY_MOVED_TO_COLUMN", AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN)
             AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN,

@@ -233,6 +233,14 @@ run("background drop emits CATEGORY_MOVED_TO_COLUMN with moveTail false when shi
     assertEqual(lastEvent.args[3], false, "moveTail should be false when shift is not held")
 end)
 
+run("background right-click does not trigger category move during drag", function()
+    resetDragTestState()
+    addonEnv.DragAndDrop.categoryStartDrag({ ItemCategory = category("cus-11") })
+    addonEnv.DragAndDrop.backgroundOnReceiveDrag(frameForColumn(2), "RightButton")
+
+    assertTrue(lastEvent == nil, "right-click should not emit category move event")
+end)
+
 run("GetCategoryDropHint returns nil when no drag item is active", function()
     resetDragTestState()
     cursorInfoType = nil
