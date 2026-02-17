@@ -11,6 +11,7 @@ local BankView = {
     headerFrames = {},
     dropFrames = {},
     currentScope = BANK_CHARACTER_SCOPE,
+    visibleTabIds = {},
     refreshQueued = false,
     hooksInstalled = false,
     dataRetryCount = 0,
@@ -55,16 +56,13 @@ local function ensureItemButtonBagMethods(itemButton)
     end
 end
 
-local function resolveBankButtonContainerSlot(itemButton, selectedTabID)
+local function resolveBankButtonContainerSlot(itemButton)
     local bagID = nil
     if itemButton.GetBankTabID then
         bagID = itemButton:GetBankTabID()
     end
     if bagID == nil and itemButton.GetBagID then
         bagID = itemButton:GetBagID()
-    end
-    if bagID == nil then
-        bagID = selectedTabID
     end
 
     local slotID = nil
@@ -79,6 +77,143 @@ local function resolveBankButtonContainerSlot(itemButton, selectedTabID)
         return nil, nil
     end
     return bagID, slotID
+end
+
+local function getPurchasedTabIdsForActiveType(panel)
+    local tabData = panel.purchasedBankTabData
+    if type(tabData) ~= "table" then
+        tabData = C_Bank.FetchPurchasedBankTabData(panel:GetActiveBankType()) or {}
+    end
+
+    local tabIds = {}
+    for index = 1, #tabData do
+        local id = tabData[index] and tabData[index].ID
+        if type(id) == "number" and id > 0 then
+            table.insert(tabIds, id)
+        end
+    end
+    return tabIds, tabData
+end
+
+local function buildVisibleTabIds(tabIds)
+    local set = {}
+    for index = 1, #tabIds do
+        set[tabIds[index]] = true
+    end
+    return set
+end
+
+local function shouldRefreshForBagUpdate(visibleTabIds, bagID)
+    if bagID == nil then
+        return true
+    end
+    return visibleTabIds[bagID] == true
+end
+
+local function generateAllTabItemButtons(panel, activeBankType, tabIds)
+    panel.itemButtonPool:ReleaseAll()
+    for tabIndex = 1, #tabIds do
+        local tabID = tabIds[tabIndex]
+        local slots = C_Container.GetContainerNumSlots(tabID)
+        if type(slots) == "number" and slots > 0 then
+            for containerSlotID = 1, slots do
+                local button = panel.itemButtonPool:Acquire()
+                button:Init(activeBankType, tabID, containerSlotID)
+                button:Show()
+            end
+        end
+    end
+end
+
+local function hideBlizzardBankTabs(panel)
+    for tabButton in panel.bankTabPool:EnumerateActive() do
+        tabButton:Hide()
+    end
+    panel.PurchaseTab:Hide()
+end
+
+local function ensureActionsDropdown(self)
+    if self.actionsDropdownFrame then
+        return self.actionsDropdownFrame
+    end
+    local dropdown = CreateFrame("Frame", "MyBagsBankActionsDropdown", UIParent, "UIDropDownMenuTemplate")
+    self.actionsDropdownFrame = dropdown
+    return dropdown
+end
+
+local function buildActionsMenuItems(panel, activeBankType, tabData)
+    assert(BankPanelTabSettingsMenuMixin and BankPanelTabSettingsMenuMixin.Event and BankPanelTabSettingsMenuMixin.Event.OpenTabSettingsRequested,
+        "BankPanelTabSettingsMenuMixin OpenTabSettingsRequested event missing")
+    local items = {}
+    local eventName = BankPanelTabSettingsMenuMixin.Event.OpenTabSettingsRequested
+
+    table.insert(items, {
+        text = "Tab Settings",
+        isTitle = true,
+        notCheckable = true,
+    })
+
+    for index = 1, #tabData do
+        local currentTab = tabData[index]
+        local tabID = currentTab and currentTab.ID
+        if type(tabID) == "number" and tabID > 0 then
+            table.insert(items, {
+                text = currentTab.name or ("Tab " .. tabID),
+                notCheckable = true,
+                func = function()
+                    panel.TabSettingsMenu:TriggerEvent(eventName, tabID)
+                end,
+            })
+        end
+    end
+
+    table.insert(items, {
+        text = " ",
+        disabled = true,
+        notCheckable = true,
+    })
+
+    local canPurchase = C_Bank.CanPurchaseBankTab(activeBankType)
+    local hasMaxTabs = C_Bank.HasMaxBankTabs(activeBankType)
+    table.insert(items, {
+        text = "Purchase Next Tab",
+        notCheckable = true,
+        disabled = (not canPurchase) or hasMaxTabs,
+        func = function()
+            StaticPopup_Show("CONFIRM_BUY_BANK_TAB", nil, nil, { bankType = activeBankType })
+        end,
+    })
+
+    return items
+end
+
+local function ensureActionsButton(self, panel)
+    if self.actionsButton then
+        return self.actionsButton
+    end
+
+    local button = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    button:SetSize(58, 20)
+    button:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -10)
+    button:SetText("Actions")
+    button:Hide()
+    self.actionsButton = button
+    return button
+end
+
+local function showActionsButton(self, panel, activeBankType, tabData)
+    local button = ensureActionsButton(self, panel)
+    button:SetScript("OnClick", function()
+        local menu = buildActionsMenuItems(panel, activeBankType, tabData)
+        EasyMenu(menu, ensureActionsDropdown(self), "cursor", 0, 0, "MENU")
+    end)
+    button:Show()
+end
+
+local function hideActionsButton(self)
+    if self.actionsButton then
+        self.actionsButton:Hide()
+    end
 end
 
 local function ensureItemButtonHooks(itemButton)
@@ -533,37 +668,26 @@ function BankView:Refresh(scope)
         AddonNS.printDebug("MyBags BankView:Refresh skipped; frame hidden")
         hideHeaders(self)
         hideScrollArea(self)
-        return
-    end
-
-    local selectedTabID = panel:GetSelectedTabID()
-    if type(selectedTabID) ~= "number" then
-        AddonNS.printDebug("MyBags BankView:Refresh skipped; invalid selectedTabID", selectedTabID)
-        hideHeaders(self)
-        hideScrollArea(self)
-        hideAllItemButtons(panel)
-        return
-    end
-    local slots = C_Container.GetContainerNumSlots(selectedTabID)
-    if type(slots) ~= "number" or slots <= 0 then
-        AddonNS.printDebug("MyBags BankView:Refresh skipped; no slots for tab", selectedTabID, slots)
-        hideHeaders(self)
-        hideScrollArea(self)
-        hideAllItemButtons(panel)
+        hideActionsButton(self)
         return
     end
 
     local activeBankType = BankFrame:GetActiveBankType()
     local activeScope = scope or getScopeForBankType(activeBankType)
+    local tabIds, tabData = getPurchasedTabIdsForActiveType(panel)
+    self.visibleTabIds = buildVisibleTabIds(tabIds)
     self.currentScope = activeScope
     AddonNS:SetCurrentLayoutScope(activeScope)
 
     ensureScrollArea(self, panel)
     ensureBackground(self, self.scrollContentFrame)
+    hideBlizzardBankTabs(panel)
+    showActionsButton(self, panel, activeBankType, tabData)
     self.scrollViewportBackdrop:Show()
     self.scrollFrame:Show()
     self.backgroundFrame:Show()
     updateDropAreaOverlays(self, activeScope)
+    generateAllTabItemButtons(panel, activeBankType, tabIds)
 
     local arrangedItems = {}
     local firstItemButton = nil
@@ -575,7 +699,7 @@ function BankView:Refresh(scope)
         itemButton.MyBagsScope = activeScope
 
         itemButton.ItemCategory = nil
-        local bagID, slotID = resolveBankButtonContainerSlot(itemButton, selectedTabID)
+        local bagID, slotID = resolveBankButtonContainerSlot(itemButton)
         if bagID and slotID then
             local info = C_Container.GetContainerItemInfo(bagID, slotID)
             if info and not info.isFiltered then
@@ -658,6 +782,7 @@ local function tryInstallHooks()
         hideHeaders(BankView)
         hideScrollArea(BankView)
         hideDropAreaOverlays(BankView)
+        hideActionsButton(BankView)
         if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsShown() then
             AddonNS:SetCurrentLayoutScope("bag")
         end
@@ -683,11 +808,7 @@ local function tryInstallHooks()
         if not BankFrame:IsShown() then
             return
         end
-        local selectedTabID = BankPanel and BankPanel.GetSelectedTabID and BankPanel:GetSelectedTabID() or nil
-        if type(selectedTabID) ~= "number" then
-            return
-        end
-        if bagID == nil or bagID == selectedTabID then
+        if shouldRefreshForBagUpdate(BankView.visibleTabIds, bagID) then
             BankView:QueueRefresh()
         end
     end)
@@ -716,8 +837,14 @@ local function tryInstallHooks()
 end
 
 AddonNS.BankView = BankView
+AddonNS.BankViewTestHooks = {
+    GetPurchasedTabIdsForActiveType = getPurchasedTabIdsForActiveType,
+    BuildVisibleTabIds = buildVisibleTabIds,
+    ShouldRefreshForBagUpdate = shouldRefreshForBagUpdate,
+    GenerateAllTabItemButtons = generateAllTabItemButtons,
+}
 
-    AddonNS.Events:OnInitialize(function()
+AddonNS.Events:OnInitialize(function()
     AddonNS.Categories:SetColumnCount(4, BANK_CHARACTER_SCOPE)
     AddonNS.Categories:SetColumnCount(4, BANK_ACCOUNT_SCOPE)
     tryInstallHooks()

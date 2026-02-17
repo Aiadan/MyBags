@@ -126,6 +126,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ added temporary bank-only debug overlays that visualize background drop-to-column zones used by category drag/drop assignment.
 * ✅ bank scope column count is now forced to 4 on addon initialization for both `bank-character` and `bank-account`.
 * ✅ fixed drag hint regression where hovering item buttons did not keep category highlight active; hint mapping now resolves by category id + scope (while still avoiding bag/bank cross-frame tooltip stealing).
+* ✅ bank MyBags view now renders all purchased tabs at once per active bank type (character/account), hides Blizzard bank tab strip while active, tracks visible tab IDs for `BAG_UPDATE` refreshes, and adds a compact `Actions` menu for tab settings + purchase-next-tab.
 
 ### TODO
 
