@@ -318,6 +318,7 @@ local function newIterator(container, index)
             itemButton.myBagAddonHooked = true;
         end
 
+        itemButton.MyBagsScope = "bag"
 
         -- [[ CATEGORISATION ]]
         local info = C_Container.GetContainerItemInfo(itemButton:GetBagID(), itemButton:GetID());
