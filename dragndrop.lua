@@ -376,6 +376,9 @@ local function GetMouseSectionRelativeToFrame(frame)
     -- Determine which section (column) the mouse is in
 
     local scope = frame.MyBagsScope or getScopeFromButton(frame)
+    if scope ~= "bag" and AddonNS.BankView and AddonNS.BankView.ResolveDropColumn then
+        return AddonNS.BankView:ResolveDropColumn(relativeX, scope, frameWidth)
+    end
     return math.floor(relativeX * AddonNS.CategoryStore:GetColumnCount(scope) / frameWidth) + 1
 end
 
