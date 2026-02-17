@@ -329,6 +329,18 @@ function draggableFrame:StopDragging()
     activeDragShiftState = nil
 end
 
+function AddonNS.gui:StartCategoryDragVisual(categoryName)
+    activeDraggedCategoryName = categoryName or "Unassigned"
+    refreshDragTooltipText()
+    draggableFrame:Show()
+    draggableFrame:StartDragging()
+end
+
+function AddonNS.gui:StopCategoryDragVisual()
+    draggableFrame:Hide()
+    draggableFrame:StopDragging()
+end
+
 backgroundFrame = CreateFrame("Frame", nil, AddonNS.container, "BackdropTemplate")     -- todo: does it need to be some frame with bg, or pure frame would sufficie? I think I was testing it and it didnt work for some reason.
 backgroundFrame.MyBagsScope = "bag"
 backgroundFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
@@ -765,18 +777,13 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f:RegisterForDrag("LeftButton")
             f:SetScript("OnDragStart", function(self, button)
                 -- adjustDraggableFramePositionToMouse()
-                activeDraggedCategoryName = self.ItemCategory:GetDisplayName() or "Unassigned"
-                refreshDragTooltipText()
-                -- draggableFrame:SetWidth(self:GetWidth());
-                draggableFrame:Show()
-                draggableFrame:StartDragging()
+                AddonNS.gui:StartCategoryDragVisual(self.ItemCategory:GetDisplayName() or "Unassigned")
                 AddonNS.DragAndDrop.categoryStartDrag(self);
                 PlaySound(1183 );
                 AddonNS.printDebug("OnDragStart", button)
             end)
             f:SetScript("OnDragStop", function(self)
-                draggableFrame:Hide()
-                draggableFrame:StopDragging()
+                AddonNS.gui:StopCategoryDragVisual()
                 PlaySound(1200);
                 AddonNS.printDebug("OnDragStop")
             end)
@@ -855,17 +862,13 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f:SetScript("OnMouseUp", AddonNS.DragAndDrop.categoryOnMouseUp)
             f:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.categoryOnReceiveDrag)
             f:SetScript("OnDragStart", function(self, button)
-                activeDraggedCategoryName = self.ItemCategory:GetDisplayName() or "Unassigned"
-                refreshDragTooltipText()
-                draggableFrame:Show()
-                draggableFrame:StartDragging()
+                AddonNS.gui:StartCategoryDragVisual(self.ItemCategory:GetDisplayName() or "Unassigned")
                 AddonNS.DragAndDrop.categoryStartDrag(self);
                 PlaySound(1183 );
                 AddonNS.printDebug("OnDragStart", button)
             end)
             f:SetScript("OnDragStop", function(self)
-                draggableFrame:Hide()
-                draggableFrame:StopDragging()
+                AddonNS.gui:StopCategoryDragVisual()
                 PlaySound(1200);
                 AddonNS.printDebug("OnDragStop")
             end)
