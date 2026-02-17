@@ -33,35 +33,29 @@ Moving items between categories easily reassgins to a new category. Please note 
 
 ![Category always visible](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/main/.previews/cat_always_visible.gif)
 
-Some other worth mentioning:
+Other notable features:
 
-* correct items orders kept
-* two default categorizers:
-  * for Junk
-  * for equipment sets (with pretty icons ;) )
-  * for New items. Right click on category name to move items to their preassigned categories.
-* All items by default land in Unassigned category.
-* While dragging an item, category hint banners explain the drop action; dropping onto `Unassigned` removes manual assignment from custom categories.
-* left click category to collapse it
-* hold `Shift` while dropping a dragged category to move that category and the full tail below it
-* searching works as a filter
-* search results use a union: Blizzard default search matches plus valid query-language matches from the same search text; invalid query text is ignored
-* bag/bank search boxes now allow longer text to support practical query input
-* custom category query editing mirrors text into bag search for live preview of what the query matches
-* custom category editor opens as a centered Blizzard-style movable panel with staged editing: changes apply only on `Save`, `Revert Changes` restores current drafts to the selected category baseline, and closing with pending edits prompts `Save and Exit` or `Exit`
-* custom query categories support explicit priority scores (higher score wins first)
-* query syntax/attributes reference: see [QUERY_ATTRIBUTES.md](QUERY_ATTRIBUTES.md)
-* query editor now includes an in-game `Help` button with a scrollable query syntax/priority reference panel
-* item tooltip diagnostics are Shift-gated: hold `Shift` to show matched categories and reason tags (`manual assignment` or query priority)
-* custom categories support import/export via in-game text payloads
+* Keeps item order.
+* Built-in always-available categories:
+  * `Junk`
+  * `Equipment Sets` (with set icons)
+  * `New Items` (right-click the category header to clear it by moving those items back to their normal categories)
+* New items go to `Unassigned` by default until you assign them.
+* Dropping an item on `Unassigned` removes its manual custom-category assignment.
+* Left-click a category header to collapse or expand it.
+* Hold `Shift` while dropping a dragged category to move that category and all categories below it.
+* Search filters visible bag items.
+* Search combines Blizzard's default match with valid MyBags query-text match from the same input.
+* Invalid query text in search is ignored instead of breaking results.
+* While editing a custom category query, the text is mirrored into bag search for live preview.
+* Custom query categories support priority scores (higher priority wins first).
+* Query syntax and attributes reference: [QUERY_ATTRIBUTES.md](QUERY_ATTRIBUTES.md)
+* Query editor includes an in-game `Help` button with a scrollable syntax and priority reference.
+* Item tooltip diagnostics are shown only while holding `Shift` (matched categories + reason tags).
+* Custom categories support import and export using in-game text payloads.
 
 ## Q&A
 List of questions about things regarding the addon or possible extentions.
-
-### Move, resize, do not close
-I do not plan at this moment to add this functionality and it can be achieved via these two addons:
-* [BlizzMove](https://github.com/Kiatra/BlizzMove) - move and scale. Unfortunately it does not currently (at the moment of writing) remeber user defined scale and reset with each open. One of the reasons I am considering adding such functionality within this addon.
-* [NoAutoClose](https://github.com/NumyAddon/NoAutoClose) - prevents automatic close of frames when too many open at the same time.
 
 ### Show simple ilvl
 Can be achieved using this addon:
