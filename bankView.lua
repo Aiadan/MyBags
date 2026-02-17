@@ -265,6 +265,33 @@ local function hideAllItemButtons(panel)
     end
 end
 
+local function evaluateSearchVisibility(defaultMatch, searchEvaluator, itemInfo, itemButton)
+    local includeInSearch = defaultMatch
+    local queryMatch = false
+    if not defaultMatch and searchEvaluator then
+        local payload = AddonNS.CustomCategories:GetItemQueryPayload(itemInfo.itemID, itemButton)
+        includeInSearch, queryMatch = AddonNS.QueryCategories:EvaluateSearchUnion(defaultMatch, searchEvaluator, payload)
+    end
+    return includeInSearch, queryMatch
+end
+
+local function applySearchUnionMatchState(panel, searchEvaluator)
+    if not searchEvaluator then
+        return
+    end
+    for itemButton in panel:EnumerateValidItems() do
+        local bagID, slotID = resolveBankButtonContainerSlot(itemButton)
+        if bagID and slotID then
+            local info = C_Container.GetContainerItemInfo(bagID, slotID)
+            if info then
+                local defaultMatch = not info.isFiltered
+                local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
+                itemButton:SetMatchesSearch(includeInSearch)
+            end
+        end
+    end
+end
+
 local function ensureDropAreaOverlay(self, index)
     if self.dropAreaOverlays[index] then
         return self.dropAreaOverlays[index]
@@ -688,6 +715,8 @@ function BankView:Refresh(scope)
     self.backgroundFrame:Show()
     updateDropAreaOverlays(self, activeScope)
     generateAllTabItemButtons(panel, activeBankType, tabIds)
+    local searchText = BankItemSearchBox:GetText() or ""
+    local searchEvaluator = AddonNS.QueryCategories:CompileAdHoc(searchText)
 
     local arrangedItems = {}
     local firstItemButton = nil
@@ -702,12 +731,19 @@ function BankView:Refresh(scope)
         local bagID, slotID = resolveBankButtonContainerSlot(itemButton)
         if bagID and slotID then
             local info = C_Container.GetContainerItemInfo(bagID, slotID)
-            if info and not info.isFiltered then
-                itemButton._myBagsItemId = info.itemID
-                itemButton.ItemCategory = AddonNS.Categories:Categorize(info.itemID, itemButton)
-                arrangedItems[itemButton.ItemCategory] = arrangedItems[itemButton.ItemCategory] or {}
-                table.insert(arrangedItems[itemButton.ItemCategory], itemButton)
-                firstItemButton = firstItemButton or itemButton
+            if info then
+                local defaultMatch = not info.isFiltered
+                local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
+                itemButton:SetMatchesSearch(includeInSearch)
+                if includeInSearch then
+                    itemButton._myBagsItemId = info.itemID
+                    itemButton.ItemCategory = AddonNS.Categories:Categorize(info.itemID, itemButton)
+                    arrangedItems[itemButton.ItemCategory] = arrangedItems[itemButton.ItemCategory] or {}
+                    table.insert(arrangedItems[itemButton.ItemCategory], itemButton)
+                    firstItemButton = firstItemButton or itemButton
+                else
+                    AddonNS.emptyItemButton = itemButton
+                end
             else
                 AddonNS.emptyItemButton = itemButton
             end
@@ -800,6 +836,11 @@ local function tryInstallHooks()
         end
         BankView:RefreshNow()
     end)
+    hooksecurefunc(BankPanel, "UpdateSearchResults", function()
+        local searchText = BankItemSearchBox:GetText() or ""
+        local searchEvaluator = AddonNS.QueryCategories:CompileAdHoc(searchText)
+        applySearchUnionMatchState(BankPanel, searchEvaluator)
+    end)
     hooksecurefunc(BankPanel, "Clean", function()
         BankView:QueueRefresh()
     end)
@@ -815,7 +856,7 @@ local function tryInstallHooks()
 
     AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE", function()
         if BankFrame:IsShown() then
-            BankView:QueueRefresh(BankView.currentScope)
+            BankView:RefreshNow(BankView.currentScope)
         end
     end)
 
@@ -842,6 +883,8 @@ AddonNS.BankViewTestHooks = {
     BuildVisibleTabIds = buildVisibleTabIds,
     ShouldRefreshForBagUpdate = shouldRefreshForBagUpdate,
     GenerateAllTabItemButtons = generateAllTabItemButtons,
+    EvaluateSearchVisibility = evaluateSearchVisibility,
+    ApplySearchUnionMatchState = applySearchUnionMatchState,
 }
 
 AddonNS.Events:OnInitialize(function()

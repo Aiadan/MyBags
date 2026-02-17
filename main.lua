@@ -207,6 +207,31 @@ local function refreshSearchQueryState(searchText)
     searchQueryState.evaluator = AddonNS.QueryCategories:CompileAdHoc(nextText)
 end
 
+local function evaluateSearchVisibility(defaultMatch, searchEvaluator, itemInfo, itemButton)
+    local includeInSearch = defaultMatch
+    local queryMatch = false
+    if not defaultMatch and searchEvaluator then
+        local payload = AddonNS.CustomCategories:GetItemQueryPayload(itemInfo.itemID, itemButton)
+        includeInSearch, queryMatch = AddonNS.QueryCategories:EvaluateSearchUnion(defaultMatch, searchEvaluator, payload)
+    end
+    return includeInSearch, queryMatch
+end
+
+local function applySearchUnionMatchState()
+    local searchEvaluator = searchQueryState.evaluator
+    if not searchEvaluator then
+        return
+    end
+    for _, itemButton in container:EnumerateValidItems() do
+        local info = C_Container.GetContainerItemInfo(itemButton:GetBagID(), itemButton:GetID())
+        if info then
+            local defaultMatch = not info.isFiltered
+            local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
+            itemButton:SetMatchesSearch(includeInSearch)
+        end
+    end
+end
+
 BagItemSearchBox:HookScript("OnEditFocusGained", function(searchBox)
     refreshSearchAnchorLockState(searchBox)
 end)
@@ -254,6 +279,10 @@ extendSearchBoxMaxLetters(BankItemSearchBox)
 
 installSearchBoxWrapper(BagItemSearchBox)
 installSearchBoxWrapper(BankItemSearchBox)
+hooksecurefunc(container, "UpdateSearchResults", function()
+    refreshSearchQueryState(BagItemSearchBox:GetText())
+    applySearchUnionMatchState()
+end)
 
 container:HookScript("OnHide", function()
     container:SetSearchAnchorLockActive(false)
@@ -309,16 +338,8 @@ local function newIterator(container, index)
         itemButton.ItemCategory = nil;
         if (info) then
             local defaultMatch = not info.isFiltered
-            local includeInSearch = defaultMatch
-            local queryMatch = false
-            if not defaultMatch and searchQueryState.evaluator then
-                local payload = AddonNS.CustomCategories:GetItemQueryPayload(info.itemID, itemButton)
-                includeInSearch, queryMatch = AddonNS.QueryCategories:EvaluateSearchUnion(defaultMatch,
-                    searchQueryState.evaluator, payload)
-            end
-            if queryMatch then
-                itemButton:SetMatchesSearch(true)
-            end
+            local includeInSearch = evaluateSearchVisibility(defaultMatch, searchQueryState.evaluator, info, itemButton)
+            itemButton:SetMatchesSearch(includeInSearch)
             if includeInSearch then
                 itemButton._myBagsItemId = info.itemID
                 local categorizeStartedAt = refreshProfile and profileNowMs() or nil

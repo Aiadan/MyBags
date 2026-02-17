@@ -121,10 +121,12 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ column hover tooltip now uses the full column width (instead of the hovered category frame width).
 * ✅ [bug] fixed right-click on bag-column background during drag: it no longer triggers category move for the dragged item's category.
 * ✅ [bug] `CATEGORIZER_CATEGORIES_UPDATED` handler now skips `TriggerContainerOnTokenWatchChanged()` when the bag container is hidden, avoiding needless refreshes.
-* ✅ bank now has MyBags category rendering/assignment support with separate layout scopes (`bag`, `bank-character`, `bank-account`), and account/warband bank remains a separate tab/scope (no forced merge); bag edit-mode controls remain bag-only.
+* ✅ bank now has MyBags category rendering/assignment support with separate layout scopes (`bag`, `bank-character`, `bank-account`), account/warband bank remains a separate tab/scope (no forced merge), bank search now also supports query-union matching from search text (same include rules as bag search), and bag edit-mode controls remain bag-only.
 * ✅ added bank MyBags vertical scrolling with a dark bounded viewport and native Blizzard minimal scrollbar/wheel handling; overflow is clipped to the visible area and scroll offset is preserved across refreshes (clamped when content shrinks).
 * ✅ added temporary bank-only debug overlays that visualize background drop-to-column zones used by category drag/drop assignment.
 * ✅ bank scope column count is now forced to 4 on addon initialization for both `bank-character` and `bank-account`.
+* ✅ reduced bank search query-union visual blip by applying bank `INVENTORY_SEARCH_UPDATE` with immediate `RefreshNow()` instead of deferred `QueueRefresh()`, so query-match de-greying is applied in the same update path.
+* ✅ fixed persistent greying of query-union matches in both bag and bank by explicitly setting per-item `SetMatchesSearch(includeInSearch)` during MyBags categorization loops and reapplying query-union match state after Blizzard `UpdateSearchResults` runs.
 * ✅ fixed drag hint regression where hovering item buttons did not keep category highlight active; hint mapping now resolves by category id + scope (while still avoiding bag/bank cross-frame tooltip stealing).
 * ✅ bank MyBags view now renders all purchased tabs at once per active bank type (character/account), hides Blizzard bank tab strip while active, tracks visible tab IDs for `BAG_UPDATE` refreshes, and adds a compact `Actions` menu for tab settings + purchase-next-tab.
 
