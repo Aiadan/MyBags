@@ -122,6 +122,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ [bug] fixed right-click on bag-column background during drag: it no longer triggers category move for the dragged item's category.
 * ✅ [bug] `CATEGORIZER_CATEGORIES_UPDATED` handler now skips `TriggerContainerOnTokenWatchChanged()` when the bag container is hidden, avoiding needless refreshes.
 * ✅ bank now has MyBags category rendering/assignment support with separate layout scopes (`bag`, `bank-character`, `bank-account`), and account/warband bank remains a separate tab/scope (no forced merge); bag edit-mode controls remain bag-only.
+* ✅ added bank MyBags vertical scrolling with a dark bounded viewport and native Blizzard minimal scrollbar/wheel handling; overflow is clipped to the visible area and scroll offset is preserved across refreshes (clamped when content shrinks).
+* ✅ added temporary bank-only debug overlays that visualize background drop-to-column zones used by category drag/drop assignment.
+* ✅ bank scope column count is now forced to 4 on addon initialization for both `bank-character` and `bank-account`.
+* ✅ fixed drag hint regression where hovering item buttons did not keep category highlight active; hint mapping now resolves by category id + scope (while still avoiding bag/bank cross-frame tooltip stealing).
 
 ### TODO
 

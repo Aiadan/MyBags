@@ -258,12 +258,21 @@ end
 
 function AddonNS.gui:RefreshCategoryDragHints()
     local hoveredFrame = getHoveredCategoryFrameForHints()
+    local hoveredCategoryId = nil
+    local hoveredScope = nil
+    if hoveredFrame and hoveredFrame.ItemCategory then
+        hoveredCategoryId = hoveredFrame.ItemCategory:GetId()
+        hoveredScope = hoveredFrame.MyBagsScope
+    end
     local shownTextFrame = nil
     local shownText = nil
     forEachCategoryHintFrame(self, function(frame)
         if frame:IsShown() then
             if frame.ItemCategory then
                 local isHovered = frame == hoveredFrame
+                if not isHovered and hoveredCategoryId and hoveredScope then
+                    isHovered = frame.ItemCategory:GetId() == hoveredCategoryId and frame.MyBagsScope == hoveredScope
+                end
                 local hint = AddonNS.DragAndDrop:GetCategoryDropHint(frame.ItemCategory, isHovered)
                 applyCategoryHint(frame, hint)
                 if isHovered then
