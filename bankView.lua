@@ -151,11 +151,18 @@ local function ensureScrollArea(self, panel)
     viewportBackdrop:EnableMouse(false)
     viewportBackdrop:SetClipsChildren(true)
 
-    local scrollFrame = CreateFrame("ScrollFrame", nil, viewportBackdrop, "MinimalScrollFrameTemplate")
+    local scrollFrame = CreateFrame("ScrollFrame", nil, viewportBackdrop)
     scrollFrame:SetPoint("TOPLEFT", viewportBackdrop, "TOPLEFT", 0, 0)
-    scrollFrame:SetPoint("BOTTOMRIGHT", viewportBackdrop, "BOTTOMRIGHT", -8, 0)
+    scrollFrame:SetPoint("BOTTOMRIGHT", viewportBackdrop, "BOTTOMRIGHT", -24, 0)
     scrollFrame:EnableMouseWheel(true)
-    scrollFrame:SetClipsChildren(true)
+
+    local scrollBar = CreateFrame("EventFrame", nil, viewportBackdrop, "MinimalScrollBar")
+    scrollBar:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", 5, -8)
+    scrollBar:SetPoint("BOTTOMLEFT", scrollFrame, "BOTTOMRIGHT", 5, 5)
+    scrollBar:SetFrameStrata(scrollFrame:GetFrameStrata())
+    scrollBar:SetFrameLevel(scrollFrame:GetFrameLevel() + 10)
+
+    ScrollUtil.InitScrollFrameWithScrollBar(scrollFrame, scrollBar)
     scrollFrame:HookScript("OnVerticalScroll", function(_, offset)
         self.scrollOffset = offset
     end)
@@ -169,6 +176,7 @@ local function ensureScrollArea(self, panel)
 
     self.scrollViewportBackdrop = viewportBackdrop
     self.scrollFrame = scrollFrame
+    self.scrollBar = scrollBar
     self.scrollContentFrame = scrollContentFrame
 end
 
@@ -181,9 +189,6 @@ local function updateScrollMetrics(self, contentBottomY)
     self.scrollContentFrame:SetWidth(math.max(1, viewportWidth))
     self.scrollContentFrame:SetHeight(contentHeight)
 
-    local scrollBar = self.scrollFrame.ScrollBar
-    scrollBar:SetMinMaxValues(0, maxScroll)
-
     local clampedOffset = self.scrollOffset
     if clampedOffset > maxScroll then
         clampedOffset = maxScroll
@@ -193,7 +198,6 @@ local function updateScrollMetrics(self, contentBottomY)
     end
     self.scrollOffset = clampedOffset
     self.scrollFrame:SetVerticalScroll(clampedOffset)
-    scrollBar:SetValue(clampedOffset)
 end
 
 local function ensureHeaderFrame(self, index)
