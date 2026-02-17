@@ -181,8 +181,8 @@ hooksecurefunc("UpdateContainerFrameAnchors", function()
 end)
 
 local function refreshSearchAnchorLockState(searchBox)
-    local queryEditorFocused = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorFocused()
-    local shouldLock = searchBox.anchorBag == container and (searchBox:HasFocus() or searchBox:GetText() ~= "" or queryEditorFocused)
+    local queryEditorLockRequested = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
+    local shouldLock = searchBox.anchorBag == container and (searchBox:HasFocus() or searchBox:GetText() ~= "" or queryEditorLockRequested)
     local changed = container:SetSearchAnchorLockActive(shouldLock)
     if shouldLock then
         container:CaptureSearchAnchorLockPosition()

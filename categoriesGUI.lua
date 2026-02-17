@@ -635,6 +635,27 @@ function AddonNS.createGUI()
     queryEditBox.instructionText = "Query expression"
     queryEditBox.Instructions:SetText(queryEditBox.instructionText)
 
+    local queryValidationBorder = CreateFrame("Frame", nil, editorContent, "BackdropTemplate")
+    queryValidationBorder:SetPoint("TOPLEFT", queryEditBox, "TOPLEFT", -3, 3)
+    queryValidationBorder:SetPoint("BOTTOMRIGHT", queryEditBox, "BOTTOMRIGHT", 3, -3)
+    queryValidationBorder:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 12,
+        insets = { left = 2, right = 2, top = 2, bottom = 2 },
+    })
+    queryValidationBorder:SetBackdropColor(0.2, 0.05, 0.05, 0.45)
+    queryValidationBorder:SetBackdropBorderColor(1, 0.18, 0.18, 1)
+    queryValidationBorder:EnableMouse(false)
+    queryValidationBorder:Hide()
+
+    local queryValidationText = editorContent:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    queryValidationText:SetPoint("TOPLEFT", queryEditBox, "BOTTOMLEFT", 0, -4)
+    queryValidationText:SetPoint("TOPRIGHT", queryEditBox, "BOTTOMRIGHT", 0, -4)
+    queryValidationText:SetJustifyH("LEFT")
+    queryValidationText:SetTextColor(1, 0.25, 0.25, 1)
+    queryValidationText:SetText("")
+
     local helpButton = CreateFrame("Button", nil, editorContent, "MainHelpPlateButton")
     helpButton:SetPoint("LEFT", queryEditBox, "RIGHT", 2, 0)
     helpButton:SetSize(64, 64)
@@ -691,6 +712,32 @@ function AddonNS.createGUI()
         GameTooltip:Show()
     end
 
+    local function getQueryValidationError(queryText)
+        local normalizedQueryText = queryText or ""
+        if normalizedQueryText == "" then
+            return nil
+        end
+        local isValid = AddonNS.QueryCategories:CompileAdHoc(normalizedQueryText) ~= nil
+        if isValid then
+            return nil
+        end
+        return "Invalid query syntax. Check Query Help."
+    end
+
+    local function refreshQueryValidationState(queryText)
+        local message = getQueryValidationError(queryText)
+        if message then
+            queryValidationBorder:Show()
+            queryValidationText:SetText(message)
+            queryEditBox:SetTextColor(1, 0.45, 0.45)
+            return false
+        end
+        queryValidationBorder:Hide()
+        queryValidationText:SetText("")
+        queryEditBox:SetTextColor(1, 1, 1)
+        return true
+    end
+
     local function readDraftState()
         local rawPriority = priorityEditBox:GetText()
         return {
@@ -732,6 +779,7 @@ function AddonNS.createGUI()
         priorityEditBox:SetText(tostring(state.priority))
         alwaysShowCheckbox:SetChecked(state.alwaysShow)
         suspendControlHandlers = false
+        refreshQueryValidationState(state.query)
         refreshActionButtonsState()
     end
 
@@ -740,8 +788,14 @@ function AddonNS.createGUI()
         if not category then
             return false
         end
-        local currentState = normalizeCategoryState(category)
         local draftState = readDraftState()
+        local queryValidationError = getQueryValidationError(draftState.query)
+        if queryValidationError then
+            refreshQueryValidationState(draftState.query)
+            queryValidationText:SetText("Cannot save: " .. queryValidationError)
+            return false
+        end
+        local currentState = normalizeCategoryState(category)
         if draftState.name == "" then
             draftState.name = currentState.name
         end
@@ -887,6 +941,7 @@ function AddonNS.createGUI()
         if suspendControlHandlers then
             return
         end
+        refreshQueryValidationState(self:GetText())
         if userInput then
             applyQueryTextToBagSearch(self:GetText())
             refreshActionButtonsState()
@@ -932,6 +987,7 @@ function AddonNS.createGUI()
         alwaysShowCheckbox:SetChecked(false)
         queryEditBox:SetText("")
         priorityEditBox:SetText("")
+        refreshQueryValidationState("")
         nameEditBox:Disable()
         alwaysShowCheckbox:Disable()
         priorityEditBox:Disable()
@@ -1013,7 +1069,10 @@ function AddonNS.createGUI()
         button1 = "Save and Exit",
         button2 = "Exit",
         OnAccept = function()
-            saveSelectedCategoryDraft()
+            local didSave = saveSelectedCategoryDraft()
+            if not didSave then
+                return
+            end
             local callback = pendingCloseAfterSave
             pendingCloseAfterSave = nil
             pendingCloseDiscard = nil
@@ -1102,6 +1161,16 @@ function AddonNS.createGUI()
 
     function AddonNS.CategoriesGUI:IsQueryEditorFocused()
         return queryEditorFocused
+    end
+
+    function AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
+        if queryEditorFocused then
+            return true
+        end
+        if not containerFrame:IsShown() then
+            return false
+        end
+        return (queryEditBox:GetText() or "") ~= ""
     end
 end
 

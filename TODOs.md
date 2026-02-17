@@ -117,6 +117,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ custom-category editor flow is now decoupled from edit-mode toggle: the panel no longer auto-opens, its in-panel category list was removed and replaced by an explicit selected-category header (`Category: ...`), closing the panel clears selected-category highlight (`>>`), in-bag custom headers gained a yellow `GM-icon-settings` edit button (left of trash) that opens/selects category config, and header left-click in edit mode now collapses/uncollapses like normal mode.
 * ✅ redesigned custom-category editor to a centered Blizzard-style movable panel with staged editing: changes are applied only on `Save`, `Revert Changes` restores drafts to the selected category baseline, panel-side delete remains removed, Escape cancels in-field name draft text, closing with pending edits prompts `Save and Exit` or `Exit`, action buttons are kept in the bottom-right corner with a tighter overall panel height, leaving query-editor focus clears the mirrored bag search text, saving a rename now updates the config-window title immediately, and missing field tooltips were added (including a clearer priority explanation that it resolves which matching category receives the item).
 * ✅ query help panel content is now selectable/copyable, includes in-panel search with `Prev`/`Next` navigation that scrolls to and highlights each match without stealing search-box focus, and opens scrolled to the top (when no active search query).
+* ✅ invalid query syntax in the custom-category editor now shows inline validation (red query box styling + red note under the field) using the same query compiler path as runtime, and save is blocked with an explicit inline error when query syntax is invalid (including `Save and Exit` flow) without force-changing focus/lock state; search-anchor lock now also stays requested while query editor text is non-empty (not only while query field has focus) to avoid anchor drift/rescale jumps.
 
 ### TODO
 
@@ -124,7 +125,6 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * [bug] when draggin an item an click right click on a column part, it moves entire cateogory in which a given itembutton was in
 * add info at the top, and in bright colour, of query expanation in game that this information is available also at https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md
 * the column tooltip on mouse hover should be as wide as column, not as wide as category that is being hovered.
-* When query is not valid, make the box red with some note underneath that it is not valud.
 
 #### Low priority
 
