@@ -264,6 +264,11 @@ extendSearchBoxMaxLetters(BankItemSearchBox)
 
 installSearchBoxWrapper(BagItemSearchBox)
 installSearchBoxWrapper(BankItemSearchBox)
+hooksecurefunc(container, "UpdateSearchResults", function()
+    for _, itemButton in container:EnumerateValidItems() do
+        itemButton:SetMatchesSearch(true)
+    end
+end)
 
 container:HookScript("OnHide", function()
     container:SetSearchAnchorLockActive(false)
@@ -320,7 +325,7 @@ local function newIterator(container, index)
         if (info) then
             local defaultMatch = not info.isFiltered
             local includeInSearch = evaluateSearchVisibility(defaultMatch, searchQueryState.evaluator, info, itemButton)
-            itemButton:SetMatchesSearch(includeInSearch)
+            itemButton:SetMatchesSearch(true)
             if includeInSearch then
                 itemButton._myBagsItemId = info.itemID
                 local categorizeStartedAt = refreshProfile and profileNowMs() or nil

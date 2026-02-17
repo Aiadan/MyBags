@@ -115,6 +115,6 @@ run("applySearchUnionMatchState updates visible bank buttons with query-union ma
     }
 
     hooks.ApplySearchUnionMatchState(panel, addonEnv.QueryCategories:CompileAdHoc("itemType = 42"))
-    assertEqual(firstButtonMatchState, true, "query-only match should be marked as matching search")
-    assertEqual(secondButtonMatchState, false, "non-matching filtered item should stay non-matching")
+    assertEqual(firstButtonMatchState, true, "query-only match should be undimmed")
+    assertEqual(secondButtonMatchState, true, "non-matching item is also undimmed by design")
 end)

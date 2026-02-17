@@ -163,6 +163,12 @@ local function buildItemButtonsSignature(activeBankType, tabIds)
     return table.concat(parts, "|")
 end
 
+local function applyCachedIncludeInSearch(panel)
+    for itemButton in panel:EnumerateValidItems() do
+        itemButton:SetMatchesSearch(true)
+    end
+end
+
 local function hideBlizzardBankTabs(panel)
     for tabButton in panel.bankTabPool:EnumerateActive() do
         tabButton:Hide()
@@ -324,7 +330,7 @@ local function applySearchUnionMatchState(panel, searchEvaluator)
             if info then
                 local defaultMatch = not info.isFiltered
                 local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
-                itemButton:SetMatchesSearch(includeInSearch)
+                itemButton:SetMatchesSearch(true)
             end
         end
     end
@@ -781,7 +787,7 @@ function BankView:Refresh(scope)
             if info then
                 local defaultMatch = not info.isFiltered
                 local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
-                itemButton:SetMatchesSearch(includeInSearch)
+                itemButton:SetMatchesSearch(true)
                 if includeInSearch then
                     itemButton._myBagsItemId = info.itemID
                     itemButton.ItemCategory = AddonNS.Categories:Categorize(info.itemID, itemButton)
@@ -883,6 +889,9 @@ local function tryInstallHooks()
         end
         BankView:RefreshNow()
     end)
+    hooksecurefunc(BankPanel, "UpdateSearchResults", function()
+        applyCachedIncludeInSearch(BankPanel)
+    end)
     hooksecurefunc(BankPanel, "Clean", function()
         BankView:QueueRefresh()
     end)
@@ -926,6 +935,7 @@ AddonNS.BankViewTestHooks = {
     ShouldRefreshForBagUpdate = shouldRefreshForBagUpdate,
     GenerateAllTabItemButtons = generateAllTabItemButtons,
     BuildItemButtonsSignature = buildItemButtonsSignature,
+    ApplyCachedIncludeInSearch = applyCachedIncludeInSearch,
     HasAnyActiveItemButtons = hasAnyActiveItemButtons,
     CountActiveItemButtons = countActiveItemButtons,
     CountExpectedButtonsForTabs = countExpectedButtonsForTabs,
