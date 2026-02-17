@@ -243,7 +243,7 @@ local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, item
     local positions = {}
     local columnsBottom = {}
     local leftPadding = 22
-    local firstRowY = 66
+    local firstRowY = 30
     local columnPixelWidth = itemSize * ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
 
     local function placeColumn(columnIndex, categories)
