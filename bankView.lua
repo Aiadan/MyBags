@@ -13,7 +13,14 @@ local BankView = {
     refreshQueued = false,
     hooksInstalled = false,
     dataRetryCount = 0,
+    scrollOffset = 0,
 }
+
+local BANK_VIEWPORT_TOP = -58
+local BANK_VIEWPORT_BOTTOM = 40
+local BANK_VIEWPORT_LEFT = 16
+local BANK_VIEWPORT_RIGHT = -28
+local BANK_CONTENT_PADDING_BOTTOM = 8
 
 local function getScopeForBankType(bankType)
     if bankType == Enum.BankType.Account then
@@ -78,6 +85,18 @@ local function ensureItemButtonHooks(itemButton)
     itemButton:HookScript("OnDragStop", AddonNS.DragAndDrop.itemStopDrag)
     itemButton:HookScript("PreClick", AddonNS.DragAndDrop.itemOnClick)
     itemButton:HookScript("OnReceiveDrag", AddonNS.DragAndDrop.itemOnReceiveDrag)
+
+    if not itemButton.myBagAddonMouseWheelHooked then
+        itemButton:EnableMouseWheel(true)
+        itemButton:HookScript("OnMouseWheel", function(_, delta)
+            local view = AddonNS.BankView
+            if view and view.scrollFrame then
+                ScrollFrameTemplate_OnMouseWheel(view.scrollFrame, delta)
+            end
+        end)
+        itemButton.myBagAddonMouseWheelHooked = true
+    end
+
     itemButton.myBagAddonHooked = true
 end
 
@@ -89,6 +108,18 @@ end
 local function hideHeaders(self)
     for index = 1, #self.headerFrames do
         self.headerFrames[index]:Hide()
+    end
+end
+
+local function hideScrollArea(self)
+    if self.scrollViewportBackdrop then
+        self.scrollViewportBackdrop:Hide()
+    end
+end
+
+local function hideAllItemButtons(panel)
+    for itemButton in panel:EnumerateValidItems() do
+        itemButton:Hide()
     end
 end
 
@@ -105,6 +136,64 @@ local function ensureBackground(self, parentFrame)
     backgroundFrame:EnableMouse(false)
 
     self.backgroundFrame = backgroundFrame
+end
+
+local function ensureScrollArea(self, panel)
+    if self.scrollFrame then
+        return
+    end
+
+    local viewportBackdrop = CreateFrame("Frame", nil, panel, "BackdropTemplate")
+    viewportBackdrop:SetPoint("TOPLEFT", panel, "TOPLEFT", BANK_VIEWPORT_LEFT, BANK_VIEWPORT_TOP)
+    viewportBackdrop:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", BANK_VIEWPORT_RIGHT, BANK_VIEWPORT_BOTTOM)
+    viewportBackdrop:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
+    viewportBackdrop:SetBackdropColor(0.02, 0.02, 0.02, 0.82)
+    viewportBackdrop:EnableMouse(false)
+    viewportBackdrop:SetClipsChildren(true)
+
+    local scrollFrame = CreateFrame("ScrollFrame", nil, viewportBackdrop, "MinimalScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", viewportBackdrop, "TOPLEFT", 0, 0)
+    scrollFrame:SetPoint("BOTTOMRIGHT", viewportBackdrop, "BOTTOMRIGHT", -8, 0)
+    scrollFrame:EnableMouseWheel(true)
+    scrollFrame:SetClipsChildren(true)
+    scrollFrame:HookScript("OnVerticalScroll", function(_, offset)
+        self.scrollOffset = offset
+    end)
+
+    local scrollContentFrame = CreateFrame("Frame", nil, scrollFrame)
+    scrollContentFrame:SetPoint("TOPLEFT", scrollFrame, "TOPLEFT", 0, 0)
+    scrollContentFrame:SetPoint("TOPRIGHT", scrollFrame, "TOPRIGHT", 0, 0)
+    scrollContentFrame:SetHeight(1)
+    scrollContentFrame:SetClipsChildren(false)
+    scrollFrame:SetScrollChild(scrollContentFrame)
+
+    self.scrollViewportBackdrop = viewportBackdrop
+    self.scrollFrame = scrollFrame
+    self.scrollContentFrame = scrollContentFrame
+end
+
+local function updateScrollMetrics(self, contentBottomY)
+    local viewportHeight = self.scrollFrame:GetHeight() or 0
+    local viewportWidth = self.scrollFrame:GetWidth() or 0
+    local contentHeight = math.max(viewportHeight, contentBottomY + BANK_CONTENT_PADDING_BOTTOM)
+    local maxScroll = math.max(0, contentHeight - viewportHeight)
+
+    self.scrollContentFrame:SetWidth(math.max(1, viewportWidth))
+    self.scrollContentFrame:SetHeight(contentHeight)
+
+    local scrollBar = self.scrollFrame.ScrollBar
+    scrollBar:SetMinMaxValues(0, maxScroll)
+
+    local clampedOffset = self.scrollOffset
+    if clampedOffset > maxScroll then
+        clampedOffset = maxScroll
+    end
+    if clampedOffset < 0 then
+        clampedOffset = 0
+    end
+    self.scrollOffset = clampedOffset
+    self.scrollFrame:SetVerticalScroll(clampedOffset)
+    scrollBar:SetValue(clampedOffset)
 end
 
 local function ensureHeaderFrame(self, index)
@@ -131,6 +220,10 @@ local function ensureHeaderFrame(self, index)
         AddonNS.DragAndDrop.categoryStartDrag(frame)
     end)
     headerFrame:SetScript("OnDragStop", function() end)
+    headerFrame:EnableMouseWheel(true)
+    headerFrame:SetScript("OnMouseWheel", function(_, delta)
+        ScrollFrameTemplate_OnMouseWheel(self.scrollFrame, delta)
+    end)
 
     function headerFrame:SetText(text)
         label:SetText(text)
@@ -201,13 +294,23 @@ local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, item
         placeColumn(columnIndex, categories)
     end
 
-    return positions, categoryPositions, columnsBottom
+    local contentBottom = 0
+    for index = 1, #columnsBottom do
+        if columnsBottom[index] > contentBottom then
+            contentBottom = columnsBottom[index]
+        end
+    end
+
+    return positions, categoryPositions, contentBottom
 end
 
-local function applyItemPositions(panel, positions)
+local function applyItemPositions(panel, parentFrame, positions)
     for itemButton, position in pairs(positions) do
+        if itemButton:GetParent() ~= parentFrame then
+            itemButton:SetParent(parentFrame)
+        end
         itemButton:ClearAllPoints()
-        itemButton:SetPoint("TOPLEFT", panel, "TOPLEFT", position.x, -position.y)
+        itemButton:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", position.x, -position.y)
         itemButton:Show()
     end
 
@@ -249,6 +352,7 @@ function BankView:Refresh(scope)
     if not BankFrame:IsShown() or not panel:IsShown() then
         AddonNS.printDebug("MyBags BankView:Refresh skipped; frame hidden")
         hideHeaders(self)
+        hideScrollArea(self)
         return
     end
 
@@ -256,12 +360,16 @@ function BankView:Refresh(scope)
     if type(selectedTabID) ~= "number" then
         AddonNS.printDebug("MyBags BankView:Refresh skipped; invalid selectedTabID", selectedTabID)
         hideHeaders(self)
+        hideScrollArea(self)
+        hideAllItemButtons(panel)
         return
     end
     local slots = C_Container.GetContainerNumSlots(selectedTabID)
     if type(slots) ~= "number" or slots <= 0 then
         AddonNS.printDebug("MyBags BankView:Refresh skipped; no slots for tab", selectedTabID, slots)
         hideHeaders(self)
+        hideScrollArea(self)
+        hideAllItemButtons(panel)
         return
     end
 
@@ -270,7 +378,11 @@ function BankView:Refresh(scope)
     self.currentScope = activeScope
     AddonNS:SetCurrentLayoutScope(activeScope)
 
-    ensureBackground(self, panel)
+    ensureScrollArea(self, panel)
+    ensureBackground(self, self.scrollContentFrame)
+    self.scrollViewportBackdrop:Show()
+    self.scrollFrame:Show()
+    self.backgroundFrame:Show()
 
     local arrangedItems = {}
     local firstItemButton = nil
@@ -311,16 +423,18 @@ function BankView:Refresh(scope)
             self.dataRetryCount = 0
         end
         hideHeaders(self)
+        hideAllItemButtons(panel)
         return
     end
     self.dataRetryCount = 0
 
     local itemSize = firstItemButton:GetHeight() + ITEM_SPACING
     local categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, activeScope)
-    local positions, categoryPositions = placeItemsAndBuildHeaders(activeScope, panel, categoryAssignments, itemSize)
+    local positions, categoryPositions, contentBottom = placeItemsAndBuildHeaders(activeScope, panel, categoryAssignments, itemSize)
     AddonNS.printDebug("MyBags BankView:Refresh rendered categories", #categoryPositions, "scope", activeScope)
 
-    applyItemPositions(panel, positions)
+    updateScrollMetrics(self, contentBottom)
+    applyItemPositions(panel, self.scrollContentFrame, positions)
     renderHeaders(self, activeScope, panel, categoryPositions)
 end
 
@@ -358,6 +472,7 @@ local function tryInstallHooks()
     end)
     BankFrame:HookScript("OnHide", function()
         hideHeaders(BankView)
+        hideScrollArea(BankView)
         if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsShown() then
             AddonNS:SetCurrentLayoutScope("bag")
         end
