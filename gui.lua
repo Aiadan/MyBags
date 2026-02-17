@@ -559,7 +559,7 @@ local function startColumnResize()
     end
 
     local container = AddonNS.container
-    local startColumns = AddonNS:GetNumColumns()
+    local startColumns = AddonNS.CategoryStore:GetColumnCount("bag")
     local startWidth = container:GetWidth()
     local columnPixelWidth = getColumnPixelWidth()
     activeResize = {
