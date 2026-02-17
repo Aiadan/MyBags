@@ -49,6 +49,7 @@ local unprotectedCategoryBackdrop = {
 AddonNS.gui = AddonNS.gui or {}
 AddonNS.gui.categoriesFrames = {};
 local hoveredCategoryFrame = nil
+local backgroundFrame = nil
 local EDIT_CATEGORY_TOOLTIP = "Edit"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Hold-shift to skip confirmation prompt"
@@ -156,7 +157,17 @@ hintTextFrame.label:SetWordWrap(true)
 hintTextFrame.label:SetTextColor(1, 1, 1, 1)
 
 local function layoutHintTextFrame(anchorFrame, text)
-    hintTextFrame:SetWidth(anchorFrame:GetWidth())
+    local itemSize = AddonNS.container.Items[1]:GetHeight() + ITEM_SPACING
+    local columnPixelWidth = itemSize * AddonNS.Const.ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
+    local columnWidth = columnPixelWidth - AddonNS.Const.COLUMN_SPACING
+    local backgroundLeft = backgroundFrame:GetLeft()
+    local anchorLeft = anchorFrame:GetLeft()
+    local relativeLeft = anchorLeft - backgroundLeft + ITEM_SPACING / 2
+    local columnIndex = math.floor(relativeLeft / columnPixelWidth)
+    local columnLeft = backgroundLeft + columnIndex * columnPixelWidth - ITEM_SPACING / 2
+    local offsetX = columnLeft - anchorLeft
+
+    hintTextFrame:SetWidth(columnWidth)
     hintTextFrame.label:SetText(text)
 
     local textHeight = math.ceil(hintTextFrame.label:GetStringHeight() or 0)
@@ -172,9 +183,9 @@ local function layoutHintTextFrame(anchorFrame, text)
 
     hintTextFrame:ClearAllPoints()
     if hasRoomAbove then
-        hintTextFrame:SetPoint("BOTTOMLEFT", anchorFrame, "TOPLEFT", 0, HINT_TEXT_VERTICAL_GAP)
+        hintTextFrame:SetPoint("BOTTOMLEFT", anchorFrame, "TOPLEFT", offsetX, HINT_TEXT_VERTICAL_GAP)
     else
-        hintTextFrame:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 0, -HINT_TEXT_VERTICAL_GAP)
+        hintTextFrame:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", offsetX, -HINT_TEXT_VERTICAL_GAP)
     end
 end
 
@@ -318,7 +329,6 @@ function draggableFrame:StopDragging()
     activeDragShiftState = nil
 end
 
-local backgroundFrame = nil;
 backgroundFrame = CreateFrame("Frame", nil, AddonNS.container, "BackdropTemplate")     -- todo: does it need to be some frame with bg, or pure frame would sufficie? I think I was testing it and it didnt work for some reason.
 backgroundFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
 backgroundFrame:SetBackdropColor(0, 1, 0, 0)

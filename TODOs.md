@@ -118,13 +118,12 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ redesigned custom-category editor to a centered Blizzard-style movable panel with staged editing: changes are applied only on `Save`, `Revert Changes` restores drafts to the selected category baseline, panel-side delete remains removed, Escape cancels in-field name draft text, closing with pending edits prompts `Save and Exit` or `Exit`, action buttons are kept in the bottom-right corner with a tighter overall panel height, leaving query-editor focus clears the mirrored bag search text, saving a rename now updates the config-window title immediately, and missing field tooltips were added (including a clearer priority explanation that it resolves which matching category receives the item).
 * ✅ query help panel content is now selectable/copyable, includes in-panel search with `Prev`/`Next` navigation that scrolls to and highlights each match without stealing search-box focus, and opens scrolled to the top (when no active search query).
 * ✅ invalid query syntax in the custom-category editor now shows inline validation (red query box styling + red note under the field) using the same query compiler path as runtime, and save is blocked with an explicit inline error when query syntax is invalid (including `Save and Exit` flow) without force-changing focus/lock state; search-anchor lock now also stays requested while query editor text is non-empty (not only while query field has focus) to avoid anchor drift/rescale jumps.
+* ✅ column hover tooltip now uses the full column width (instead of the hovered category frame width).
 
 ### TODO
 
 * BUG: the handler for `CATEGORIZER_CATEGORIES_UPDATED` calls `TriggerContainerOnTokenWatchChanged()` even when the container/bag UI is hidden, causing needless refreshes; guard so it only runs when the container is visible.
 * [bug] when draggin an item an click right click on a column part, it moves entire cateogory in which a given itembutton was in
-* add info at the top, and in bright colour, of query expanation in game that this information is available also at https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md
-* the column tooltip on mouse hover should be as wide as column, not as wide as category that is being hovered.
 
 #### Low priority
 
@@ -137,9 +136,9 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * make collapsed a part of a mixin for container, not separate entity
 * [in progress] clearup the todos as I think there are duplicates and also these have become unordered due to that
 
-
 ### REJECTED
-
+* add info at the top, and in bright colour, of query expanation in game that this information is available also at https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md
+  * I have added search functionality and copy
 * Add ability to hide category so it won't show, nor the items in it
   * I dont want to create this, items should be visible not cause confusion "where is my item, oh I have hidden it"
 * I have decided to not include button for authenticator that is available in normal bags. Consider adding it via adding to layout update self:LayoutAddSlots(); as well as support for this button. Although I have no idea how I could test it
