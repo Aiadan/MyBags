@@ -157,3 +157,52 @@ run("GenerateAllTabItemButtons creates buttons for all slots from all tabs", fun
     assertEqual(inits[3].slotID, 1, "first slot in second tab")
     assertEqual(inits[3].bankType, Enum.BankType.Character, "active bank type should be forwarded")
 end)
+
+run("BuildItemButtonsSignature includes bank type and per-tab slot counts", function()
+    local signature = hooks.BuildItemButtonsSignature(Enum.BankType.Character, { 10, 20 })
+    assertEqual(signature, "1|10:2|20:1", "signature should include active type and tab:slot pairs")
+end)
+
+run("HasAnyActiveItemButtons reports whether enumeration has entries", function()
+    local emptyPanel = {
+        EnumerateValidItems = function()
+            return function()
+                return nil
+            end
+        end,
+    }
+    local populatedPanel = {
+        EnumerateValidItems = function()
+            local done = false
+            return function()
+                if done then
+                    return nil
+                end
+                done = true
+                return {}
+            end
+        end,
+    }
+    assertTrue(not hooks.HasAnyActiveItemButtons(emptyPanel), "empty enumeration should report false")
+    assertTrue(hooks.HasAnyActiveItemButtons(populatedPanel), "non-empty enumeration should report true")
+end)
+
+run("CountActiveItemButtons counts all enumerated buttons", function()
+    local panel = {
+        EnumerateValidItems = function()
+            local index = 0
+            return function()
+                index = index + 1
+                if index <= 3 then
+                    return {}
+                end
+                return nil
+            end
+        end,
+    }
+    assertEqual(hooks.CountActiveItemButtons(panel), 3, "active button count should match enumeration size")
+end)
+
+run("CountExpectedButtonsForTabs sums slots across all tabs", function()
+    assertEqual(hooks.CountExpectedButtonsForTabs({ 10, 20 }), 3, "expected buttons should sum all visible tab slots")
+end)

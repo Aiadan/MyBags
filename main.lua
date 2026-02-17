@@ -211,25 +211,10 @@ local function evaluateSearchVisibility(defaultMatch, searchEvaluator, itemInfo,
     local includeInSearch = defaultMatch
     local queryMatch = false
     if not defaultMatch and searchEvaluator then
-        local payload = AddonNS.CustomCategories:GetItemQueryPayload(itemInfo.itemID, itemButton)
+        local payload = AddonNS.CustomCategories:GetItemQueryPayload(itemInfo.itemID, itemButton, itemInfo)
         includeInSearch, queryMatch = AddonNS.QueryCategories:EvaluateSearchUnion(defaultMatch, searchEvaluator, payload)
     end
     return includeInSearch, queryMatch
-end
-
-local function applySearchUnionMatchState()
-    local searchEvaluator = searchQueryState.evaluator
-    if not searchEvaluator then
-        return
-    end
-    for _, itemButton in container:EnumerateValidItems() do
-        local info = C_Container.GetContainerItemInfo(itemButton:GetBagID(), itemButton:GetID())
-        if info then
-            local defaultMatch = not info.isFiltered
-            local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
-            itemButton:SetMatchesSearch(includeInSearch)
-        end
-    end
 end
 
 BagItemSearchBox:HookScript("OnEditFocusGained", function(searchBox)
@@ -279,10 +264,6 @@ extendSearchBoxMaxLetters(BankItemSearchBox)
 
 installSearchBoxWrapper(BagItemSearchBox)
 installSearchBoxWrapper(BankItemSearchBox)
-hooksecurefunc(container, "UpdateSearchResults", function()
-    refreshSearchQueryState(BagItemSearchBox:GetText())
-    applySearchUnionMatchState()
-end)
 
 container:HookScript("OnHide", function()
     container:SetSearchAnchorLockActive(false)

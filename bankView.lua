@@ -16,6 +16,7 @@ local BankView = {
     hooksInstalled = false,
     dataRetryCount = 0,
     scrollOffset = 0,
+    itemButtonsSignature = nil,
 }
 
 local BANK_VIEWPORT_TOP = -58
@@ -123,6 +124,43 @@ local function generateAllTabItemButtons(panel, activeBankType, tabIds)
             end
         end
     end
+end
+
+local function hasAnyActiveItemButtons(panel)
+    for _ in panel:EnumerateValidItems() do
+        return true
+    end
+    return false
+end
+
+local function countActiveItemButtons(panel)
+    local count = 0
+    for _ in panel:EnumerateValidItems() do
+        count = count + 1
+    end
+    return count
+end
+
+local function countExpectedButtonsForTabs(tabIds)
+    local expected = 0
+    for index = 1, #tabIds do
+        local tabID = tabIds[index]
+        local slotCount = C_Container.GetContainerNumSlots(tabID) or 0
+        if slotCount > 0 then
+            expected = expected + slotCount
+        end
+    end
+    return expected
+end
+
+local function buildItemButtonsSignature(activeBankType, tabIds)
+    local parts = { tostring(activeBankType) }
+    for index = 1, #tabIds do
+        local tabID = tabIds[index]
+        local slotCount = C_Container.GetContainerNumSlots(tabID) or 0
+        table.insert(parts, tostring(tabID) .. ":" .. tostring(slotCount))
+    end
+    return table.concat(parts, "|")
 end
 
 local function hideBlizzardBankTabs(panel)
@@ -269,7 +307,7 @@ local function evaluateSearchVisibility(defaultMatch, searchEvaluator, itemInfo,
     local includeInSearch = defaultMatch
     local queryMatch = false
     if not defaultMatch and searchEvaluator then
-        local payload = AddonNS.CustomCategories:GetItemQueryPayload(itemInfo.itemID, itemButton)
+        local payload = AddonNS.CustomCategories:GetItemQueryPayload(itemInfo.itemID, itemButton, itemInfo)
         includeInSearch, queryMatch = AddonNS.QueryCategories:EvaluateSearchUnion(defaultMatch, searchEvaluator, payload)
     end
     return includeInSearch, queryMatch
@@ -714,7 +752,16 @@ function BankView:Refresh(scope)
     self.scrollFrame:Show()
     self.backgroundFrame:Show()
     updateDropAreaOverlays(self, activeScope)
-    generateAllTabItemButtons(panel, activeBankType, tabIds)
+    local itemButtonsSignature = buildItemButtonsSignature(activeBankType, tabIds)
+    local expectedButtons = countExpectedButtonsForTabs(tabIds)
+    local shouldRegenerateButtons =
+        self.itemButtonsSignature ~= itemButtonsSignature
+        or not hasAnyActiveItemButtons(panel)
+        or countActiveItemButtons(panel) ~= expectedButtons
+    if shouldRegenerateButtons then
+        generateAllTabItemButtons(panel, activeBankType, tabIds)
+        self.itemButtonsSignature = itemButtonsSignature
+    end
     local searchText = BankItemSearchBox:GetText() or ""
     local searchEvaluator = AddonNS.QueryCategories:CompileAdHoc(searchText)
 
@@ -836,11 +883,6 @@ local function tryInstallHooks()
         end
         BankView:RefreshNow()
     end)
-    hooksecurefunc(BankPanel, "UpdateSearchResults", function()
-        local searchText = BankItemSearchBox:GetText() or ""
-        local searchEvaluator = AddonNS.QueryCategories:CompileAdHoc(searchText)
-        applySearchUnionMatchState(BankPanel, searchEvaluator)
-    end)
     hooksecurefunc(BankPanel, "Clean", function()
         BankView:QueueRefresh()
     end)
@@ -883,6 +925,10 @@ AddonNS.BankViewTestHooks = {
     BuildVisibleTabIds = buildVisibleTabIds,
     ShouldRefreshForBagUpdate = shouldRefreshForBagUpdate,
     GenerateAllTabItemButtons = generateAllTabItemButtons,
+    BuildItemButtonsSignature = buildItemButtonsSignature,
+    HasAnyActiveItemButtons = hasAnyActiveItemButtons,
+    CountActiveItemButtons = countActiveItemButtons,
+    CountExpectedButtonsForTabs = countExpectedButtonsForTabs,
     EvaluateSearchVisibility = evaluateSearchVisibility,
     ApplySearchUnionMatchState = applySearchUnionMatchState,
 }

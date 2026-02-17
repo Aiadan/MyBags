@@ -541,22 +541,42 @@ local function resolve_raw_id(categoryOrId)
     return strip_raw_id_prefix(tostring(categoryOrId))
 end
 
-local function collectItemInfo(itemID, itemButton)
+local function buildQueryPayload(itemID, itemButton, containerInfo)
     if not itemButton then
         return nil, nil
     end
     local bagID = itemButton:GetBagID()
     local slotID = itemButton:GetID()
-    local containerInfo = C_Container.GetContainerItemInfo(bagID, slotID)
+    local resolvedContainerInfo = containerInfo
+    if not resolvedContainerInfo then
+        resolvedContainerInfo = C_Container.GetContainerItemInfo(bagID, slotID)
+    end
+    local containerInfo = resolvedContainerInfo
     if not containerInfo then
         return nil, nil
     end
+
+    local questInfo = C_Container.GetContainerItemQuestInfo(bagID, slotID) or {}
+    local cacheKey = table.concat({
+        tostring(bagID),
+        tostring(slotID),
+        tostring(containerInfo.itemID),
+        tostring(containerInfo.stackCount),
+        tostring(containerInfo.quality),
+        tostring(containerInfo.hyperlink),
+        tostring(questInfo.questID),
+        tostring(questInfo.isActive),
+        tostring(questInfo.isQuestItem),
+    }, ":")
+    if itemButton._myBagsQueryPayloadCacheKey == cacheKey then
+        return itemButton._myBagsQueryPayloadCacheValue, containerInfo
+    end
+
     local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent =
         C_Item.GetItemInfo(containerInfo.hyperlink)
     if not itemName then
         return nil, containerInfo
     end
-    local questInfo = C_Container.GetContainerItemQuestInfo(bagID, slotID) or {}
     local inventoryType = C_Item.GetItemInventoryTypeByID(itemID)
     local payload = {
         stackCount = containerInfo.stackCount,
@@ -580,11 +600,13 @@ local function collectItemInfo(itemID, itemButton)
         bindType = bindType,
         expansionID = expansionID,
     }
+    itemButton._myBagsQueryPayloadCacheKey = cacheKey
+    itemButton._myBagsQueryPayloadCacheValue = payload
     return payload, containerInfo
 end
 
-function CustomCategories:GetItemQueryPayload(itemID, itemButton)
-    local payload = collectItemInfo(itemID, itemButton)
+function CustomCategories:GetItemQueryPayload(itemID, itemButton, containerInfo)
+    local payload = buildQueryPayload(itemID, itemButton, containerInfo)
     return payload
 end
 
@@ -617,7 +639,7 @@ function CustomCategorizer:Categorize(itemID, itemButton)
 
     -- Query-based matching remains internal to custom categorizer.
     local infoStartedAt = startedAt and profileNowMs() or nil
-    local itemInfo, containerInfo = collectItemInfo(itemID, itemButton)
+    local itemInfo = CustomCategories:GetItemQueryPayload(itemID, itemButton)
     if infoStartedAt then
         categorizeProfile.infoMs = categorizeProfile.infoMs + (profileNowMs() - infoStartedAt)
     end
