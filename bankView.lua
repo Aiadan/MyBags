@@ -752,6 +752,7 @@ function BankView:Refresh(scope)
     for itemButton in panel:EnumerateValidItems() do
         ensureItemButtonBagMethods(itemButton)
         ensureItemButtonHooks(itemButton)
+        itemButton:Refresh()
         itemButton.MyBagsScope = activeScope
 
         itemButton.ItemCategory = nil
