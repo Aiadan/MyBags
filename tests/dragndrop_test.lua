@@ -9,14 +9,52 @@ local currentTime = 1
 local cursorX = 0
 local cursorY = 0
 local lastEvent = nil
+local clearCursorCalls = 0
+local pickupCalls = 0
+local emptyButtonClickCalls = 0
+local lastEmptyButtonClicked = nil
 
-_G.C_Container = {}
+_G.C_Container = {
+    GetContainerItemInfo = function(bagID, slotID)
+        if bagID == 0 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        if bagID == 0 and slotID == 2 then
+            return { itemID = 3003 }
+        end
+        if bagID == Enum.BagIndex.CharacterBankTab_1 and slotID == 1 then
+            return { itemID = 2002 }
+        end
+        return nil
+    end,
+    PickupContainerItem = function(bagID, slotID)
+        pickupCalls = pickupCalls + 1
+    end,
+}
 _G.hooksecurefunc = function() end
 _G.GetTime = function() return currentTime end
 _G.GetCursorInfo = function() return cursorInfoType, cursorItemId, nil end
 _G.IsShiftKeyDown = function() return shiftDown end
 _G.RunNextFrame = function(fn) fn() end
 _G.GetCursorPosition = function() return cursorX, cursorY end
+_G.GetMouseFoci = function()
+    return {}
+end
+_G.ClearCursor = function()
+    clearCursorCalls = clearCursorCalls + 1
+end
+_G.ContainerFrameItemButton_OnClick = function(button, mouseButton)
+    emptyButtonClickCalls = emptyButtonClickCalls + 1
+    lastEmptyButtonClicked = button
+end
+_G.Enum = {
+    BagIndex = {
+        CharacterBankTab_1 = 100,
+        CharacterBankTab_6 = 105,
+        AccountBankTab_1 = 106,
+        AccountBankTab_5 = 110,
+    },
+}
 
 local addonEnv = {
     container = {},
@@ -38,6 +76,18 @@ local addonEnv = {
     CategoriesGUI = {
         SelectCategoryById = function(_, categoryId)
             selectedCategoryId = categoryId
+        end,
+    },
+    Categories = {
+        GetLastCategoryInColumn = function(_, _, scope)
+            return {
+                GetId = function()
+                    return "target-" .. tostring(scope)
+                end,
+                IsProtected = function()
+                    return false
+                end,
+            }
         end,
     },
     TriggerContainerOnTokenWatchChanged = function() end,
@@ -90,6 +140,9 @@ local function category(id, opts)
         GetId = function()
             return id
         end,
+        IsProtected = function()
+            return false
+        end,
         OnLeftClickConfigMode = function()
             if opts and opts.configModeHandler then
                 configModeClickCalls = configModeClickCalls + 1
@@ -106,6 +159,11 @@ local function resetDragTestState()
     cursorItemId = nil
     currentTime = currentTime + 1
     lastEvent = nil
+    clearCursorCalls = 0
+    pickupCalls = 0
+    emptyButtonClickCalls = 0
+    lastEmptyButtonClicked = nil
+    addonEnv.emptyItemButton = nil
 end
 
 local function hintCategory(id, isProtected)
@@ -299,4 +357,322 @@ run("GetCategoryDropHint treats merchant cursor as active item drag", function()
     local hint = addonEnv.DragAndDrop:GetCategoryDropHint(hintCategory("cus-3", false), true)
     assertTrue(hint ~= nil, "merchant item drag should show hint")
     assertEqual(hint.tone, "assign", "merchant drag over assignable category should assign")
+end)
+
+run("itemStopDrag clears cursor for same-scope transfer", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+
+    _G.GetMouseFoci = function()
+        return {
+            {
+                myBagAddonHooked = true,
+                GetBagID = function()
+                    return 0
+                end,
+                GetID = function()
+                    return 2
+                end,
+            },
+        }
+    end
+
+    local bagButton = {
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+
+    addonEnv.DragAndDrop.itemStartDrag(bagButton)
+    addonEnv.DragAndDrop.itemStopDrag(bagButton)
+
+    assertEqual(clearCursorCalls, 1, "same-scope stop drag should clear cursor")
+end)
+
+run("itemStopDrag does not clear cursor for cross-scope transfer", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+
+    _G.GetMouseFoci = function()
+        return {
+            {
+                myBagAddonHooked = true,
+                GetBagID = function()
+                    return Enum.BagIndex.CharacterBankTab_1
+                end,
+                GetID = function()
+                    return 1
+                end,
+            },
+        }
+    end
+
+    local bagButton = {
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+
+    addonEnv.DragAndDrop.itemStartDrag(bagButton)
+    addonEnv.DragAndDrop.itemStopDrag(bagButton)
+
+    assertEqual(clearCursorCalls, 0, "cross-scope stop drag should keep cursor")
+end)
+
+run("itemOnReceiveDrag replays pickup for same-scope transfer", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+
+    local sourceButton = {
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+    local targetButton = {
+        ItemCategory = category("cus-22"),
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 2
+        end,
+    }
+
+    _G.C_Container.GetContainerItemInfo = function(bagID, slotID)
+        if bagID == 0 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        if bagID == 0 and slotID == 2 then
+            return { itemID = 3003 }
+        end
+        return nil
+    end
+
+    addonEnv.DragAndDrop.itemStartDrag(sourceButton)
+    addonEnv.DragAndDrop.itemOnReceiveDrag(targetButton)
+
+    assertEqual(pickupCalls, 1, "same-scope receive drag should replay pickup")
+end)
+
+run("itemOnReceiveDrag does not replay pickup for cross-scope transfer", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+
+    local sourceButton = {
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+    local targetButton = {
+        ItemCategory = category("cus-22"),
+        GetBagID = function()
+            return Enum.BagIndex.CharacterBankTab_1
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+
+    _G.C_Container.GetContainerItemInfo = function(bagID, slotID)
+        if bagID == 0 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        if bagID == Enum.BagIndex.CharacterBankTab_1 and slotID == 1 then
+            return { itemID = 3003 }
+        end
+        return nil
+    end
+
+    addonEnv.DragAndDrop.itemStartDrag(sourceButton)
+    addonEnv.DragAndDrop.itemOnReceiveDrag(targetButton)
+
+    assertEqual(pickupCalls, 0, "cross-scope receive drag should not replay pickup")
+end)
+
+run("itemOnClick does not apply fast-path for cross-scope transfer", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+
+    local sourceButton = {
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+    local targetButton = {
+        ItemCategory = category("cus-22"),
+        GetBagID = function()
+            return Enum.BagIndex.CharacterBankTab_1
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+
+    _G.C_Container.GetContainerItemInfo = function(bagID, slotID)
+        if bagID == 0 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        if bagID == Enum.BagIndex.CharacterBankTab_1 and slotID == 1 then
+            return { itemID = 3003 }
+        end
+        return nil
+    end
+
+    addonEnv.DragAndDrop.itemStartDrag(sourceButton)
+    addonEnv.DragAndDrop.itemOnClick(targetButton, "LeftButton")
+
+    assertEqual(clearCursorCalls, 0, "cross-scope click should not clear cursor")
+    assertEqual(pickupCalls, 0, "cross-scope click should not replay pickup")
+end)
+
+run("itemStopDrag uses parent scoped frame to detect cross-scope transfer", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+
+    _G.GetMouseFoci = function()
+        local parentScopeFrame = {
+            MyBagsScope = "bank-character",
+            GetParent = function()
+                return nil
+            end,
+        }
+        return {
+            {
+                myBagAddonHooked = true,
+                GetBagID = function()
+                    return nil
+                end,
+                GetID = function()
+                    return nil
+                end,
+                GetParent = function()
+                    return parentScopeFrame
+                end,
+            },
+        }
+    end
+
+    local bagButton = {
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+
+    _G.C_Container.GetContainerItemInfo = function(bagID, slotID)
+        if bagID == 0 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        return nil
+    end
+
+    addonEnv.DragAndDrop.itemStartDrag(bagButton)
+    addonEnv.DragAndDrop.itemStopDrag(bagButton)
+
+    assertEqual(clearCursorCalls, 0, "parent-scoped cross-scope hover should not clear cursor")
+end)
+
+run("categoryOnReceiveDrag places item into available empty slot for cross-scope transfer", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+
+    local sourceButton = {
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+    local targetEmptyButton = { id = "bank-empty" }
+    addonEnv.emptyItemButton = targetEmptyButton
+
+    _G.C_Container.GetContainerItemInfo = function(bagID, slotID)
+        if bagID == 0 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        return nil
+    end
+
+    addonEnv.DragAndDrop.itemStartDrag(sourceButton)
+    addonEnv.DragAndDrop.categoryOnReceiveDrag({
+        ItemCategory = category("cus-22"),
+        MyBagsScope = "bank-character",
+    })
+
+    assertEqual(emptyButtonClickCalls, 1, "cross-scope category drop should use available empty slot")
+    assertTrue(lastEmptyButtonClicked == targetEmptyButton, "should click available empty button")
+end)
+
+run("backgroundOnReceiveDrag places item into available empty slot for cross-scope transfer", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+    cursorX = 50
+    cursorY = 50
+
+    local sourceButton = {
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+    local targetEmptyButton = { id = "bank-empty-2" }
+    addonEnv.emptyItemButton = targetEmptyButton
+
+    _G.C_Container.GetContainerItemInfo = function(bagID, slotID)
+        if bagID == 0 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        return nil
+    end
+
+    addonEnv.DragAndDrop.itemStartDrag(sourceButton)
+    addonEnv.DragAndDrop.backgroundOnReceiveDrag({
+        MyBagsScope = "bank-character",
+        GetEffectiveScale = function()
+            return 1
+        end,
+        GetLeft = function()
+            return 0
+        end,
+        GetBottom = function()
+            return 0
+        end,
+        GetWidth = function()
+            return 300
+        end,
+        GetHeight = function()
+            return 100
+        end,
+    }, "LeftButton")
+
+    assertEqual(emptyButtonClickCalls, 1, "cross-scope background drop should use available empty slot")
+    assertTrue(lastEmptyButtonClicked == targetEmptyButton, "should click available empty button")
 end)

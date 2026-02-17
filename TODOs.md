@@ -136,6 +136,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ fixed drag hint regression where hovering item buttons did not keep category highlight active; hint mapping now resolves by category id + scope (while still avoiding bag/bank cross-frame tooltip stealing).
 * ✅ bank MyBags view now renders all purchased tabs at once per active bank type (character/account), hides Blizzard bank tab strip while active, tracks visible tab IDs for `BAG_UPDATE` refreshes, and adds a compact `Actions` menu for tab settings + purchase-next-tab.
 * ✅ fixed bank move-to-empty-slot icon bug: MyBags bank refresh now calls Blizzard `BankPanelItemButtonMixin:Refresh()` for each active button so icons/count/lock state update immediately when an item is moved into a previously empty bank slot.
+* ✅ fixed bank<->bag drag transfer regression by normalizing cross-scope item drags to merchant-style (`cross-scope => pickedItemButton = nil`) across `OnDragStop`, `OnReceiveDrag`, and `PreClick`; category/background drops now use the standard available empty slot path, while same-scope drags keep fast-path swap behavior.
 
 ### TODO
 

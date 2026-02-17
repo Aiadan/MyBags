@@ -725,6 +725,7 @@ function BankView:Refresh(scope)
     AddonNS:SetCurrentLayoutScope(activeScope)
 
     ensureScrollArea(self, panel)
+    self.scrollFrame.MyBagsScope = activeScope
     ensureBackground(self, self.scrollContentFrame)
     hideBlizzardBankTabs(panel)
     showActionsButton(self, panel, activeBankType, tabData)

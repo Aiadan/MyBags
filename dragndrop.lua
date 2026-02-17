@@ -45,13 +45,30 @@ local function getScopeByBagId(bagId)
 end
 
 local function getScopeFromButton(button)
-    if button and button.MyBagsScope then
-        return button.MyBagsScope
+    local frame = button
+    while frame do
+        if frame.MyBagsScope then
+            return frame.MyBagsScope
+        end
+        if not frame.GetParent then
+            break
+        end
+        frame = frame:GetParent()
     end
     if button and button.GetBagID then
         return getScopeByBagId(button:GetBagID())
     end
     return pickedScope or "bag"
+end
+
+local function isSameScopeTransfer(targetScope)
+    return (pickedScope or "bag") == (targetScope or "bag")
+end
+
+local function normalizeCrossScopeItemDrag(targetScope)
+    if pickedItemButton and not isSameScopeTransfer(targetScope) then
+        pickedItemButton = nil
+    end
 end
 
 local function queueRefreshForScope(scope)
@@ -195,6 +212,8 @@ function AddonNS.DragAndDrop.itemOnClick(self, button)
         local infoType, itemID, itemLink = getCachedCursorInfo()
         AddonNS.printDebug(pickedItemButton, infoType, itemID, itemLink)
         if (infoType) then
+            local targetScope = getScopeFromButton(self)
+            normalizeCrossScopeItemDrag(targetScope)
             if (pickedItemButton and itemID ~= getItemIdFromButton(self)) then
                 ClearCursor(); -- [faster movement feature] see INFO in itemOnReceiveDrag function
             end
@@ -205,20 +224,29 @@ function AddonNS.DragAndDrop.itemOnClick(self, button)
     end
 end
 
-local function isMouseOverHookedFrame(targetedItemID)
+local function getHoveredHookedFrame(targetedItemID)
     local mouseFoci = GetMouseFoci()
     local f = mouseFoci[1]
     if f and (f.myBagAddonHooked or f.ItemCategory) then
-        if (getItemIdFromButton(f)) then
-            return getItemIdFromButton(f) ~= targetedItemID;
+        local hoveredItemID = getItemIdFromButton(f)
+        if hoveredItemID then
+            if hoveredItemID == targetedItemID then
+                return nil
+            end
+            return f
         end
-        return true
+        return f
     end
-    return false
+    return nil
 end
+
 function AddonNS.DragAndDrop.itemStopDrag(self)                 -- its only here to refresh cursor as we are hooking to onreceiveddrag and that means that cursor is cleared by the time it arrives to our code. Hence we will Cache it and use that instead.
     getCachedCursorInfo()                                       -- this is here to cache the value even when it would be removed by Blizzard code
-    if (isMouseOverHookedFrame(getItemIdFromButton(self))) then -- [faster movement feature]
+    local hoveredFrame = getHoveredHookedFrame(getItemIdFromButton(self))
+    if hoveredFrame then
+        normalizeCrossScopeItemDrag(getScopeFromButton(hoveredFrame))
+    end
+    if hoveredFrame and pickedItemButton then -- [faster movement feature]
         ClearCursor();                                          -- see INFO in itemOnReceiveDrag function
     end
     AddonNS.gui:RefreshCategoryDragHints()
@@ -243,6 +271,7 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
 
     local targetItemCategory = self.ItemCategory;
     local targetScope = getScopeFromButton(self)
+    normalizeCrossScopeItemDrag(targetScope)
 
     local infoType, itemID, itemLink = getCachedCursorInfo()
     if (infoType == "merchant") then
@@ -324,11 +353,15 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
         infoType = "item";
     end
     if (infoType == "item") then
+        normalizeCrossScopeItemDrag(targetScope)
         if (pickedItemButton and itemID ~= pickedItemID) then
             AddonNS.DragAndDrop.cleanUp()
         end
-        if not pickedItemButton and AddonNS.emptyItemButton then
-            ContainerFrameItemButton_OnClick(AddonNS.emptyItemButton, "LeftButton")
+        if not pickedItemButton then
+            local emptyItemButton = AddonNS.emptyItemButton
+            if emptyItemButton then
+                ContainerFrameItemButton_OnClick(emptyItemButton, "LeftButton")
+            end
         end
         triggerItemMoved(itemID, nil, pickedItemCategory, targetItemCategory, pickedItemButton, nil);
         ClearCursor();
@@ -397,13 +430,17 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self, mouseButtonName)
             infoType = "item";
         end
         if (infoType == "item") then
+            local scope = getScopeFromButton(self)
+            normalizeCrossScopeItemDrag(scope)
             if (pickedItemButton and itemID ~= pickedItemID) then
                 AddonNS.DragAndDrop.cleanUp()
             end
-            if not pickedItemButton and AddonNS.emptyItemButton then
-                ContainerFrameItemButton_OnClick(AddonNS.emptyItemButton, "LeftButton")
+            if not pickedItemButton then
+                local emptyItemButton = AddonNS.emptyItemButton
+                if emptyItemButton then
+                    ContainerFrameItemButton_OnClick(emptyItemButton, "LeftButton")
+                end
             end
-            local scope = self.MyBagsScope or pickedScope
             local targetCategory = AddonNS.Categories:GetLastCategoryInColumn(columnNo, scope);
             triggerItemMoved(itemID, nil, pickedItemCategory, targetCategory, pickedItemButton, nil);
             ClearCursor();
@@ -411,7 +448,7 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self, mouseButtonName)
         elseif isCategoryDragActive and pickedItemCategory then -- category frame
             local moveTail = IsShiftKeyDown()
             AddonNS.printDebug("sending CATEGORY_MOVED_TO_COLUMN", AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN)
-            local scope = self.MyBagsScope or pickedScope
+            local scope = getScopeFromButton(self)
             AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN,
                 getCategoryId(pickedItemCategory), columnNo, moveTail, scope);
             -- ClearCursor();
