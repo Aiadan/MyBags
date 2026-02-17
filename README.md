@@ -6,7 +6,7 @@
 
 This is yet another bag addon with a focus on manually creating groups and easy management of them to keep the bags organised.
 
-**Bank bags and other are currently not supported.**
+**Both regular bags and bank are supported (including account/warband bank as a separate scope).**
 
 ## Features
 
@@ -47,6 +47,9 @@ Other notable features:
 * Search filters visible bag items.
 * Search combines Blizzard's default match with valid MyBags query-text match from the same input.
 * Invalid query text in search is ignored instead of breaking results.
+* Bank uses the same category-based organization flow as bags.
+* Bank has separate layout scopes for character bank and account/warband bank.
+* Bank view includes a compact `Actions` menu for tab settings and purchase-next-tab.
 * While editing a custom category query, the text is mirrored into bag search for live preview.
 * Custom query categories support priority scores (higher priority wins first).
 * Query syntax and attributes reference: [QUERY_ATTRIBUTES.md](QUERY_ATTRIBUTES.md)
