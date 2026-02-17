@@ -176,59 +176,31 @@ local function hideBlizzardBankTabs(panel)
     panel.PurchaseTab:Hide()
 end
 
-local function ensureActionsDropdown(self)
-    if self.actionsDropdownFrame then
-        return self.actionsDropdownFrame
-    end
-    local dropdown = CreateFrame("Frame", "MyBagsBankActionsDropdown", UIParent, "UIDropDownMenuTemplate")
-    self.actionsDropdownFrame = dropdown
-    return dropdown
-end
-
-local function buildActionsMenuItems(panel, activeBankType, tabData)
+local function addActionsMenuItems(rootDescription, panel, activeBankType, tabData)
     assert(BankPanelTabSettingsMenuMixin and BankPanelTabSettingsMenuMixin.Event and BankPanelTabSettingsMenuMixin.Event.OpenTabSettingsRequested,
         "BankPanelTabSettingsMenuMixin OpenTabSettingsRequested event missing")
-    local items = {}
     local eventName = BankPanelTabSettingsMenuMixin.Event.OpenTabSettingsRequested
 
-    table.insert(items, {
-        text = "Tab Settings",
-        isTitle = true,
-        notCheckable = true,
-    })
+    rootDescription:CreateTitle("Tab Settings")
 
     for index = 1, #tabData do
         local currentTab = tabData[index]
         local tabID = currentTab and currentTab.ID
         if type(tabID) == "number" and tabID > 0 then
-            table.insert(items, {
-                text = currentTab.name or ("Tab " .. tabID),
-                notCheckable = true,
-                func = function()
+            rootDescription:CreateButton(currentTab.name or ("Tab " .. tabID), function()
                     panel.TabSettingsMenu:TriggerEvent(eventName, tabID)
-                end,
-            })
+                end)
         end
     end
 
-    table.insert(items, {
-        text = " ",
-        disabled = true,
-        notCheckable = true,
-    })
+    rootDescription:CreateDivider()
 
     local canPurchase = C_Bank.CanPurchaseBankTab(activeBankType)
     local hasMaxTabs = C_Bank.HasMaxBankTabs(activeBankType)
-    table.insert(items, {
-        text = "Purchase Next Tab",
-        notCheckable = true,
-        disabled = (not canPurchase) or hasMaxTabs,
-        func = function()
+    local purchaseButton = rootDescription:CreateButton("Purchase Next Tab", function()
             StaticPopup_Show("CONFIRM_BUY_BANK_TAB", nil, nil, { bankType = activeBankType })
-        end,
-    })
-
-    return items
+        end)
+    purchaseButton:SetEnabled((canPurchase and not hasMaxTabs) == true)
 end
 
 local function ensureActionsButton(self, panel)
@@ -238,7 +210,8 @@ local function ensureActionsButton(self, panel)
 
     local button = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     button:SetSize(58, 20)
-    button:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -8, -10)
+    assert(BankItemSearchBox, "BankItemSearchBox missing")
+    button:SetPoint("RIGHT", BankItemSearchBox, "LEFT", -8, 0)
     button:SetText("Actions")
     button:Hide()
     self.actionsButton = button
@@ -248,8 +221,9 @@ end
 local function showActionsButton(self, panel, activeBankType, tabData)
     local button = ensureActionsButton(self, panel)
     button:SetScript("OnClick", function()
-        local menu = buildActionsMenuItems(panel, activeBankType, tabData)
-        EasyMenu(menu, ensureActionsDropdown(self), "cursor", 0, 0, "MENU")
+        MenuUtil.CreateContextMenu(button, function(_, rootDescription)
+            addActionsMenuItems(rootDescription, panel, activeBankType, tabData)
+        end)
     end)
     button:Show()
 end

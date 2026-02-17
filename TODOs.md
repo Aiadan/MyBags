@@ -132,6 +132,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ fixed regression where only first bank tab items could remain visible after optimization by tightening regenerate conditions: now bank also regenerates when active pooled button count differs from expected total slot count across visible tabs.
 * ✅ fixed dimming regression while keeping search performance by caching per-item search inclusion (`_myBagsIncludeInSearch`) during bag/bank refresh and reapplying that cached state after Blizzard `UpdateSearchResults` (no extra payload/query recomputation pass).
 * ✅ simplified search visuals per request: visible bag/bank item buttons are now always forced undimmed (`SetMatchesSearch(true)`), while filtering still relies on include/exclude layout decisions rather than dim state.
+* ✅ fixed bank Actions button runtime error (`EasyMenu` nil on modern Retail) by migrating to Blizzard `MenuUtil.CreateContextMenu`; menu now uses the supported context-menu API and the button is anchored to the bank search row for stable placement.
 * ✅ fixed drag hint regression where hovering item buttons did not keep category highlight active; hint mapping now resolves by category id + scope (while still avoiding bag/bank cross-frame tooltip stealing).
 * ✅ bank MyBags view now renders all purchased tabs at once per active bank type (character/account), hides Blizzard bank tab strip while active, tracks visible tab IDs for `BAG_UPDATE` refreshes, and adds a compact `Actions` menu for tab settings + purchase-next-tab.
 
