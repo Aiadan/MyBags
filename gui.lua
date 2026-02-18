@@ -203,16 +203,8 @@ local function layoutHintTextFrame(anchorFrame, text)
     end
     hintTextFrame:SetHeight(frameHeight)
 
-    local uiTop = UIParent:GetTop() or UIParent:GetHeight()
-    local anchorTop = anchorFrame:GetTop() or 0
-    local hasRoomAbove = (anchorTop + frameHeight + HINT_TEXT_VERTICAL_GAP) <= uiTop
-
     hintTextFrame:ClearAllPoints()
-    if hasRoomAbove then
-        hintTextFrame:SetPoint("BOTTOMLEFT", anchorFrame, "TOPLEFT", offsetX, HINT_TEXT_VERTICAL_GAP)
-    else
-        hintTextFrame:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", offsetX, -HINT_TEXT_VERTICAL_GAP)
-    end
+    hintTextFrame:SetPoint("BOTTOMLEFT", anchorFrame, "TOPLEFT", offsetX, HINT_TEXT_VERTICAL_GAP)
 end
 
 local function getCategoryHoverText(frame)
@@ -846,6 +838,8 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.isAddCategoryControl = true
             f.MyBagsScope = categoryGUIInfo.scope or "bag"
             f.MyBagsContainerRef = AddonNS.container
+            f.MyBagsHintAnchorFrame = backgroundFrame
+            f.MyBagsHintAlignToFrame = true
             if categoryGUIInfo.isExportCategoryControl then
                 f.controlKind = "export"
             elseif categoryGUIInfo.isImportCategoryControl then
@@ -880,6 +874,8 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.isAddCategoryControl = false
             f.MyBagsScope = categoryGUIInfo.scope or "bag"
             f.MyBagsContainerRef = AddonNS.container
+            f.MyBagsHintAnchorFrame = backgroundFrame
+            f.MyBagsHintAlignToFrame = true
             f.controlKind = nil
             f.bg:Hide()
             f.addControlBackdrop:Hide()
