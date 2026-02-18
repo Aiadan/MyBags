@@ -286,6 +286,91 @@ run("ResolveTargetPanelSize uses locked size when search lock is active", functi
     assertEqual(height, 520, "computed height should be used without lock")
 end)
 
+run("GetBackgroundHintFrame resolves hovered category drop frame by hit-test", function()
+    local view = {
+        dropFrames = {
+            {
+                id = "drop-11",
+                MyBagsScope = "bank-character",
+                ItemCategory = {},
+                IsShown = function() return true end,
+                GetLeft = function() return 120 end,
+                GetRight = function() return 220 end,
+                GetBottom = function() return 90 end,
+                GetTop = function() return 190 end,
+            },
+            {
+                id = "drop-12",
+                MyBagsScope = "bank-character",
+                ItemCategory = {},
+                IsShown = function() return true end,
+                GetLeft = function() return 240 end,
+                GetRight = function() return 320 end,
+                GetBottom = function() return 90 end,
+                GetTop = function() return 190 end,
+            },
+        },
+    }
+    local frame = {
+        GetEffectiveScale = function() return 1 end,
+        GetLeft = function() return 100 end,
+        GetBottom = function() return 50 end,
+        GetWidth = function() return 400 end,
+        GetHeight = function() return 200 end,
+    }
+
+    local oldGetCursorPosition = _G.GetCursorPosition
+    _G.GetCursorPosition = function()
+        return 180, 140
+    end
+
+    local hintFrame = hooks.GetBackgroundHintFrame(view, frame, "bank-character")
+    _G.GetCursorPosition = oldGetCursorPosition
+
+    assertTrue(hintFrame.id == "drop-11", "mapped drop frame should be returned")
+end)
+
+run("GetBackgroundColumnFallbackHintFrame resolves last category in hovered column", function()
+    addonEnv.Categories = {
+        GetLastCategoryInColumn = function(_, columnNo, scope)
+            if columnNo == 2 and scope == "bank-character" then
+                return {
+                    GetId = function()
+                        return "cus-22"
+                    end,
+                }
+            end
+            return nil
+        end,
+    }
+
+    local view = {
+        ResolveDropColumn = function()
+            return 2
+        end,
+        dropFrameByCategoryId = {
+            ["cus-22"] = { id = "drop-22" },
+        },
+    }
+    local frame = {
+        GetEffectiveScale = function() return 1 end,
+        GetLeft = function() return 100 end,
+        GetBottom = function() return 50 end,
+        GetWidth = function() return 400 end,
+        GetHeight = function() return 200 end,
+    }
+
+    local oldGetCursorPosition = _G.GetCursorPosition
+    _G.GetCursorPosition = function()
+        return 280, 140
+    end
+
+    local hintFrame = hooks.GetBackgroundColumnFallbackHintFrame(view, frame, "bank-character")
+    _G.GetCursorPosition = oldGetCursorPosition
+
+    assertTrue(hintFrame.id == "drop-22", "fallback should map to last category drop frame in column")
+end)
+
 run("GetBankCapacityState returns taken free and total slot counts", function()
     local state = hooks.GetBankCapacityState({ 10, 30 })
     assertEqual(state.taken, 2, "two slots should be taken")

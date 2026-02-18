@@ -638,6 +638,97 @@ local function updateDropAreaOverlays(self, scope)
     end
 end
 
+local function getCursorPositionForFrame(frame)
+    local cursorX, cursorY = GetCursorPosition()
+    local scale = frame:GetEffectiveScale()
+    local localX = cursorX / scale
+    local localY = cursorY / scale
+    return localX, localY
+end
+
+local function getMouseRelativePosition(frame)
+    local localX, localY = getCursorPositionForFrame(frame)
+    localX = localX - frame:GetLeft()
+    localY = localY - frame:GetBottom()
+    local width = frame:GetWidth()
+    local height = frame:GetHeight()
+    if localX < 0 or localX > width or localY < 0 or localY > height then
+        return nil, nil
+    end
+    return localX, width
+end
+
+local function getBackgroundHintFrame(self, frame, scope)
+    if not self.dropFrames then
+        return nil
+    end
+    local cursorX, cursorY = getCursorPositionForFrame(frame)
+    for index = 1, #self.dropFrames do
+        local dropFrame = self.dropFrames[index]
+        if dropFrame and dropFrame:IsShown() and dropFrame.MyBagsScope == scope and dropFrame.ItemCategory then
+            local left = dropFrame:GetLeft()
+            local right = dropFrame:GetRight()
+            local bottom = dropFrame:GetBottom()
+            local top = dropFrame:GetTop()
+            if left and right and bottom and top and cursorX >= left and cursorX <= right and cursorY >= bottom and cursorY <= top then
+                return dropFrame
+            end
+        end
+    end
+    return nil
+end
+
+local function getBackgroundColumnFallbackHintFrame(self, frame, scope)
+    local relativeX, frameWidth = getMouseRelativePosition(frame)
+    if not relativeX or not frameWidth then
+        return nil
+    end
+    local columnNo = self:ResolveDropColumn(relativeX, scope, frameWidth)
+    if not columnNo then
+        return nil
+    end
+    local targetCategory = AddonNS.Categories:GetLastCategoryInColumn(columnNo, scope)
+    if not targetCategory or not targetCategory.GetId then
+        return nil
+    end
+    if not self.dropFrameByCategoryId then
+        return nil
+    end
+    return self.dropFrameByCategoryId[targetCategory:GetId()]
+end
+
+local function refreshBackgroundHoverHint(self, frame)
+    if not AddonNS.DragAndDrop:IsItemDragActive() then
+        AddonNS.gui:ClearHoveredCategoryFrame(frame)
+        return
+    end
+    local scope = frame.MyBagsScope or self.currentScope
+    local hintFrame = getBackgroundHintFrame(self, frame, scope)
+    if not hintFrame then
+        hintFrame = getBackgroundColumnFallbackHintFrame(self, frame, scope)
+    end
+    if hintFrame and hintFrame:IsShown() then
+        AddonNS.gui:SetHoveredCategoryFrame(hintFrame)
+        return
+    end
+    AddonNS.gui:ClearHoveredCategoryFrame(frame)
+end
+
+local function handleBackgroundDrop(self, frame, mouseButtonName)
+    if mouseButtonName and mouseButtonName ~= "LeftButton" then
+        return
+    end
+    if AddonNS.DragAndDrop:IsItemDragActive() then
+        local scope = frame.MyBagsScope or self.currentScope
+        local hintFrame = getBackgroundHintFrame(self, frame, scope)
+        if hintFrame and hintFrame:IsShown() then
+            AddonNS.DragAndDrop.categoryOnReceiveDrag(hintFrame)
+            return
+        end
+    end
+    AddonNS.DragAndDrop.backgroundOnReceiveDrag(frame, mouseButtonName)
+end
+
 local function ensureBackground(self, parentFrame)
     if self.backgroundFrame then
         return
@@ -648,7 +739,26 @@ local function ensureBackground(self, parentFrame)
     backgroundFrame:SetPoint("BOTTOMRIGHT", parentFrame, "BOTTOMRIGHT", 0, 0)
     backgroundFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
     backgroundFrame:SetBackdropColor(0, 0, 0, 0)
-    backgroundFrame:EnableMouse(false)
+    backgroundFrame:EnableMouse(true)
+    backgroundFrame:SetScript("OnEnter", function(frame)
+        refreshBackgroundHoverHint(self, frame)
+    end)
+    backgroundFrame:SetScript("OnLeave", function(frame)
+        AddonNS.gui:ClearHoveredCategoryFrame(frame)
+    end)
+    backgroundFrame:SetScript("OnUpdate", function(frame)
+        refreshBackgroundHoverHint(self, frame)
+    end)
+    backgroundFrame:HookScript("OnHide", function(frame)
+        AddonNS.gui:ClearHoveredCategoryFrame(frame)
+    end)
+    backgroundFrame:SetScript("OnReceiveDrag", function(frame)
+        handleBackgroundDrop(self, frame)
+    end)
+    backgroundFrame:SetScript("OnMouseUp", function(frame, mouseButtonName)
+        handleBackgroundDrop(self, frame, mouseButtonName)
+    end)
+    backgroundFrame.myBagAddonHooked = true
 
     self.backgroundFrame = backgroundFrame
 end
@@ -663,11 +773,8 @@ local function ensureContentArea(self, panel)
     contentFrame:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", BANK_VIEWPORT_RIGHT, BANK_VIEWPORT_BOTTOM)
     contentFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
     contentFrame:SetBackdropColor(0.02, 0.02, 0.02, 0.82)
-    contentFrame:EnableMouse(true)
+    contentFrame:EnableMouse(false)
     contentFrame:SetClipsChildren(false)
-    contentFrame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
-    contentFrame:SetScript("OnMouseUp", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
-    contentFrame.myBagAddonHooked = true
 
     self.contentFrame = contentFrame
     self.dropAreaOverlays = self.dropAreaOverlays or {}
@@ -1410,6 +1517,8 @@ AddonNS.BankViewTestHooks = {
     ApplySearchUnionMatchState = applySearchUnionMatchState,
     ApplySharedBankColumnCount = applySharedBankColumnCount,
     ResolveTargetPanelSize = resolveTargetPanelSize,
+    GetBackgroundHintFrame = getBackgroundHintFrame,
+    GetBackgroundColumnFallbackHintFrame = getBackgroundColumnFallbackHintFrame,
 }
 
 AddonNS.Events:OnInitialize(function()

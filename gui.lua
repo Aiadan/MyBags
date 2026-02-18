@@ -399,8 +399,110 @@ backgroundFrame.MyBagsScope = "bag"
 backgroundFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
 backgroundFrame:SetBackdropColor(0, 1, 0, 0)
 backgroundFrame:EnableMouse(true)
-backgroundFrame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
-backgroundFrame:SetScript("OnMouseUp", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
+
+local function getCursorPositionForFrame(frame)
+    local cursorX, cursorY = GetCursorPosition()
+    local scale = frame:GetEffectiveScale()
+    return cursorX / scale, cursorY / scale
+end
+
+local function getBackgroundHintFrame(frame)
+    local cursorX, cursorY = getCursorPositionForFrame(frame)
+    for index = 1, #AddonNS.gui.categoriesFrames do
+        local categoryFrame = AddonNS.gui.categoriesFrames[index]
+        if categoryFrame and categoryFrame:IsShown() and categoryFrame.ItemCategory and categoryFrame.MyBagsScope == "bag" then
+            local left = categoryFrame:GetLeft()
+            local right = categoryFrame:GetRight()
+            local bottom = categoryFrame:GetBottom()
+            local top = categoryFrame:GetTop()
+            if left and right and bottom and top and cursorX >= left and cursorX <= right and cursorY >= bottom and cursorY <= top then
+                return categoryFrame
+            end
+        end
+    end
+    return nil
+end
+
+local function getMouseSectionRelativeToFrame(frame)
+    local cursorX, cursorY = getCursorPositionForFrame(frame)
+    local relativeX = cursorX - frame:GetLeft()
+    local relativeY = cursorY - frame:GetBottom()
+    local frameWidth = frame:GetWidth()
+    local frameHeight = frame:GetHeight()
+    if relativeX < 0 or relativeX > frameWidth or relativeY < 0 or relativeY > frameHeight then
+        return nil
+    end
+    local columnCount = AddonNS.CategoryStore:GetColumnCount("bag")
+    if columnCount <= 0 then
+        return nil
+    end
+    local column = math.floor(relativeX * columnCount / frameWidth) + 1
+    if column < 1 then
+        return 1
+    end
+    if column > columnCount then
+        return columnCount
+    end
+    return column
+end
+
+local function getBackgroundColumnFallbackHintFrame(frame)
+    local columnNo = getMouseSectionRelativeToFrame(frame)
+    if not columnNo then
+        return nil
+    end
+    local targetCategory = AddonNS.Categories:GetLastCategoryInColumn(columnNo, "bag")
+    if not targetCategory or not targetCategory.GetId then
+        return nil
+    end
+    if not AddonNS.gui.categoryFrameByCategoryId then
+        return nil
+    end
+    return AddonNS.gui.categoryFrameByCategoryId[targetCategory:GetId()]
+end
+
+local function refreshBackgroundHoverHint(frame)
+    if not AddonNS.DragAndDrop:IsItemDragActive() then
+        AddonNS.gui:ClearHoveredCategoryFrame(frame)
+        return
+    end
+    local hintFrame = getBackgroundHintFrame(frame)
+    if not hintFrame then
+        hintFrame = getBackgroundColumnFallbackHintFrame(frame)
+    end
+    if hintFrame and hintFrame:IsShown() then
+        AddonNS.gui:SetHoveredCategoryFrame(hintFrame)
+        return
+    end
+    AddonNS.gui:ClearHoveredCategoryFrame(frame)
+end
+
+local function handleBackgroundDrop(frame, mouseButtonName)
+    if AddonNS.DragAndDrop:IsItemDragActive() then
+        local hintFrame = getBackgroundHintFrame(frame)
+        if hintFrame and hintFrame:IsShown() then
+            AddonNS.DragAndDrop.categoryOnReceiveDrag(hintFrame)
+            return
+        end
+    end
+    AddonNS.DragAndDrop.backgroundOnReceiveDrag(frame, mouseButtonName)
+end
+
+backgroundFrame:SetScript("OnEnter", function(frame)
+    refreshBackgroundHoverHint(frame)
+end)
+backgroundFrame:SetScript("OnLeave", function(frame)
+    AddonNS.gui:ClearHoveredCategoryFrame(frame)
+end)
+backgroundFrame:SetScript("OnUpdate", function(frame)
+    refreshBackgroundHoverHint(frame)
+end)
+backgroundFrame:SetScript("OnReceiveDrag", function(frame)
+    handleBackgroundDrop(frame)
+end)
+backgroundFrame:SetScript("OnMouseUp", function(frame, mouseButtonName)
+    handleBackgroundDrop(frame, mouseButtonName)
+end)
 
 backgroundFrame:SetPoint("BOTTOMRIGHT", AddonNS.container.MoneyFrame, "TOPRIGHT", 0, 0)
 backgroundFrame.myBagAddonHooked = true;
@@ -525,6 +627,7 @@ AddonNS.Events:RegisterEvent("PLAYER_REGEN_ENABLED", refreshResizeHandle)
 function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
     local moneyFrame = AddonNS.container.MoneyFrame;
     local customCategories = AddonNS.CustomCategories:GetCategories()
+    AddonNS.gui.categoryFrameByCategoryId = {}
     AddonNS.printDebug("money frame:", moneyFrame, AddonNS.container.MoneyFrame)
     backgroundFrame:SetPoint("TOPLEFT", moneyFrame, "TOPLEFT", 0, yFrameOffset)
     for i = 1, #categoriesGUIInfo, 1 do
@@ -814,6 +917,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             if isCollapsed(categoryGUIInfo.category) then
                 label = label .. " (" .. categoryGUIInfo.itemsCount .. ") |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a"
             end
+            AddonNS.gui.categoryFrameByCategoryId[f.ItemCategory:GetId()] = f
             f:SetText(label); -- .
             f:Show()
         end
