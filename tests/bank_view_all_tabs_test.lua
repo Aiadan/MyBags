@@ -276,6 +276,16 @@ run("ApplySharedBankColumnCount updates both bank scopes", function()
     assertEqual(calls[2].scope, "bank-account", "second call scope")
 end)
 
+run("ResolveTargetPanelSize uses locked size when search lock is active", function()
+    local width, height = hooks.ResolveTargetPanelSize(740, 520, 700, 480, true)
+    assertEqual(width, 700, "locked width should win while filtering")
+    assertEqual(height, 480, "locked height should win while filtering")
+
+    width, height = hooks.ResolveTargetPanelSize(740, 520, 700, 480, false)
+    assertEqual(width, 740, "computed width should be used without lock")
+    assertEqual(height, 520, "computed height should be used without lock")
+end)
+
 run("GetBankCapacityState returns taken free and total slot counts", function()
     local state = hooks.GetBankCapacityState({ 10, 30 })
     assertEqual(state.taken, 2, "two slots should be taken")

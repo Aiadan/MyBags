@@ -37,6 +37,7 @@ Use it only during diagnostics. Keep profiling disabled during normal play.
 - Bank column resize uses the same drag thresholds/preview behavior as bags.
 - Bank resize applies column-count changes to both bank scopes together (`bank-character` and `bank-account`).
 - Bank scopes default to 4 columns only when no persisted value exists; saved values are not overwritten on initialization.
+- While bank search text is non-empty, panel size is locked to the pre-filter dimensions to prevent resize jitter during filtering.
 
 ## Custom Query Priority Notes
 

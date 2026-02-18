@@ -16,6 +16,9 @@ local BankView = {
     hooksInstalled = false,
     dataRetryCount = 0,
     itemButtonsSignature = nil,
+    searchSizeLockActive = false,
+    searchLockedPanelWidth = nil,
+    searchLockedPanelHeight = nil,
 }
 
 local BANK_VIEWPORT_TOP = -58
@@ -197,9 +200,9 @@ local function ensureEditModeButton(self, panel)
         return self.editModeButton
     end
 
-    local button = CreateFrame("Button", nil, panel)
+    local button = CreateFrame("Button", nil, panel, "UIPanelIconDropdownButtonTemplate")
     button:SetSize(20, 20)
-    button:SetPoint("LEFT", BankItemSearchBox, "RIGHT", 8, 0)
+    button:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -9, -34)
     button:SetScript("OnClick", function()
         if AddonNS.BagViewState:IsCategoriesConfigMode() then
             AddonNS.BagViewState:SetMode("normal")
@@ -207,18 +210,6 @@ local function ensureEditModeButton(self, panel)
         end
         AddonNS.BagViewState:SetMode("categories_config")
     end)
-
-    button.Icon = button:CreateTexture(nil, "ARTWORK")
-    button.Icon:SetPoint("TOPLEFT", button, "TOPLEFT", -4, 4)
-    button.Icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 4, -4)
-    button.Icon:SetAtlas("GM-icon-settings")
-
-    button.Highlight = button:CreateTexture(nil, "HIGHLIGHT")
-    button.Highlight:SetPoint("TOPLEFT", button, "TOPLEFT", -2, 2)
-    button.Highlight:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 2, -2)
-    button.Highlight:SetAtlas("GM-icon-settings")
-    button.Highlight:SetAlpha(0.45)
-    button.Highlight:SetBlendMode("ADD")
 
     button:SetScript("OnEnter", function(frame)
         GameTooltip:SetOwner(frame, "ANCHOR_TOP")
@@ -238,10 +229,8 @@ local function showEditModeButton(self, panel)
     local button = ensureEditModeButton(self, panel)
     if AddonNS.BagViewState:IsCategoriesConfigMode() then
         button.Icon:SetVertexColor(1, 0.85, 0.2, 1)
-        button.Highlight:SetVertexColor(1, 0.85, 0.2, 1)
     else
         button.Icon:SetVertexColor(0.78, 0.78, 0.78, 1)
-        button.Highlight:SetVertexColor(0.78, 0.78, 0.78, 1)
     end
     panel.AutoSortButton:Hide()
     button:Show()
@@ -416,11 +405,41 @@ local function refreshBankFrameScale()
     end
 end
 
+local function resolveTargetPanelSize(computedWidth, computedHeight, lockedWidth, lockedHeight, lockActive)
+    if not lockActive then
+        return computedWidth, computedHeight
+    end
+    return lockedWidth or computedWidth, lockedHeight or computedHeight
+end
+
+local function updateSearchSizeLock(self, panel, searchText)
+    local searchActive = searchText ~= ""
+    if searchActive then
+        if not self.searchSizeLockActive then
+            self.searchSizeLockActive = true
+            self.searchLockedPanelWidth = panel:GetWidth()
+            self.searchLockedPanelHeight = panel:GetHeight()
+        end
+        return
+    end
+
+    self.searchSizeLockActive = false
+    self.searchLockedPanelWidth = nil
+    self.searchLockedPanelHeight = nil
+end
+
 local function updateFrameSizeForContent(self, panel, contentBottom)
     local columnCount = AddonNS.CategoryStore:GetColumnCount(self.currentScope)
     local columnPixelWidth = self.columnPixelWidth
     local panelWidth = getPanelWidthForColumns(columnCount, columnPixelWidth)
     local panelHeight = getPanelHeightForContent(contentBottom)
+    panelWidth, panelHeight = resolveTargetPanelSize(
+        panelWidth,
+        panelHeight,
+        self.searchLockedPanelWidth,
+        self.searchLockedPanelHeight,
+        self.searchSizeLockActive
+    )
 
     panel:SetSize(panelWidth, panelHeight)
     BankFrame:SetSize(panelWidth, panelHeight)
@@ -481,9 +500,11 @@ local function ensureResizeController(self, panel)
             self:RefreshNow(self.currentScope)
         end,
         ShouldShow = function()
-            return BankFrame:IsShown() and panel:IsShown() and not InCombatLockdown()
+            return BankFrame:IsShown() and panel:IsShown() and not InCombatLockdown() and not self.searchSizeLockActive
         end,
-        IsDisabled = InCombatLockdown,
+        IsDisabled = function()
+            return InCombatLockdown() or self.searchSizeLockActive
+        end,
     })
 
     controller.handle:SetSize(BANK_RESIZE_HANDLE_SIZE, BANK_RESIZE_HANDLE_SIZE)
@@ -1149,6 +1170,7 @@ function BankView:Refresh(scope)
         self.itemButtonsSignature = itemButtonsSignature
     end
     local searchText = BankItemSearchBox:GetText() or ""
+    updateSearchSizeLock(self, panel, searchText)
     local searchEvaluator = AddonNS.QueryCategories:CompileAdHoc(searchText)
 
     local arrangedItems = {}
@@ -1262,6 +1284,9 @@ local function tryInstallHooks()
         if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsShown() then
             AddonNS:SetCurrentLayoutScope("bag")
         end
+        BankView.searchSizeLockActive = false
+        BankView.searchLockedPanelWidth = nil
+        BankView.searchLockedPanelHeight = nil
     end)
 
     hooksecurefunc(BankPanel, "RefreshBankPanel", function()
@@ -1352,6 +1377,7 @@ AddonNS.BankViewTestHooks = {
     EvaluateSearchVisibility = evaluateSearchVisibility,
     ApplySearchUnionMatchState = applySearchUnionMatchState,
     ApplySharedBankColumnCount = applySharedBankColumnCount,
+    ResolveTargetPanelSize = resolveTargetPanelSize,
 }
 
 AddonNS.Events:OnInitialize(function()
