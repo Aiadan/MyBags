@@ -148,6 +148,9 @@ else
         if BankFrame and not BankFrame.myBagsScaleOverridden then
             FrameParametersOverride:OverrideScale(BankFrame, "BankFrame.lua")
             BankFrame.myBagsScaleOverridden = true
+            RunNextFrame(function()
+                AddonNS.ApplyBankFrameScale()
+            end)
         end
     end)
 end

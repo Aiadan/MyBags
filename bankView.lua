@@ -19,6 +19,8 @@ local BankView = {
     searchSizeLockActive = false,
     searchLockedPanelWidth = nil,
     searchLockedPanelHeight = nil,
+    needsInitialPositionUpdate = false,
+    initialPositionUpdateQueued = false,
 }
 
 local BANK_VIEWPORT_TOP = -58
@@ -472,10 +474,21 @@ local function updateFrameSizeForContent(self, panel, contentBottom)
 
     panel:SetSize(panelWidth, panelHeight)
     BankFrame:SetSize(panelWidth, panelHeight)
-    if UpdateUIPanelPositions then
-        UpdateUIPanelPositions(BankFrame)
-    end
     refreshBankFrameScale()
+    if self.needsInitialPositionUpdate and not self.initialPositionUpdateQueued then
+        self.initialPositionUpdateQueued = true
+        RunNextFrame(function()
+            self.initialPositionUpdateQueued = false
+            if not BankFrame:IsShown() then
+                return
+            end
+            if UpdateUIPanelPositions then
+                UpdateUIPanelPositions(BankFrame)
+            end
+            refreshBankFrameScale()
+            self.needsInitialPositionUpdate = false
+        end)
+    end
 end
 
 local function ensureResizeController(self, panel)
@@ -1408,6 +1421,8 @@ local function tryInstallHooks()
     end
 
     BankFrame:HookScript("OnShow", function()
+        BankView.needsInitialPositionUpdate = true
+        BankView.initialPositionUpdateQueued = false
         BankView:RefreshNow()
     end)
     BankFrame:HookScript("OnHide", function()
@@ -1426,6 +1441,8 @@ local function tryInstallHooks()
         BankView.searchSizeLockActive = false
         BankView.searchLockedPanelWidth = nil
         BankView.searchLockedPanelHeight = nil
+        BankView.needsInitialPositionUpdate = false
+        BankView.initialPositionUpdateQueued = false
     end)
 
     hooksecurefunc(BankPanel, "RefreshBankPanel", function()

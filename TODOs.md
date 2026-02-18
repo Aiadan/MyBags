@@ -148,6 +148,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ Shift item tooltip now also lists non-zero query retriever payload values under matched categories, with value-meaning labels from query docs (for example `itemType: 2 (Weapon)` and `itemSubType` labels resolved by current `itemType`); tooltip attribute definitions/order now live centrally in `Categorizers/custom/query.lua` and rows use explicit attribute/value/meaning coloring, including `expansionID` value labels (`0..12`).
 * ✅ updated `QUERY_ATTRIBUTES.md` core value tables with explicit `expansionID` mapping (`0..12`) to keep docs aligned with tooltip/query metadata.
 * ✅ fixed query numeric comparators (`>`, `>=`, `<`, `<=`) to safely return `false` when attribute value is missing/non-numeric (for example `questid > 0`) instead of throwing runtime errors.
+* ✅ fixed bank-frame position drift during category/layout refreshes by removing forced `UpdateUIPanelPositions(BankFrame)` from MyBags bank content sizing, so moving/reordering categories no longer pushes the bank frame downward unexpectedly.
+* ✅ fixed first-open-after-reload bank bottom overflow edge case by making initial bank position correction run once on the next frame after first-size/scale pass (`UpdateUIPanelPositions(BankFrame)` + rescale), instead of repeating reposition on every refresh.
 
 ### TODO
 
