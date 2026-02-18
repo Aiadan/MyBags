@@ -769,11 +769,9 @@ function CustomCategorizer:GetMatches(itemID, itemButton)
 
     local db = get_db()
     for _, rawId in ipairs(get_sorted_query_raw_ids(db)) do
-        if rawId ~= assignedId then
-            local evaluator = AddonNS.QueryCategories:GetCompiled(rawId)
-            if evaluator and evaluator(itemInfo) then
-                table.insert(matches, new_raw(rawId, db.categories[rawId]))
-            end
+        local evaluator = AddonNS.QueryCategories:GetCompiled(rawId)
+        if evaluator and evaluator(itemInfo) then
+            table.insert(matches, new_raw(rawId, db.categories[rawId]))
         end
     end
     if #matches > 0 then

@@ -62,10 +62,16 @@ local function resolveTooltipItemId(owner)
     return info and info.itemID or nil
 end
 
-local function formatCategoryReason(itemID, category)
+local function formatCategoryReason(itemID, category, reasonKind)
     local categoryId = category:GetId()
     if not categoryId:match("^cus%-") then
         return nil
+    end
+    if reasonKind == "manual" then
+        return "Manual assignment"
+    end
+    if reasonKind == "query" then
+        return "Priority: " .. AddonNS.CustomCategories:GetEffectivePriority(category)
     end
     if AddonNS.CustomCategories:IsManuallyAssignedToCategory(itemID, category) then
         return "Manual assignment"
@@ -93,15 +99,26 @@ local function addCategoriesToTooltip(tooltip)
         return
     end
 
-    local matches = AddonNS.Categories:GetMatches(itemID, owner)
+    local matches = AddonNS.Categories:GetMatches(itemID, owner, { allowDuplicateCategoryIds = true })
     if #matches == 0 then
         return
     end
 
     GameTooltip_AddNormalLine(tooltip, MYBAGS_TOOLTIP_TITLE .. MYBAGS_TOOLTIP_HINT_COLOR_PREFIX .." matched categories:|r")
+    local seenManualByCategoryId = {}
     for i = 1, #matches do
         local category = matches[i]
-        local reason = formatCategoryReason(itemID, category)
+        local categoryId = category:GetId()
+        local reasonKind = nil
+        if categoryId:match("^cus%-") and AddonNS.CustomCategories:IsManuallyAssignedToCategory(itemID, category) then
+            if seenManualByCategoryId[categoryId] then
+                reasonKind = "query"
+            else
+                reasonKind = "manual"
+                seenManualByCategoryId[categoryId] = true
+            end
+        end
+        local reason = formatCategoryReason(itemID, category, reasonKind)
         local line = i .. ". " .. category:GetName()
         if reason then
             line = line .. " (" .. reason .. ")"

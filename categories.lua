@@ -4,13 +4,13 @@ AddonNS.Categories = AddonNS.Categories or {}
 
 local categorizers = OrderedMap:new()
 
-local function wrap_raw_result(categorizerId, result, output, seen)
+local function wrap_raw_result(categorizerId, result, output, seen, allowDuplicateCategoryIds)
     if not result then
         return
     end
     if type(result) == "table" and result[1] then
         for i = 1, #result do
-            wrap_raw_result(categorizerId, result[i], output, seen)
+            wrap_raw_result(categorizerId, result[i], output, seen, allowDuplicateCategoryIds)
         end
         return
     end
@@ -21,10 +21,12 @@ local function wrap_raw_result(categorizerId, result, output, seen)
     if not wrapper then
         return
     end
-    if seen[wrapper:GetId()] then
+    if (not allowDuplicateCategoryIds) and seen[wrapper:GetId()] then
         return
     end
-    seen[wrapper:GetId()] = true
+    if not allowDuplicateCategoryIds then
+        seen[wrapper:GetId()] = true
+    end
     table.insert(output, wrapper)
 end
 
@@ -87,9 +89,10 @@ function AddonNS.Categories:GetConstantCategories()
     return constant
 end
 
-function AddonNS.Categories:GetMatches(itemID, itemButton)
+function AddonNS.Categories:GetMatches(itemID, itemButton, options)
     local matches = {}
     local seen = {}
+    local allowDuplicateCategoryIds = options and options.allowDuplicateCategoryIds
     for _, record in categorizers:iterate() do
         ensure_wrapped(record)
         local result
@@ -98,7 +101,7 @@ function AddonNS.Categories:GetMatches(itemID, itemButton)
         else
             result = record.categorizer:Categorize(itemID, itemButton)
         end
-        wrap_raw_result(record.id, result, matches, seen)
+        wrap_raw_result(record.id, result, matches, seen, allowDuplicateCategoryIds)
     end
     return matches
 end

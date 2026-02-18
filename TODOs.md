@@ -143,7 +143,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ fixed category hover hint vertical placement to always anchor above the category title (removed below-category fallback branch).
 * ✅ category hover hint frame now matches the hovered bag/bank effective scale, and assign-hover text now uses toned-green `Assign` styling for consistency with existing toned status colors.
 * ✅ increased category hover hint readability (larger text/padding) and added dynamic width expansion so long category names can widen the hint when needed (capped to available UI width).
-* ✅ fixed Shift-tooltip category diagnostics via separate match-list path: `Categorize` is fast single-match only, while tooltip uses dedicated full-match collection (manual first + query candidates) with cached query-priority order.
+* ✅ fixed Shift-tooltip category diagnostics via separate match-list path: `Categorize` is fast single-match only, while tooltip uses dedicated full-match collection (manual first + query candidates), including duplicate-category diagnostics when the same custom category matches both manually and by query (`X (Manual assignment)` + `X (Priority: ...)`).
 
 ### TODO
 

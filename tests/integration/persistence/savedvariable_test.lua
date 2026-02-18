@@ -656,7 +656,13 @@ run("custom query matching uses priority order and manual assignment precedence"
     local manualMatches = ctx.AddonNS.Categories:GetMatches(2001, button)
     assert_true(manualMatches[1]:GetId() == catB:GetId(), "manual assignment takes precedence over query ordering")
     assert_true(manualMatches[2]:GetId() == catA:GetId(),
-        "manual assignment still keeps additional query matches available")
+        "default match list keeps unique category ids")
+
+    local diagnosticMatches = ctx.AddonNS.Categories:GetMatches(2001, button, { allowDuplicateCategoryIds = true })
+    assert_true(diagnosticMatches[1]:GetId() == catB:GetId(), "diagnostic list keeps manual assignment first")
+    assert_true(diagnosticMatches[2]:GetId() == catA:GetId(), "diagnostic list keeps query ordering by priority")
+    assert_true(diagnosticMatches[3]:GetId() == catB:GetId(),
+        "diagnostic list includes same category twice when manual and query both match")
 end)
 
 run("always visible empty category stays empty in arranged output", function()
