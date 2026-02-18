@@ -116,17 +116,58 @@ TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, addCategories
 local freeBagSlots = 10000;
 local lockedUpdates = false;
 
-local function getFreeSlotCounts()
+local function getBagCapacityState()
     local freeItemSlots = 0
+    local totalItemSlots = 0
     for bagID = Enum.BagIndex.Backpack, Constants.InventoryConstants.NumBagSlots do
         local slotsInBag = C_Container.GetContainerNumFreeSlots(bagID)
+        local slotsTotal = C_Container.GetContainerNumSlots(bagID)
         freeItemSlots = freeItemSlots + slotsInBag
+        totalItemSlots = totalItemSlots + slotsTotal
     end
     local freeReagentSlots = C_Container.GetContainerNumFreeSlots(Enum.BagIndex.ReagentBag)
-    return freeItemSlots, freeReagentSlots
+    local totalReagentSlots = C_Container.GetContainerNumSlots(Enum.BagIndex.ReagentBag)
+    local takenItemSlots = totalItemSlots - freeItemSlots
+    local takenReagentSlots = totalReagentSlots - freeReagentSlots
+
+    return {
+        items = {
+            taken = takenItemSlots,
+            free = freeItemSlots,
+            total = totalItemSlots,
+        },
+        reagents = {
+            taken = takenReagentSlots,
+            free = freeReagentSlots,
+            total = totalReagentSlots,
+        },
+    }
 end
 
-AddonNS.GetFreeSlotCounts = getFreeSlotCounts
+local function getBankCapacityState(bankTabIds)
+    local totalSlots = 0
+    local takenSlots = 0
+    for index = 1, #(bankTabIds or {}) do
+        local tabID = bankTabIds[index]
+        local slotCount = C_Container.GetContainerNumSlots(tabID)
+        totalSlots = totalSlots + slotCount
+        for slotID = 1, slotCount do
+            local info = C_Container.GetContainerItemInfo(tabID, slotID)
+            if info then
+                takenSlots = takenSlots + 1
+            end
+        end
+    end
+
+    return {
+        taken = takenSlots,
+        free = totalSlots - takenSlots,
+        total = totalSlots,
+    }
+end
+
+AddonNS.GetBagCapacityState = getBagCapacityState
+AddonNS.GetBankCapacityState = getBankCapacityState
 
 function AddonNS.Events:BAG_UPDATE(event, bagID)
     AddonNS.printDebug("BAG_UPDATE", bagID)

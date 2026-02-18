@@ -389,11 +389,11 @@ backgroundFrame:SetScript("OnMouseUp", AddonNS.DragAndDrop.backgroundOnReceiveDr
 backgroundFrame:SetPoint("BOTTOMRIGHT", AddonNS.container.MoneyFrame, "TOPRIGHT", 0, 0)
 backgroundFrame.myBagAddonHooked = true;
 
-local FREE_SLOT_COUNT_LABEL_FORMAT = "Free %d   Reagents %d"
+local BAG_CAPACITY_LABEL_FORMAT = "%d / %d  Reagents %d / %d"
 local freeSlotCountOverlay = CreateFrame("Frame", nil, AddonNS.container)
 freeSlotCountOverlay:SetAllPoints(AddonNS.container.MoneyFrame)
 freeSlotCountOverlay:SetFrameLevel(AddonNS.container.MoneyFrame:GetFrameLevel() + 10)
-freeSlotCountOverlay:EnableMouse(false)
+freeSlotCountOverlay:EnableMouse(true)
 
 local freeSlotCountLabel = freeSlotCountOverlay:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 freeSlotCountLabel:SetPoint("LEFT", freeSlotCountOverlay, "LEFT", 6, 0)
@@ -401,9 +401,35 @@ freeSlotCountLabel:SetJustifyH("LEFT")
 freeSlotCountLabel:SetTextColor(1, 0.82, 0.2, 1)
 
 function AddonNS.gui:RefreshFreeSlotCountLabel()
-    local freeItemSlots, freeReagentSlots = AddonNS.GetFreeSlotCounts()
-    freeSlotCountLabel:SetText(FREE_SLOT_COUNT_LABEL_FORMAT:format(freeItemSlots, freeReagentSlots))
+    local state = AddonNS.GetBagCapacityState()
+    freeSlotCountLabel:SetText(BAG_CAPACITY_LABEL_FORMAT:format(
+        state.items.taken,
+        state.items.total,
+        state.reagents.taken,
+        state.reagents.total
+    ))
 end
+
+freeSlotCountOverlay:SetScript("OnEnter", function(self)
+    local state = AddonNS.GetBagCapacityState()
+    GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
+    GameTooltip:SetText("Bag capacity")
+    GameTooltip:AddLine(
+        "You are using " .. state.items.taken .. " regular bag slots out of " .. state.items.total ..
+        " (" .. state.items.free .. " available).",
+        1, 1, 1, true
+    )
+    GameTooltip:AddLine(
+        "You are using " .. state.reagents.taken .. " reagent bag slots out of " .. state.reagents.total ..
+        " (" .. state.reagents.free .. " available).",
+        1, 1, 1, true
+    )
+    GameTooltip:Show()
+end)
+
+freeSlotCountOverlay:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+end)
 
 AddonNS.container:HookScript("OnShow", function()
     AddonNS.gui:RefreshFreeSlotCountLabel()

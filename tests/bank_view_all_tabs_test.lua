@@ -15,6 +15,12 @@ _G.C_Bank = {
             { ID = 42, name = "Fetched B" },
         }
     end,
+    CanPurchaseBankTab = function()
+        return true
+    end,
+    HasMaxBankTabs = function()
+        return false
+    end,
 }
 
 _G.C_Container = {
@@ -25,7 +31,19 @@ _G.C_Container = {
         if tabID == 20 then
             return 1
         end
+        if tabID == 30 then
+            return 2
+        end
         return 0
+    end,
+    GetContainerItemInfo = function(tabID, slotID)
+        if tabID == 10 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        if tabID == 30 and slotID == 2 then
+            return { itemID = 1002 }
+        end
+        return nil
     end,
 }
 
@@ -47,6 +65,25 @@ local addonEnv = {
     Events = {
         OnInitialize = function() end,
     },
+    GetBankCapacityState = function(tabIds)
+        local total = 0
+        local taken = 0
+        for index = 1, #(tabIds or {}) do
+            local tabID = tabIds[index]
+            local slots = C_Container.GetContainerNumSlots(tabID)
+            total = total + slots
+            for slotID = 1, slots do
+                if C_Container.GetContainerItemInfo(tabID, slotID) then
+                    taken = taken + 1
+                end
+            end
+        end
+        return {
+            taken = taken,
+            free = total - taken,
+            total = total,
+        }
+    end,
     printDebug = function() end,
 }
 
@@ -205,4 +242,26 @@ end)
 
 run("CountExpectedButtonsForTabs sums slots across all tabs", function()
     assertEqual(hooks.CountExpectedButtonsForTabs({ 10, 20 }), 3, "expected buttons should sum all visible tab slots")
+end)
+
+run("ShouldShowPurchaseTabButton is true only when purchase is possible", function()
+    C_Bank.CanPurchaseBankTab = function()
+        return true
+    end
+    C_Bank.HasMaxBankTabs = function()
+        return false
+    end
+    assertTrue(hooks.ShouldShowPurchaseTabButton(Enum.BankType.Character), "button should be visible when purchase is available")
+
+    C_Bank.HasMaxBankTabs = function()
+        return true
+    end
+    assertTrue(not hooks.ShouldShowPurchaseTabButton(Enum.BankType.Character), "button should be hidden when max tabs reached")
+end)
+
+run("GetBankCapacityState returns taken free and total slot counts", function()
+    local state = hooks.GetBankCapacityState({ 10, 30 })
+    assertEqual(state.taken, 2, "two slots should be taken")
+    assertEqual(state.total, 4, "total slots should include all tabs")
+    assertEqual(state.free, 2, "remaining slots should be computed")
 end)

@@ -27,6 +27,15 @@ local BANK_CONTENT_PADDING_BOTTOM = 8
 local SHOW_COLUMN_DROP_AREAS = true
 local BANK_CONTENT_LEFT_PADDING = 6
 local BANK_CONTENT_FIRST_ROW_Y = 30
+local CONTROL_LABELS = {
+    add = "|cff90ff90+ Add Category|r",
+    export = "|cff8ec5ffExport Categories|r",
+    import = "|cffffd27fImport Categories|r",
+}
+local EDIT_CATEGORY_TOOLTIP = "Edit"
+local DELETE_CATEGORY_TOOLTIP = "Delete"
+local DELETE_CATEGORY_HINT = "Shift-click to delete without confirmation."
+local CAPACITY_LABEL_FORMAT = "%d / %d"
 
 local function getScopeForBankType(bankType)
     if bankType == Enum.BankType.Account then
@@ -176,61 +185,75 @@ local function hideBlizzardBankTabs(panel)
     panel.PurchaseTab:Hide()
 end
 
-local function addActionsMenuItems(rootDescription, panel, activeBankType, tabData)
-    assert(BankPanelTabSettingsMenuMixin and BankPanelTabSettingsMenuMixin.Event and BankPanelTabSettingsMenuMixin.Event.OpenTabSettingsRequested,
-        "BankPanelTabSettingsMenuMixin OpenTabSettingsRequested event missing")
-    local eventName = BankPanelTabSettingsMenuMixin.Event.OpenTabSettingsRequested
-
-    rootDescription:CreateTitle("Tab Settings")
-
-    for index = 1, #tabData do
-        local currentTab = tabData[index]
-        local tabID = currentTab and currentTab.ID
-        if type(tabID) == "number" and tabID > 0 then
-            rootDescription:CreateButton(currentTab.name or ("Tab " .. tabID), function()
-                    panel.TabSettingsMenu:TriggerEvent(eventName, tabID)
-                end)
-        end
-    end
-
-    rootDescription:CreateDivider()
-
-    local canPurchase = C_Bank.CanPurchaseBankTab(activeBankType)
-    local hasMaxTabs = C_Bank.HasMaxBankTabs(activeBankType)
-    local purchaseButton = rootDescription:CreateButton("Purchase Next Tab", function()
-            StaticPopup_Show("CONFIRM_BUY_BANK_TAB", nil, nil, { bankType = activeBankType })
-        end)
-    purchaseButton:SetEnabled((canPurchase and not hasMaxTabs) == true)
+local function shouldShowPurchaseTabButton(activeBankType)
+    return C_Bank.CanPurchaseBankTab(activeBankType) and not C_Bank.HasMaxBankTabs(activeBankType)
 end
 
-local function ensureActionsButton(self, panel)
-    if self.actionsButton then
-        return self.actionsButton
+local function refreshSearchBoxWidth()
+    if not BankItemSearchBox or not BagItemSearchBox then
+        return
+    end
+    BankItemSearchBox:SetWidth(BagItemSearchBox:GetWidth())
+end
+
+local function ensureEditModeButton(self, panel)
+    if self.editModeButton then
+        return self.editModeButton
     end
 
-    local button = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    button:SetSize(58, 20)
-    assert(BankItemSearchBox, "BankItemSearchBox missing")
-    button:SetPoint("RIGHT", BankItemSearchBox, "LEFT", -8, 0)
-    button:SetText("Actions")
+    local button = CreateFrame("Button", nil, panel)
+    button:SetSize(20, 20)
+    button:SetPoint("LEFT", BankItemSearchBox, "RIGHT", 8, 0)
+    button:SetScript("OnClick", function()
+        if AddonNS.BagViewState:IsCategoriesConfigMode() then
+            AddonNS.BagViewState:SetMode("normal")
+            return
+        end
+        AddonNS.BagViewState:SetMode("categories_config")
+    end)
+
+    button.Icon = button:CreateTexture(nil, "ARTWORK")
+    button.Icon:SetPoint("TOPLEFT", button, "TOPLEFT", -4, 4)
+    button.Icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 4, -4)
+    button.Icon:SetAtlas("GM-icon-settings")
+
+    button.Highlight = button:CreateTexture(nil, "HIGHLIGHT")
+    button.Highlight:SetPoint("TOPLEFT", button, "TOPLEFT", -2, 2)
+    button.Highlight:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 2, -2)
+    button.Highlight:SetAtlas("GM-icon-settings")
+    button.Highlight:SetAlpha(0.45)
+    button.Highlight:SetBlendMode("ADD")
+
+    button:SetScript("OnEnter", function(frame)
+        GameTooltip:SetOwner(frame, "ANCHOR_TOP")
+        GameTooltip:SetText("Toggle edit mode")
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
     button:Hide()
-    self.actionsButton = button
+    self.editModeButton = button
     return button
 end
 
-local function showActionsButton(self, panel, activeBankType, tabData)
-    local button = ensureActionsButton(self, panel)
-    button:SetScript("OnClick", function()
-        MenuUtil.CreateContextMenu(button, function(_, rootDescription)
-            addActionsMenuItems(rootDescription, panel, activeBankType, tabData)
-        end)
-    end)
+local function showEditModeButton(self, panel)
+    local button = ensureEditModeButton(self, panel)
+    if AddonNS.BagViewState:IsCategoriesConfigMode() then
+        button.Icon:SetVertexColor(1, 0.85, 0.2, 1)
+        button.Highlight:SetVertexColor(1, 0.85, 0.2, 1)
+    else
+        button.Icon:SetVertexColor(0.78, 0.78, 0.78, 1)
+        button.Highlight:SetVertexColor(0.78, 0.78, 0.78, 1)
+    end
+    panel.AutoSortButton:Hide()
     button:Show()
 end
 
-local function hideActionsButton(self)
-    if self.actionsButton then
-        self.actionsButton:Hide()
+local function hideEditModeButton(self)
+    if self.editModeButton then
+        self.editModeButton:Hide()
     end
 end
 
@@ -280,6 +303,99 @@ end
 local function hideAllItemButtons(panel)
     for itemButton in panel:EnumerateValidItems() do
         itemButton:Hide()
+    end
+end
+
+local function ensureCapacityOverlay(self, panel)
+    if self.capacityOverlay then
+        return self.capacityOverlay
+    end
+
+    local overlay = CreateFrame("Frame", nil, panel)
+    overlay:SetSize(120, 20)
+    overlay:SetPoint("RIGHT", panel.MoneyFrame, "LEFT", -8, 0)
+    overlay:EnableMouse(true)
+
+    local label = overlay:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    label:SetPoint("LEFT", overlay, "LEFT", 0, 0)
+    label:SetJustifyH("LEFT")
+    label:SetTextColor(1, 0.82, 0.2, 1)
+
+    overlay.label = label
+    self.capacityOverlay = overlay
+    return overlay
+end
+
+local function ensurePurchaseTabButton(self, panel)
+    if self.purchaseTabButton then
+        return self.purchaseTabButton
+    end
+
+    local button = CreateFrame("Button", nil, panel)
+    button:SetSize(20, 20)
+    button:SetScript("OnClick", function(frame)
+        StaticPopup_Show("CONFIRM_BUY_BANK_TAB", nil, nil, { bankType = frame.bankType })
+    end)
+    button:SetScript("OnEnter", function(frame)
+        GameTooltip:SetOwner(frame, "ANCHOR_TOP")
+        GameTooltip:SetText("Click to purchase the next bank tab and increase bank capacity.")
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
+    local icon = button:CreateTexture(nil, "ARTWORK")
+    icon:SetAllPoints()
+    icon:SetAtlas("Garr_Building-AddFollowerPlus")
+    button.icon = icon
+
+    local highlight = button:CreateTexture(nil, "HIGHLIGHT")
+    highlight:SetAllPoints()
+    highlight:SetAtlas("Garr_Building-AddFollowerPlus")
+    highlight:SetAlpha(0.4)
+    highlight:SetBlendMode("ADD")
+
+    button:Hide()
+    self.purchaseTabButton = button
+    return button
+end
+
+local function refreshBottomBar(self, panel, activeBankType, tabIds)
+    local capacityState = AddonNS.GetBankCapacityState(tabIds)
+    local capacityOverlay = ensureCapacityOverlay(self, panel)
+    capacityOverlay.label:SetText(CAPACITY_LABEL_FORMAT:format(capacityState.taken, capacityState.total))
+    capacityOverlay:SetScript("OnEnter", function(frame)
+        GameTooltip:SetOwner(frame, "ANCHOR_TOPLEFT")
+        GameTooltip:SetText("Bank capacity")
+        GameTooltip:AddLine(
+            "You are using " .. capacityState.taken .. " slots out of " .. capacityState.total ..
+            " (" .. capacityState.free .. " available).",
+            1, 1, 1, true
+        )
+        GameTooltip:Show()
+    end)
+    capacityOverlay:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    capacityOverlay:Show()
+
+    local purchaseButton = ensurePurchaseTabButton(self, panel)
+    purchaseButton:ClearAllPoints()
+    purchaseButton:SetPoint("LEFT", capacityOverlay, "RIGHT", 3, 0)
+    purchaseButton.bankType = activeBankType
+    purchaseButton:SetShown(shouldShowPurchaseTabButton(activeBankType))
+
+    panel.AutoDepositFrame:ClearAllPoints()
+    panel.AutoDepositFrame:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 26, 3)
+end
+
+local function hideBottomBarControls(self)
+    if self.capacityOverlay then
+        self.capacityOverlay:Hide()
+    end
+    if self.purchaseTabButton then
+        self.purchaseTabButton:Hide()
     end
 end
 
@@ -473,6 +589,78 @@ local function ensureHeaderFrame(self, index)
     hintOverlay:EnableMouse(false)
     hintOverlay:Hide()
 
+    local deleteButton = CreateFrame("Button", nil, headerFrame)
+    deleteButton:SetSize(16, 16)
+    deleteButton:SetPoint("TOPRIGHT", headerFrame, "TOPRIGHT", -6, -3)
+    deleteButton:SetFrameLevel(headerFrame:GetFrameLevel() + 25)
+    deleteButton:Hide()
+
+    deleteButton.Icon = deleteButton:CreateTexture(nil, "ARTWORK")
+    deleteButton.Icon:SetAllPoints()
+    deleteButton.Icon:SetAtlas("common-icon-delete")
+
+    deleteButton.Highlight = deleteButton:CreateTexture(nil, "HIGHLIGHT")
+    deleteButton.Highlight:SetAllPoints()
+    deleteButton.Highlight:SetAtlas("common-icon-delete")
+    deleteButton.Highlight:SetAlpha(0.45)
+    deleteButton.Highlight:SetBlendMode("ADD")
+
+    local editButton = CreateFrame("Button", nil, headerFrame)
+    editButton:SetSize(16, 16)
+    editButton:SetPoint("TOPRIGHT", deleteButton, "TOPLEFT", -2, 0)
+    editButton:SetFrameLevel(headerFrame:GetFrameLevel() + 25)
+    editButton:Hide()
+
+    editButton.Icon = editButton:CreateTexture(nil, "ARTWORK")
+    editButton.Icon:SetPoint("TOPLEFT", editButton, "TOPLEFT", -4, 4)
+    editButton.Icon:SetPoint("BOTTOMRIGHT", editButton, "BOTTOMRIGHT", 4, -4)
+    editButton.Icon:SetAtlas("GM-icon-settings")
+    editButton.Icon:SetVertexColor(1, 0.85, 0.2, 1)
+
+    editButton.Highlight = editButton:CreateTexture(nil, "HIGHLIGHT")
+    editButton.Highlight:SetPoint("TOPLEFT", editButton, "TOPLEFT", -2, 2)
+    editButton.Highlight:SetPoint("BOTTOMRIGHT", editButton, "BOTTOMRIGHT", 2, -2)
+    editButton.Highlight:SetAtlas("GM-icon-settings")
+    editButton.Highlight:SetVertexColor(1, 0.85, 0.2, 1)
+    editButton.Highlight:SetAlpha(0.45)
+    editButton.Highlight:SetBlendMode("ADD")
+
+    editButton:SetScript("OnEnter", function(selfButton)
+        local category = selfButton:GetParent().ItemCategory
+        GameTooltip:SetOwner(selfButton, "ANCHOR_TOP")
+        GameTooltip:SetText(EDIT_CATEGORY_TOOLTIP .. " \"" .. category:GetName() .. "\" category")
+        GameTooltip:Show()
+    end)
+    editButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    editButton:SetScript("OnClick", function(selfButton)
+        local category = selfButton:GetParent().ItemCategory
+        AddonNS.CategoriesGUI:SelectCategoryById(category:GetId())
+    end)
+
+    deleteButton:SetScript("OnEnter", function(selfButton)
+        local category = selfButton:GetParent().ItemCategory
+        GameTooltip:SetOwner(selfButton, "ANCHOR_TOP")
+        GameTooltip:SetText(DELETE_CATEGORY_TOOLTIP .. " \"" .. category:GetName() .. "\" category")
+        GameTooltip:AddLine(DELETE_CATEGORY_HINT, 1, 0.82, 0, true)
+        GameTooltip:Show()
+    end)
+    deleteButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    deleteButton:SetScript("OnClick", function(selfButton)
+        local category = selfButton:GetParent().ItemCategory
+        if IsShiftKeyDown() then
+            StaticPopupDialogs["DELETE_CATEGORY_CONFIRM"].OnAccept(nil, category)
+            return
+        end
+        local dialog = StaticPopup_Show("DELETE_CATEGORY_CONFIRM", category:GetName() or "")
+        if dialog then
+            dialog.data = category
+        end
+    end)
+
     headerFrame:EnableMouse(true)
     headerFrame:RegisterForDrag("LeftButton")
     headerFrame:SetScript("OnEnter", function(frame)
@@ -504,7 +692,45 @@ local function ensureHeaderFrame(self, index)
         label:SetText(text)
     end
 
+    function headerFrame:ApplyCategoryTextLayout()
+        label:ClearAllPoints()
+        label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
+        label:SetPoint("TOPRIGHT", headerFrame, "TOPRIGHT", -ITEM_SPACING / 2, -ITEM_SPACING / 2)
+        label:SetJustifyH("LEFT")
+        label:SetJustifyV("TOP")
+        label:SetFontObject("GameFontNormal")
+    end
+
+    function headerFrame:ApplyCategoryTextLayoutWithEditButton()
+        label:ClearAllPoints()
+        label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
+        label:SetPoint("TOPRIGHT", editButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
+        label:SetJustifyH("LEFT")
+        label:SetJustifyV("TOP")
+        label:SetFontObject("GameFontNormal")
+    end
+
+    function headerFrame:ApplyCategoryTextLayoutWithEditAndDeleteButtons()
+        label:ClearAllPoints()
+        label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
+        label:SetPoint("TOPRIGHT", editButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
+        label:SetJustifyH("LEFT")
+        label:SetJustifyV("TOP")
+        label:SetFontObject("GameFontNormal")
+    end
+
+    function headerFrame:ApplyAddControlTextLayout()
+        label:ClearAllPoints()
+        label:SetPoint("LEFT", headerFrame, "LEFT", 6, 0)
+        label:SetPoint("RIGHT", headerFrame, "RIGHT", -6, 0)
+        label:SetJustifyH("CENTER")
+        label:SetJustifyV("MIDDLE")
+        label:SetFontObject("GameFontHighlight")
+    end
+
     headerFrame.label = label
+    headerFrame.editButton = editButton
+    headerFrame.deleteButton = deleteButton
     headerFrame.hintOverlay = hintOverlay
     self.headerFrames[index] = headerFrame
     return headerFrame
@@ -618,6 +844,49 @@ local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, item
         end
     end
 
+    if AddonNS.BagViewState:IsCategoriesConfigMode() then
+        local lastColumnIndex = math.max(1, #categoryAssignments)
+        local columnBottomY = columnsBottom[lastColumnIndex] or firstRowY
+        local addControlY = columnBottomY + AddonNS.Const.COLUMN_SPACING
+        local controlHeight = AddonNS.Const.CATEGORY_HEIGHT
+        local controlSpacing = AddonNS.Const.COLUMN_SPACING
+        local controlX = leftPadding + (lastColumnIndex - 1) * columnPixelWidth - ITEM_SPACING / 2
+        local controlWidth = itemSize * ITEMS_PER_ROW
+
+        table.insert(categoryPositions, {
+            isAddCategoryControl = true,
+            scope = scope,
+            x = controlX,
+            y = addControlY,
+            width = controlWidth,
+            height = controlHeight,
+            blockHeight = controlHeight,
+        })
+        table.insert(categoryPositions, {
+            isExportCategoryControl = true,
+            scope = scope,
+            x = controlX,
+            y = addControlY + controlHeight + controlSpacing,
+            width = controlWidth,
+            height = controlHeight,
+            blockHeight = controlHeight,
+        })
+        table.insert(categoryPositions, {
+            isImportCategoryControl = true,
+            scope = scope,
+            x = controlX,
+            y = addControlY + (controlHeight + controlSpacing) * 2,
+            width = controlWidth,
+            height = controlHeight,
+            blockHeight = controlHeight,
+        })
+
+        local addControlBottomY = addControlY + (controlHeight + controlSpacing) * 2 + controlHeight
+        if addControlBottomY > contentBottom then
+            contentBottom = addControlBottomY
+        end
+    end
+
     return positions, categoryPositions, contentBottom
 end
 
@@ -668,34 +937,98 @@ end
 
 local function renderHeaders(self, scope, panel, categoryPositions)
     self.backgroundFrame.MyBagsScope = scope
+    local customCategories = AddonNS.CustomCategories:GetCategories()
 
     for index = 1, #categoryPositions do
         local categoryPosition = categoryPositions[index]
         local frame = ensureHeaderFrame(self, index)
         local dropFrame = ensureDropFrame(self, index)
-        frame.ItemCategory = categoryPosition.category
+        frame:ClearAllPoints()
+        frame:SetPoint("TOPLEFT", self.backgroundFrame, "TOPLEFT", categoryPosition.x, -categoryPosition.y)
+        frame:SetSize(categoryPosition.width, CATEGORY_HEIGHT)
         frame.MyBagsScope = scope
         frame.MyBagsContainerRef = panel
         frame.MyBagsHintAnchorFrame = self.backgroundFrame
         frame.MyBagsHintAlignToFrame = true
-        frame:SetPoint("TOPLEFT", self.backgroundFrame, "TOPLEFT", categoryPosition.x, -categoryPosition.y)
-        frame:SetSize(categoryPosition.width, CATEGORY_HEIGHT)
 
-        dropFrame.ItemCategory = categoryPosition.category
-        dropFrame.MyBagsScope = scope
-        dropFrame.MyBagsContainerRef = panel
-        dropFrame.MyBagsHintAnchorFrame = self.backgroundFrame
-        dropFrame.MyBagsHintAlignToFrame = true
-        dropFrame:SetPoint("TOPLEFT", self.backgroundFrame, "TOPLEFT", categoryPosition.x, -categoryPosition.y)
-        dropFrame:SetSize(categoryPosition.width, categoryPosition.blockHeight)
-        dropFrame:Show()
+        if categoryPosition.isAddCategoryControl or categoryPosition.isExportCategoryControl or categoryPosition.isImportCategoryControl then
+            frame.ItemCategory = nil
+            frame.editButton:Hide()
+            frame.deleteButton:Hide()
+            frame:RegisterForDrag("LeftButton")
+            frame:SetScript("OnReceiveDrag", nil)
+            frame:SetScript("OnDragStart", nil)
+            frame:SetScript("OnDragStop", nil)
+            frame:SetScript("OnMouseUp", function(_, button)
+                if button ~= "LeftButton" then
+                    return
+                end
+                if categoryPosition.isAddCategoryControl then
+                    StaticPopup_Show("CREATE_CATEGORY_CONFIRM")
+                    return
+                end
+                if categoryPosition.isExportCategoryControl then
+                    AddonNS.CategoriesGUI:ToggleExportFrame()
+                    return
+                end
+                AddonNS.CategoriesGUI:ToggleImportFrame()
+            end)
+            if categoryPosition.isAddCategoryControl then
+                frame:SetText(CONTROL_LABELS.add)
+            elseif categoryPosition.isExportCategoryControl then
+                frame:SetText(CONTROL_LABELS.export)
+            else
+                frame:SetText(CONTROL_LABELS.import)
+            end
+            frame:ApplyAddControlTextLayout()
+            frame:Show()
+            dropFrame:Hide()
+        else
+            frame.ItemCategory = categoryPosition.category
+            frame:RegisterForDrag("LeftButton")
+            frame:SetScript("OnMouseUp", AddonNS.DragAndDrop.categoryOnMouseUp)
+            frame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.categoryOnReceiveDrag)
+            frame:SetScript("OnDragStart", function(headerFrame)
+                AddonNS.gui:StartCategoryDragVisual(headerFrame.ItemCategory:GetDisplayName() or "Unassigned")
+                AddonNS.DragAndDrop.categoryStartDrag(headerFrame)
+                PlaySound(1183)
+            end)
+            frame:SetScript("OnDragStop", function()
+                AddonNS.gui:StopCategoryDragVisual()
+                PlaySound(1200)
+            end)
 
-        local label = categoryPosition.category:GetDisplayName(categoryPosition.itemsCount) or categoryPosition.category:GetName()
-        if AddonNS.Collapsed.isCollapsed(categoryPosition.category, scope) then
-            label = label .. " (" .. categoryPosition.itemsCount .. ") |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a"
+            local categoryId = categoryPosition.category:GetId()
+            local canEditCategory = AddonNS.BagViewState:IsCategoriesConfigMode() and customCategories[categoryId] ~= nil
+            local canDeleteCategory = canEditCategory and not categoryPosition.category:IsProtected()
+            frame.editButton:SetShown(canEditCategory)
+            frame.deleteButton:SetShown(canDeleteCategory)
+
+            if canEditCategory and canDeleteCategory then
+                frame:ApplyCategoryTextLayoutWithEditAndDeleteButtons()
+            elseif canEditCategory then
+                frame:ApplyCategoryTextLayoutWithEditButton()
+            else
+                frame:ApplyCategoryTextLayout()
+            end
+
+            dropFrame.ItemCategory = categoryPosition.category
+            dropFrame.MyBagsScope = scope
+            dropFrame.MyBagsContainerRef = panel
+            dropFrame.MyBagsHintAnchorFrame = self.backgroundFrame
+            dropFrame.MyBagsHintAlignToFrame = true
+            dropFrame:ClearAllPoints()
+            dropFrame:SetPoint("TOPLEFT", self.backgroundFrame, "TOPLEFT", categoryPosition.x, -categoryPosition.y)
+            dropFrame:SetSize(categoryPosition.width, categoryPosition.blockHeight)
+            dropFrame:Show()
+
+            local label = categoryPosition.category:GetDisplayName(categoryPosition.itemsCount) or categoryPosition.category:GetName()
+            if AddonNS.Collapsed.isCollapsed(categoryPosition.category, scope) then
+                label = label .. " (" .. categoryPosition.itemsCount .. ") |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a"
+            end
+            frame:SetText(label)
+            frame:Show()
         end
-        frame:SetText(label)
-        frame:Show()
     end
 
     for index = #categoryPositions + 1, #self.headerFrames do
@@ -713,13 +1046,15 @@ function BankView:Refresh(scope)
         AddonNS.printDebug("MyBags BankView:Refresh skipped; frame hidden")
         hideHeaders(self)
         hideScrollArea(self)
-        hideActionsButton(self)
+        hideEditModeButton(self)
+        hideBottomBarControls(self)
         return
     end
 
+    refreshSearchBoxWidth()
     local activeBankType = BankFrame:GetActiveBankType()
     local activeScope = scope or getScopeForBankType(activeBankType)
-    local tabIds, tabData = getPurchasedTabIdsForActiveType(panel)
+    local tabIds = getPurchasedTabIdsForActiveType(panel)
     self.visibleTabIds = buildVisibleTabIds(tabIds)
     self.currentScope = activeScope
     AddonNS:SetCurrentLayoutScope(activeScope)
@@ -728,7 +1063,8 @@ function BankView:Refresh(scope)
     self.scrollFrame.MyBagsScope = activeScope
     ensureBackground(self, self.scrollContentFrame)
     hideBlizzardBankTabs(panel)
-    showActionsButton(self, panel, activeBankType, tabData)
+    showEditModeButton(self, panel)
+    refreshBottomBar(self, panel, activeBankType, tabIds)
     self.scrollViewportBackdrop:Show()
     self.scrollFrame:Show()
     self.backgroundFrame:Show()
@@ -847,7 +1183,8 @@ local function tryInstallHooks()
         hideHeaders(BankView)
         hideScrollArea(BankView)
         hideDropAreaOverlays(BankView)
-        hideActionsButton(BankView)
+        hideEditModeButton(BankView)
+        hideBottomBarControls(BankView)
         if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsShown() then
             AddonNS:SetCurrentLayoutScope("bag")
         end
@@ -899,6 +1236,12 @@ local function tryInstallHooks()
         end
     end)
 
+    AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, function()
+        if BankFrame:IsShown() then
+            BankView:QueueRefresh(BankView.currentScope)
+        end
+    end)
+
     AddonNS.printDebug("MyBags BankView:hooks installed")
     BankView.hooksInstalled = true
     return true
@@ -915,6 +1258,10 @@ AddonNS.BankViewTestHooks = {
     HasAnyActiveItemButtons = hasAnyActiveItemButtons,
     CountActiveItemButtons = countActiveItemButtons,
     CountExpectedButtonsForTabs = countExpectedButtonsForTabs,
+    ShouldShowPurchaseTabButton = shouldShowPurchaseTabButton,
+    GetBankCapacityState = function(tabIds)
+        return AddonNS.GetBankCapacityState(tabIds)
+    end,
     EvaluateSearchVisibility = evaluateSearchVisibility,
     ApplySearchUnionMatchState = applySearchUnionMatchState,
 }

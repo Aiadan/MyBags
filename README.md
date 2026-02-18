@@ -49,7 +49,9 @@ Other notable features:
 * Invalid query text in search is ignored instead of breaking results.
 * Bank uses the same category-based organization flow as bags.
 * Bank has separate layout scopes for character bank and account/warband bank.
-* Bank view includes a compact `Actions` menu for tab settings and purchase-next-tab.
+* Bank view uses the same edit-mode affordances as bags (category header edit/delete and in-grid add/export/import controls).
+* Bank purchase-next-tab is exposed through a `+` button in the bottom strip (shown only when a new tab can be purchased).
+* Bag and bank footer capacity now uses `taken / total` formatting with tooltip details.
 * While editing a custom category query, the text is mirrored into bag search for live preview.
 * Custom query categories support priority scores (higher priority wins first).
 * Query syntax and attributes reference: [QUERY_ATTRIBUTES.md](QUERY_ATTRIBUTES.md)
