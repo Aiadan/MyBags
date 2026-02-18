@@ -90,6 +90,12 @@ local testCases = {
     item = testItem4,
     expected = true,
   },
+  {
+    name = "numeric comparisons treat missing value as non-match instead of error",
+    query = "questid > 0",
+    item = testItem2,
+    expected = false,
+  },
 }
 
 for _, case in ipairs(testCases) do
@@ -111,3 +117,33 @@ assert(invalidComparator == nil, "CompileAdHoc returns nil for invalid comparato
 
 local invalidSyntax = addonEnv.QueryCategories:CompileAdHoc("itemType = 3 OR")
 assert(invalidSyntax == nil, "CompileAdHoc returns nil for malformed syntax")
+
+local tooltipRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
+  stackCount = 0,
+  expansionID = 10,
+  itemType = 2,
+  itemSubType = 15,
+  bindType = 2,
+  isQuestItem = true,
+})
+assert(#tooltipRows >= 4, "GetTooltipAttributeRows returns visible non-zero attributes")
+local rowByName = {}
+for _, row in ipairs(tooltipRows) do
+  rowByName[row.name] = row
+end
+assert(rowByName.expansionID and rowByName.expansionID.meaning == "The War Within", "expansionID meaning is resolved")
+assert(rowByName.itemType and rowByName.itemType.meaning == "Weapon", "itemType meaning is resolved")
+assert(rowByName.itemSubType and rowByName.itemSubType.meaning == "Dagger", "itemSubType meaning is resolved by itemType")
+
+local order = addonEnv.QueryCategories.TooltipAttributeDefinitions.order
+local orderPosByName = {}
+for index, name in ipairs(order) do
+  orderPosByName[name] = index
+end
+local previousOrderPos = 0
+for _, row in ipairs(tooltipRows) do
+  local currentPos = orderPosByName[row.name]
+  assert(currentPos ~= nil, "row name exists in tooltip order")
+  assert(currentPos > previousOrderPos, "rows follow configured tooltip order")
+  previousOrderPos = currentPos
+end

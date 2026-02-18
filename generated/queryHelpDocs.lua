@@ -90,6 +90,24 @@ Notes:
 
 |cffe6d0a2Core Value Tables|r
 
+|cffd8d8b0|cff8ebfe9expansionID|r|r
+
+|cffe0d8c4Name / Value|r
+• Classic: |cff9bb6cf0|r
+• The Burning Crusade: |cff9bb6cf1|r
+• Wrath of the Lich King: |cff9bb6cf2|r
+• Cataclysm: |cff9bb6cf3|r
+• Mists of Pandaria: |cff9bb6cf4|r
+• Warlords of Draenor: |cff9bb6cf5|r
+• Legion: |cff9bb6cf6|r
+• Battle for Azeroth: |cff9bb6cf7|r
+• Shadowlands: |cff9bb6cf8|r
+• Dragonflight: |cff9bb6cf9|r
+• The War Within: |cff9bb6cf10|r
+• Midnight: |cff9bb6cf11|r
+• The Last Titan: |cff9bb6cf12|r
+
+
 |cffd8d8b0|cff8ebfe9quality|r|r
 
 |cffe0d8c4Name / Value|r

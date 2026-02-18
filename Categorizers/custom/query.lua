@@ -155,7 +155,11 @@ local Comparators = {
                     return nil
                 end
                 return function(itemInfo)
-                    return retriver(itemInfo) > numberValue
+                    local candidate = retriver(itemInfo)
+                    if type(candidate) ~= "number" then
+                        return false
+                    end
+                    return candidate > numberValue
                 end
             end,
         },
@@ -166,7 +170,11 @@ local Comparators = {
                     return nil
                 end
                 return function(itemInfo)
-                    return retriver(itemInfo) >= numberValue
+                    local candidate = retriver(itemInfo)
+                    if type(candidate) ~= "number" then
+                        return false
+                    end
+                    return candidate >= numberValue
                 end
             end,
         },
@@ -177,7 +185,11 @@ local Comparators = {
                     return nil
                 end
                 return function(itemInfo)
-                    return retriver(itemInfo) < numberValue
+                    local candidate = retriver(itemInfo)
+                    if type(candidate) ~= "number" then
+                        return false
+                    end
+                    return candidate < numberValue
                 end
             end,
         },
@@ -188,7 +200,11 @@ local Comparators = {
                     return nil
                 end
                 return function(itemInfo)
-                    return retriver(itemInfo) <= numberValue
+                    local candidate = retriver(itemInfo)
+                    if type(candidate) ~= "number" then
+                        return false
+                    end
+                    return candidate <= numberValue
                 end
             end,
         },
@@ -241,6 +257,169 @@ local Retrievers = {
     isQuestItemActive = { type = ValueType.BOOL },
     bindType = { type = ValueType.NUMBER },
 }
+
+local QueryTooltipDefinitions = {
+    order = {
+        
+        "itemType",
+        "itemSubType",
+        "inventoryType",
+        "isCraftingReagent",
+        "isQuestItem",
+        "questID",
+        "isQuestItemActive",
+        "bindType",
+        "expansionID",
+        "quality",
+        "isReadable",
+        "hasLoot",
+        "hasNoValue",
+        "sellPrice",
+        "stackCount",
+        "itemName",
+        "itemID",
+        "isBound",
+        "ilvl",
+        "itemMinLevel",
+        
+    },
+    descriptions = {
+        -- stackCount = "Item stack size",
+        expansionID = "Item expansion id",
+        quality = "Item quality",
+        isReadable = "Item can be read",
+        hasLoot = "Item contains loot",
+        hasNoValue = "Item has no vendor value",
+        itemID = "Item id",
+        -- isBound = "Item is bound",
+        -- itemName = "Item name",
+        -- ilvl = "Item level",
+        itemMinLevel = "Character required level",
+        itemType = "Item class",
+        itemSubType = "Item subclass",
+        inventoryType = "Equip slot type",
+        sellPrice = "Vendor sell price",
+        isCraftingReagent = "Crafting reagent flag",
+        isQuestItem = "Quest item flag",
+        questID = "Quest id",
+        isQuestItemActive = "Quest active flag",
+        bindType = "Bind type",
+    },
+    valueLabels = {
+        expansionID = {
+            [0] = "Classic",
+            [1] = "The Burning Crusade",
+            [2] = "Wrath of the Lich King",
+            [3] = "Cataclysm",
+            [4] = "Mists of Pandaria",
+            [5] = "Warlords of Draenor",
+            [6] = "Legion",
+            [7] = "Battle for Azeroth",
+            [8] = "Shadowlands",
+            [9] = "Dragonflight",
+            [10] = "The War Within",
+            [11] = "Midnight",
+            [12] = "The Last Titan",
+        },
+        quality = {
+            [0] = "Poor", [1] = "Common", [2] = "Uncommon", [3] = "Rare", [4] = "Epic", [5] = "Legendary",
+            [6] = "Artifact", [7] = "Heirloom", [8] = "WoWToken",
+        },
+        itemType = {
+            [0] = "Consumable", [1] = "Container", [2] = "Weapon", [3] = "Gem", [4] = "Armor", [5] = "Reagent",
+            [6] = "Projectile", [7] = "Tradegoods", [8] = "ItemEnhancement", [9] = "Recipe", [10] = "CurrencyTokenObsolete",
+            [11] = "Quiver", [12] = "Questitem", [13] = "Key", [14] = "PermanentObsolete", [15] = "Miscellaneous",
+            [16] = "Glyph", [17] = "Battlepet", [18] = "WoWToken", [19] = "Profession", [20] = "Housing",
+        },
+        inventoryType = {
+            [0] = "NonEquip", [1] = "Head", [2] = "Neck", [3] = "Shoulder", [4] = "Body", [5] = "Chest", [6] = "Waist",
+            [7] = "Legs", [8] = "Feet", [9] = "Wrist", [10] = "Hand", [11] = "Finger", [12] = "Trinket", [13] = "Weapon",
+            [14] = "Shield", [15] = "Ranged", [16] = "Cloak", [17] = "TwoHandWeapon", [18] = "Bag", [19] = "Tabard",
+            [20] = "Robe", [21] = "MainHandWeapon", [22] = "OffHandWeapon", [23] = "Holdable", [24] = "Ammo",
+            [25] = "Thrown", [26] = "RangedRight", [27] = "Quiver", [28] = "Relic", [29] = "ProfessionTool",
+            [30] = "ProfessionGear", [31] = "EquipableSpellOffensive", [32] = "EquipableSpellUtility",
+            [33] = "EquipableSpellDefensive", [34] = "EquipableSpellWeapon",
+        },
+        bindType = {
+            [0] = "None", [1] = "OnAcquire (Bind on Pickup)", [2] = "OnEquip (Bind on Equip)",
+            [3] = "OnUse (Bind on Use)", [4] = "Quest", [5] = "Unused1", [6] = "Unused2",
+            [7] = "ToWoWAccount", [8] = "ToBnetAccount", [9] = "ToBnetAccountUntilEquipped",
+        },
+    },
+    itemSubTypeLabelsByItemType = {
+        [0] = {
+            [0] = "Generic", [1] = "Potion", [2] = "Elixir", [3] = "Flasksphials", [4] = "Scroll", [5] = "Fooddrink",
+            [6] = "Itemenhancement", [7] = "Bandage", [8] = "Other", [9] = "VantusRune", [10] = "UtilityCurio",
+            [11] = "CombatCurio", [12] = "Relic",
+        },
+        [2] = {
+            [0] = "Axe1H", [1] = "Axe2H", [2] = "Bows", [3] = "Guns", [4] = "Mace1H", [5] = "Mace2H",
+            [6] = "Polearm", [7] = "Sword1H", [8] = "Sword2H", [9] = "Warglaive", [10] = "Staff", [11] = "Bearclaw",
+            [12] = "Catclaw", [13] = "Unarmed", [14] = "Generic", [15] = "Dagger", [16] = "Thrown", [17] = "Obsolete3",
+            [18] = "Crossbow", [19] = "Wand", [20] = "Fishingpole",
+        },
+        [3] = {
+            [0] = "Intellect", [1] = "Agility", [2] = "Strength", [3] = "Stamina", [4] = "Spirit", [5] = "Criticalstrike",
+            [6] = "Mastery", [7] = "Haste", [8] = "Versatility", [9] = "Other", [10] = "Multiplestats", [11] = "Artifactrelic",
+        },
+        [4] = {
+            [0] = "Generic", [1] = "Cloth", [2] = "Leather", [3] = "Mail", [4] = "Plate", [5] = "Cosmetic",
+            [6] = "Shield", [7] = "Libram", [8] = "Idol", [9] = "Totem", [10] = "Sigil", [11] = "Relic",
+        },
+        [5] = {
+            [0] = "Reagent", [1] = "Keystone", [2] = "ContextToken",
+        },
+        [9] = {
+            [0] = "Book", [1] = "Leatherworking", [2] = "Tailoring", [3] = "Engineering", [4] = "Blacksmithing",
+            [5] = "Cooking", [6] = "Alchemy", [7] = "FirstAid", [8] = "Enchanting", [9] = "Fishing", [10] = "Jewelcrafting",
+            [11] = "Inscription",
+        },
+        [15] = {
+            [0] = "Junk", [1] = "Reagent", [2] = "CompanionPet", [3] = "Holiday", [4] = "Other", [5] = "Mount",
+            [6] = "MountEquipment",
+        },
+        [19] = {
+            [0] = "Blacksmithing", [1] = "Leatherworking", [2] = "Alchemy", [3] = "Herbalism", [4] = "Cooking",
+            [5] = "Mining", [6] = "Tailoring", [7] = "Engineering", [8] = "Enchanting", [9] = "Fishing", [10] = "Skinning",
+            [11] = "Jewelcrafting", [12] = "Inscription", [13] = "Archaeology",
+        },
+        [20] = {
+            [0] = "Decor", [1] = "Dye", [2] = "Room", [3] = "RoomCustomization", [4] = "ExteriorCustomization",
+            [5] = "ServiceItem",
+        },
+    },
+}
+
+local function shouldIncludeTooltipValue(value)
+    if value == nil then
+        return false
+    end
+    if type(value) == "number" then
+        return value ~= 0
+    end
+    if type(value) == "boolean" then
+        return value == true
+    end
+    if type(value) == "string" then
+        return value ~= ""
+    end
+    return false
+end
+
+local function getTooltipValueMeaning(attributeName, value, payload)
+    if attributeName == "itemSubType" and type(value) == "number" then
+        local itemType = payload and payload.itemType or nil
+        local byType = QueryTooltipDefinitions.itemSubTypeLabelsByItemType[itemType]
+        if byType then
+            return byType[value]
+        end
+    end
+    local labels = QueryTooltipDefinitions.valueLabels[attributeName]
+    if labels and type(value) == "number" then
+        return labels[value]
+    end
+    return QueryTooltipDefinitions.descriptions[attributeName]
+end
 
 local RetrieversByLowerName = {}
 
@@ -526,6 +705,28 @@ function AddonNS.QueryCategories:EvaluateSearchUnion(defaultMatch, evaluator, it
         queryMatch = evaluator(itemInfo) == true
     end
     return defaultMatch or queryMatch, queryMatch
+end
+
+AddonNS.QueryCategories.TooltipAttributeDefinitions = QueryTooltipDefinitions
+
+function AddonNS.QueryCategories:GetTooltipAttributeRows(payload)
+    local rows = {}
+    if type(payload) ~= "table" then
+        return rows
+    end
+    local order = QueryTooltipDefinitions.order
+    for index = 1, #order do
+        local attributeName = order[index]
+        local value = payload[attributeName]
+        if shouldIncludeTooltipValue(value) then
+            rows[#rows + 1] = {
+                name = attributeName,
+                value = value,
+                meaning = getTooltipValueMeaning(attributeName, value, payload),
+            }
+        end
+    end
+    return rows
 end
 
 AddonNS.Events:OnInitialize(function()

@@ -145,6 +145,9 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ increased category hover hint readability (larger text/padding) and added dynamic width expansion so long category names can widen the hint when needed (capped to available UI width).
 * ✅ fixed Shift-tooltip category diagnostics via separate match-list path: `Categorize` is fast single-match only, while tooltip uses dedicated full-match collection (manual first + query candidates), including duplicate-category diagnostics when the same custom category matches both manually and by query (`X (Manual assignment)` + `X (Priority: ...)`).
 * ✅ custom manual assignment now silently ignores redundant assignment only when target custom category is already the global category winner (`Categories:Categorize`) for that item; if another categorizer would win otherwise, manual assignment is still persisted (move flow still clears previous manual source assignment).
+* ✅ Shift item tooltip now also lists non-zero query retriever payload values under matched categories, with value-meaning labels from query docs (for example `itemType: 2 (Weapon)` and `itemSubType` labels resolved by current `itemType`); tooltip attribute definitions/order now live centrally in `Categorizers/custom/query.lua` and rows use explicit attribute/value/meaning coloring, including `expansionID` value labels (`0..12`).
+* ✅ updated `QUERY_ATTRIBUTES.md` core value tables with explicit `expansionID` mapping (`0..12`) to keep docs aligned with tooltip/query metadata.
+* ✅ fixed query numeric comparators (`>`, `>=`, `<`, `<=`) to safely return `false` when attribute value is missing/non-numeric (for example `questid > 0`) instead of throwing runtime errors.
 
 ### TODO
 

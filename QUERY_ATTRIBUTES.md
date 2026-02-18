@@ -87,6 +87,24 @@ Notes:
 
 ## Core Value Tables
 
+### `expansionID`
+
+| Name | Value |
+|---|---:|
+| Classic | 0 |
+| The Burning Crusade | 1 |
+| Wrath of the Lich King | 2 |
+| Cataclysm | 3 |
+| Mists of Pandaria | 4 |
+| Warlords of Draenor | 5 |
+| Legion | 6 |
+| Battle for Azeroth | 7 |
+| Shadowlands | 8 |
+| Dragonflight | 9 |
+| The War Within | 10 |
+| Midnight | 11 |
+| The Last Titan | 12 |
+
 ### `quality`
 
 | Name | Value |

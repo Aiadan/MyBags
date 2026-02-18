@@ -81,6 +81,33 @@ end
 
 local MYBAGS_TOOLTIP_TITLE = "|cffff2459My|r Bags"
 local MYBAGS_TOOLTIP_HINT_COLOR_PREFIX = "|cff72f272"
+local QUERY_TOOLTIP_ATTRIBUTE_COLOR = "|cffffd100"
+local QUERY_TOOLTIP_VALUE_COLOR = "|cff80d8ff"
+local QUERY_TOOLTIP_MEANING_COLOR = "|cff9aa3b2"
+
+local function addQueryAttributesToTooltip(tooltip, itemID, owner)
+    local payload = AddonNS.CustomCategories:GetItemQueryPayload(itemID, owner)
+    if not payload then
+        return
+    end
+
+    local rows = AddonNS.QueryCategories:GetTooltipAttributeRows(payload)
+    if #rows == 0 then
+        return
+    end
+
+    GameTooltip_AddNormalLine(tooltip, MYBAGS_TOOLTIP_TITLE .. MYBAGS_TOOLTIP_HINT_COLOR_PREFIX .. " query attributes:|r")
+    for index = 1, #rows do
+        local row = rows[index]
+        local line = " - " ..
+            QUERY_TOOLTIP_ATTRIBUTE_COLOR .. row.name .. "|r: " ..
+            QUERY_TOOLTIP_VALUE_COLOR .. tostring(row.value) .. "|r"
+        if row.meaning and row.meaning ~= "" then
+            line = line .. " " .. QUERY_TOOLTIP_MEANING_COLOR .. "(" .. row.meaning .. ")|r"
+        end
+        GameTooltip_AddNormalLine(tooltip, line)
+    end
+end
 
 local function addCategoriesToTooltip(tooltip)
     local owner = tooltip:GetOwner()
@@ -125,6 +152,8 @@ local function addCategoriesToTooltip(tooltip)
         end
         GameTooltip_AddNormalLine(tooltip, line)
     end
+    GameTooltip_AddBlankLineToTooltip(tooltip)
+    addQueryAttributesToTooltip(tooltip, itemID, owner)
     GameTooltip_AddBlankLineToTooltip(tooltip)
 end
 
