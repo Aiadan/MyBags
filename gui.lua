@@ -457,202 +457,66 @@ AddonNS.Events:RegisterEvent("BAG_UPDATE", function()
     end
 end)
 
-local resizeHandle = CreateFrame("Button", nil, AddonNS.container, "PanelResizeButtonTemplate")
-resizeHandle:SetPoint("BOTTOMLEFT", AddonNS.container, "BOTTOMLEFT", 2, 2)
-resizeHandle:SetFrameStrata("TOOLTIP")
-resizeHandle:SetRotationDegrees(270)
-resizeHandle:Hide()
-
-local activeResize = nil
-local resizePreviewColumns = {}
-local resizePreviewFrame = CreateFrame("Frame", nil, backgroundFrame, "BackdropTemplate")
-local RESIZE_PREVIEW_COLORS = {
-    neutral = { 0.35, 0.58, 0.94, 0.22 },
-    growth = { 0.20, 0.85, 0.35, 0.30 },
-    shrink = { 0.90, 0.24, 0.24, 0.30 },
-}
-
-resizePreviewFrame:SetAllPoints(backgroundFrame)
-resizePreviewFrame:SetFrameStrata("TOOLTIP")
-resizePreviewFrame:SetFrameLevel(backgroundFrame:GetFrameLevel() + 20)
-resizePreviewFrame:EnableMouse(false)
-resizePreviewFrame:Hide()
-
-for index = 1, AddonNS.Const.MAX_NUM_COLUMNS do
-    local overlay = CreateFrame("Frame", nil, resizePreviewFrame, "BackdropTemplate")
-    overlay:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
-    overlay:SetBackdropColor(0, 0, 0, 0)
-    overlay:Hide()
-    resizePreviewColumns[index] = overlay
-end
-
 local function getColumnPixelWidth()
     local itemSize = AddonNS.container.Items[1]:GetHeight() + ITEM_SPACING
     return itemSize * AddonNS.Const.ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
 end
 
-local function hideResizePreview()
-    for index = 1, #resizePreviewColumns do
-        resizePreviewColumns[index]:Hide()
-    end
-    resizePreviewFrame:Hide()
-end
-
-local function setResizePreviewColumnColor(columnFrame, color)
-    columnFrame:SetBackdropColor(color[1], color[2], color[3], color[4])
-end
-
-local function updateResizePreview(state, currentWidth)
-    local visibleColumns = (currentWidth - state.chromeOffset) / state.columnPixelWidth
-    local targetColumns, _ = AddonNS.ColumnResize:ClassifyPreview(
-        state.startColumns,
-        visibleColumns,
-        AddonNS.Const.MIN_NUM_COLUMNS,
-        AddonNS.Const.MAX_NUM_COLUMNS
-    )
-
-    local highestVisiblePreview = math.max(state.startColumns, targetColumns)
-    local stableColumns = math.min(state.startColumns, targetColumns)
-    local overlayWidth = state.columnPixelWidth - AddonNS.Const.COLUMN_SPACING
-    if overlayWidth < 1 then
-        overlayWidth = 1
-    end
-
-    for index = 1, #resizePreviewColumns do
-        local overlay = resizePreviewColumns[index]
-        if index <= highestVisiblePreview then
-            overlay:ClearAllPoints()
-            local offsetX = (index - 1) * state.columnPixelWidth
-            overlay:SetPoint("TOPLEFT", resizePreviewFrame, "TOPLEFT", offsetX, 0)
-            overlay:SetPoint("BOTTOMLEFT", resizePreviewFrame, "BOTTOMLEFT", offsetX, 0)
-            overlay:SetWidth(overlayWidth)
-
-            if index <= stableColumns then
-                setResizePreviewColumnColor(overlay, RESIZE_PREVIEW_COLORS.neutral)
-            elseif targetColumns > state.startColumns then
-                setResizePreviewColumnColor(overlay, RESIZE_PREVIEW_COLORS.growth)
-            else
-                setResizePreviewColumnColor(overlay, RESIZE_PREVIEW_COLORS.shrink)
-            end
-            overlay:Show()
-        else
-            overlay:Hide()
-        end
-    end
-
-    resizePreviewFrame:Show()
-end
-
-local function stopColumnResize(applyChange)
-    local state = activeResize
-    if not state then
-        return
-    end
-    activeResize = nil
-    resizeHandle:SetScript("OnUpdate", nil)
-    resizeHandle:SetButtonState("NORMAL", false)
-    hideResizePreview()
-
-    local container = AddonNS.container
-    container:SetHeight(state.startHeight)
-
-    if not applyChange then
+local bagResizeController = AddonNS.ResizeHandle:Create({
+    parentFrame = AddonNS.container,
+    previewParent = backgroundFrame,
+    anchor = {
+        point = "BOTTOMLEFT",
+        relativeTo = AddonNS.container,
+        relativePoint = "BOTTOMLEFT",
+        x = 2,
+        y = 2,
+    },
+    rotationDegrees = 270,
+    GetColumnPixelWidth = getColumnPixelWidth,
+    GetCurrentColumns = function()
+        return AddonNS.CategoryStore:GetColumnCount("bag")
+    end,
+    GetWidth = function()
+        return AddonNS.container:GetWidth()
+    end,
+    GetHeight = function()
+        return AddonNS.container:GetHeight()
+    end,
+    SetWidth = function(width)
+        AddonNS.container:SetWidth(width)
+    end,
+    SetHeight = function(height)
+        AddonNS.container:SetHeight(height)
+    end,
+    CalculateDesiredWidth = function(startWidth, deltaX)
+        return startWidth - deltaX
+    end,
+    ApplyTargetColumns = function(target)
+        AddonNS:SetNumColumns(target, "bag")
+    end,
+    OnCancel = function()
         AddonNS.QueueContainerUpdateItemLayout()
-        return
-    end
-
-    local visibleColumns = (container:GetWidth() - state.chromeOffset) / state.columnPixelWidth
-    local target = AddonNS.ColumnResize:CalculateTarget(
-        state.startColumns,
-        visibleColumns,
-        AddonNS.Const.MIN_NUM_COLUMNS,
-        AddonNS.Const.MAX_NUM_COLUMNS
-    )
-    AddonNS:SetNumColumns(target, "bag")
-end
-
-local function updateColumnResize()
-    local state = activeResize
-    if not state then
-        return
-    end
-    if not IsMouseButtonDown("LeftButton") then
-        stopColumnResize(true)
-        return
-    end
-
-    local cursorX = GetCursorPosition() / state.uiScale
-    local deltaX = cursorX - state.startCursorX
-    local desiredWidth = state.startWidth - deltaX
-    if desiredWidth < state.minWidth then
-        desiredWidth = state.minWidth
-    end
-    if desiredWidth > state.maxWidth then
-        desiredWidth = state.maxWidth
-    end
-    AddonNS.container:SetWidth(desiredWidth)
-    AddonNS.container:SetHeight(state.startHeight)
-    updateResizePreview(state, desiredWidth)
-end
-
-local function startColumnResize()
-    if InCombatLockdown() then
-        return
-    end
-
-    local container = AddonNS.container
-    local startColumns = AddonNS.CategoryStore:GetColumnCount("bag")
-    local startWidth = container:GetWidth()
-    local columnPixelWidth = getColumnPixelWidth()
-    activeResize = {
-        startCursorX = GetCursorPosition() / UIParent:GetEffectiveScale(),
-        uiScale = UIParent:GetEffectiveScale(),
-        startWidth = startWidth,
-        startHeight = container:GetHeight(),
-        startColumns = startColumns,
-        columnPixelWidth = columnPixelWidth,
-        chromeOffset = startWidth - startColumns * columnPixelWidth,
-        minWidth = startWidth - startColumns * columnPixelWidth + AddonNS.Const.MIN_NUM_COLUMNS * columnPixelWidth,
-        maxWidth = startWidth - startColumns * columnPixelWidth + AddonNS.Const.MAX_NUM_COLUMNS * columnPixelWidth,
-    }
-    updateResizePreview(activeResize, startWidth)
-    resizeHandle:SetButtonState("PUSHED", true)
-    resizeHandle:SetScript("OnUpdate", updateColumnResize)
-end
+    end,
+    ShouldShow = function()
+        return AddonNS.container:IsShown() and not InCombatLockdown()
+    end,
+    IsDisabled = InCombatLockdown,
+})
 
 local function refreshResizeHandle()
-    local shouldShow = AddonNS.container:IsShown() and not InCombatLockdown()
-    if shouldShow then
-        resizeHandle:Show()
-        resizeHandle:EnableMouse(true)
-        return
-    end
-    stopColumnResize(false)
-    resizeHandle:Hide()
-    resizeHandle:EnableMouse(false)
+    bagResizeController:Refresh()
 end
-
-resizeHandle:SetScript("OnMouseDown", function(_, mouseButtonName)
-    if mouseButtonName == "LeftButton" then
-        startColumnResize()
-    end
-end)
-
-resizeHandle:SetScript("OnMouseUp", function(_, mouseButtonName)
-    if mouseButtonName == "LeftButton" then
-        stopColumnResize(true)
-    end
-end)
 
 AddonNS.container:HookScript("OnShow", refreshResizeHandle)
 AddonNS.container:HookScript("OnHide", function()
-    stopColumnResize(false)
+    bagResizeController:Stop()
     refreshResizeHandle()
 end)
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, refreshResizeHandle)
 AddonNS.Events:RegisterEvent("PLAYER_REGEN_DISABLED", function()
-    stopColumnResize(false)
+    bagResizeController:Stop()
     refreshResizeHandle()
 end)
 AddonNS.Events:RegisterEvent("PLAYER_REGEN_ENABLED", refreshResizeHandle)

@@ -65,6 +65,7 @@ local addonEnv = {
     Events = {
         OnInitialize = function() end,
     },
+    SetNumColumns = function() end,
     GetBankCapacityState = function(tabIds)
         local total = 0
         local taken = 0
@@ -257,6 +258,22 @@ run("ShouldShowPurchaseTabButton is true only when purchase is possible", functi
         return true
     end
     assertTrue(not hooks.ShouldShowPurchaseTabButton(Enum.BankType.Character), "button should be hidden when max tabs reached")
+end)
+
+run("ApplySharedBankColumnCount updates both bank scopes", function()
+    local calls = {}
+    addonEnv.SetNumColumns = function(selfRef, target, scope)
+        table.insert(calls, { selfRef = selfRef, target = target, scope = scope })
+    end
+
+    hooks.ApplySharedBankColumnCount(6)
+
+    assertEqual(#calls, 2, "shared apply should update two scopes")
+    assertTrue(calls[1].selfRef == addonEnv, "method call should preserve AddonNS receiver")
+    assertEqual(calls[1].target, 6, "first call target")
+    assertEqual(calls[1].scope, "bank-character", "first call scope")
+    assertEqual(calls[2].target, 6, "second call target")
+    assertEqual(calls[2].scope, "bank-account", "second call scope")
 end)
 
 run("GetBankCapacityState returns taken free and total slot counts", function()

@@ -2,6 +2,7 @@ local addonName, AddonNS = ...
 
 FrameParametersOverride = {};
 local DEFAULT_CONTAINER_SCALE = 0.3;
+local BANK_FRAME_SCREEN_PADDING = 24
 local function GetContainerScaleSingleBag(bag)
     local containerFrameOffsetX = EditModeUtil:GetRightActionBarWidth() + 10
     local screenWidth = GetScreenWidth()
@@ -40,6 +41,26 @@ local function GetContainerScaleSingleBag(bag)
     return containerScale;
 end
 
+local function getBankFrameScale(frame)
+    local frameWidth = frame:GetWidth(true)
+    local frameHeight = frame:GetHeight(true)
+    if not frameWidth or not frameHeight or frameWidth <= 0 or frameHeight <= 0 then
+        return 1
+    end
+
+    local screenWidth = GetScreenWidth()
+    local screenHeight = GetScreenHeight()
+    local availableWidth = screenWidth - BANK_FRAME_SCREEN_PADDING * 2
+    local availableHeight = screenHeight - BANK_FRAME_SCREEN_PADDING * 2
+    local scaleByWidth = availableWidth / frameWidth
+    local scaleByHeight = availableHeight / frameHeight
+    local scale = math.min(scaleByWidth, scaleByHeight, 1)
+    if scale < 0 then
+        scale = 0
+    end
+    return scale
+end
+
 function FrameParametersOverride:OverrideScale(frame, ignoreFile)
     local oldSetScale = frame.SetScale;
     -- function frame:SetScale(scale)
@@ -56,6 +77,9 @@ function FrameParametersOverride:OverrideScale(frame, ignoreFile)
         --     scale = frame:GetScale();     -- ignore the change
         -- end
         scale = GetContainerScaleSingleBag(self)
+        if self == BankFrame then
+            scale = getBankFrameScale(self)
+        end
         AddonNS.printDebug("SetScale", scale);
         return oldSetScale(self, scale);
     end
@@ -116,6 +140,24 @@ end
 
 
 FrameParametersOverride:OverrideScale(ContainerFrameCombinedBags, "ContainerFrame.lua")
+if BankFrame then
+    FrameParametersOverride:OverrideScale(BankFrame, "BankFrame.lua")
+    BankFrame.myBagsScaleOverridden = true
+else
+    AddonNS.Events:RegisterEvent("BANKFRAME_OPENED", function()
+        if BankFrame and not BankFrame.myBagsScaleOverridden then
+            FrameParametersOverride:OverrideScale(BankFrame, "BankFrame.lua")
+            BankFrame.myBagsScaleOverridden = true
+        end
+    end)
+end
+
+function AddonNS.ApplyBankFrameScale()
+    if not BankFrame then
+        return
+    end
+    BankFrame:SetScale(BankFrame:GetScale())
+end
 -- -- Example of applying the overrides
 -- FrameParametersOverride:OverrideHeight(ContainerFrameCombinedBags, "ContainerFrame.lua")
 -- FrameParametersOverride:OverrideWidth(ContainerFrameCombinedBags, "ContainerFrame.lua")

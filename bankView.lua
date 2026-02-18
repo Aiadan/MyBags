@@ -15,7 +15,6 @@ local BankView = {
     refreshQueued = false,
     hooksInstalled = false,
     dataRetryCount = 0,
-    scrollOffset = 0,
     itemButtonsSignature = nil,
 }
 
@@ -31,6 +30,8 @@ local EDIT_CATEGORY_TOOLTIP = "Edit"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Shift-click to delete without confirmation."
 local CAPACITY_LABEL_FORMAT = "%d / %d"
+local BANK_DEFAULT_ITEM_SIZE = 41
+local BANK_RESIZE_HANDLE_SIZE = 16
 
 local function getScopeForBankType(bankType)
     if bankType == Enum.BankType.Account then
@@ -261,17 +262,6 @@ local function ensureItemButtonHooks(itemButton)
     itemButton:HookScript("PreClick", AddonNS.DragAndDrop.itemOnClick)
     itemButton:HookScript("OnReceiveDrag", AddonNS.DragAndDrop.itemOnReceiveDrag)
 
-    if not itemButton.myBagAddonMouseWheelHooked then
-        itemButton:EnableMouseWheel(true)
-        itemButton:HookScript("OnMouseWheel", function(_, delta)
-            local view = AddonNS.BankView
-            if view and view.scrollBar then
-                view.scrollBar:ScrollStepInDirection(-delta)
-            end
-        end)
-        itemButton.myBagAddonMouseWheelHooked = true
-    end
-
     itemButton.myBagAddonHooked = true
 end
 
@@ -289,9 +279,9 @@ local function hideHeaders(self)
     end
 end
 
-local function hideScrollArea(self)
-    if self.scrollViewportBackdrop then
-        self.scrollViewportBackdrop:Hide()
+local function hideContentArea(self)
+    if self.contentFrame then
+        self.contentFrame:Hide()
     end
 end
 
@@ -394,6 +384,120 @@ local function hideBottomBarControls(self)
     end
 end
 
+local function getViewportWidthForColumns(columnCount, columnPixelWidth)
+    return BANK_CONTENT_LEFT_PADDING + columnCount * columnPixelWidth
+end
+
+local function getPanelWidthForColumns(columnCount, columnPixelWidth)
+    local viewportWidth = getViewportWidthForColumns(columnCount, columnPixelWidth)
+    return viewportWidth - BANK_VIEWPORT_RIGHT + BANK_VIEWPORT_LEFT
+end
+
+local function getPanelHeightForContent(contentBottom)
+    local viewportHeight = contentBottom + BANK_CONTENT_PADDING_BOTTOM
+    return viewportHeight - BANK_VIEWPORT_TOP + BANK_VIEWPORT_BOTTOM
+end
+
+local function getCurrentItemSize(panel)
+    for itemButton in panel:EnumerateValidItems() do
+        return itemButton:GetHeight() + ITEM_SPACING
+    end
+    return BANK_DEFAULT_ITEM_SIZE
+end
+
+local function applySharedBankColumnCount(target)
+    AddonNS:SetNumColumns(target, BANK_CHARACTER_SCOPE)
+    AddonNS:SetNumColumns(target, BANK_ACCOUNT_SCOPE)
+end
+
+local function refreshBankFrameScale()
+    if AddonNS.ApplyBankFrameScale then
+        AddonNS.ApplyBankFrameScale()
+    end
+end
+
+local function updateFrameSizeForContent(self, panel, contentBottom)
+    local columnCount = AddonNS.CategoryStore:GetColumnCount(self.currentScope)
+    local columnPixelWidth = self.columnPixelWidth
+    local panelWidth = getPanelWidthForColumns(columnCount, columnPixelWidth)
+    local panelHeight = getPanelHeightForContent(contentBottom)
+
+    panel:SetSize(panelWidth, panelHeight)
+    BankFrame:SetSize(panelWidth, panelHeight)
+    if UpdateUIPanelPositions then
+        UpdateUIPanelPositions(BankFrame)
+    end
+    refreshBankFrameScale()
+end
+
+local function ensureResizeController(self, panel)
+    if self.resizeController then
+        return self.resizeController
+    end
+
+    local controller = AddonNS.ResizeHandle:Create({
+        parentFrame = panel,
+        previewParent = self.backgroundFrame,
+        anchor = {
+            point = "BOTTOMRIGHT",
+            relativeTo = panel,
+            relativePoint = "BOTTOMRIGHT",
+            x = -2,
+            y = 2,
+        },
+        GetColumnPixelWidth = function()
+            if self.columnPixelWidth and self.columnPixelWidth > 0 then
+                return self.columnPixelWidth
+            end
+            local itemSize = getCurrentItemSize(panel)
+            return itemSize * ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
+        end,
+        GetCurrentColumns = function()
+            local scope = self.currentScope or BANK_CHARACTER_SCOPE
+            return AddonNS.CategoryStore:GetColumnCount(scope)
+        end,
+        GetWidth = function()
+            return panel:GetWidth()
+        end,
+        GetHeight = function()
+            return panel:GetHeight()
+        end,
+        SetWidth = function(width)
+            panel:SetWidth(width)
+            BankFrame:SetWidth(width)
+        end,
+        SetHeight = function(height)
+            panel:SetHeight(height)
+            BankFrame:SetHeight(height)
+        end,
+        CalculateDesiredWidth = function(startWidth, deltaX)
+            return startWidth + deltaX
+        end,
+        ApplyTargetColumns = applySharedBankColumnCount,
+        OnApplied = function()
+            self:RefreshNow(self.currentScope)
+        end,
+        OnCancel = function()
+            self:RefreshNow(self.currentScope)
+        end,
+        ShouldShow = function()
+            return BankFrame:IsShown() and panel:IsShown() and not InCombatLockdown()
+        end,
+        IsDisabled = InCombatLockdown,
+    })
+
+    controller.handle:SetSize(BANK_RESIZE_HANDLE_SIZE, BANK_RESIZE_HANDLE_SIZE)
+    self.resizeController = controller
+    return controller
+end
+
+local function refreshResizeHandle(self, panel)
+    if not self.backgroundFrame then
+        return
+    end
+    ensureResizeController(self, panel):Refresh()
+end
+
 local function evaluateSearchVisibility(defaultMatch, searchEvaluator, itemInfo, itemButton)
     local includeInSearch = defaultMatch
     local queryMatch = false
@@ -426,7 +530,7 @@ local function ensureDropAreaOverlay(self, index)
         return self.dropAreaOverlays[index]
     end
 
-    local overlay = CreateFrame("Frame", nil, self.scrollFrame, "BackdropTemplate")
+    local overlay = CreateFrame("Frame", nil, self.contentFrame, "BackdropTemplate")
     overlay:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background", edgeFile = "Interface/Tooltips/UI-Tooltip-Border", edgeSize = 10 })
     overlay:SetBackdropColor(0.22, 0.45, 0.95, 0.08)
     overlay:SetBackdropBorderColor(0.38, 0.62, 1, 0.28)
@@ -455,10 +559,14 @@ local function updateDropAreaOverlays(self, scope)
         hideDropAreaOverlays(self)
         return
     end
+    if not self.contentFrame then
+        hideDropAreaOverlays(self)
+        return
+    end
 
     local columnCount = AddonNS.CategoryStore:GetColumnCount(scope)
-    local areaWidth = self.scrollFrame:GetWidth() or 0
-    local areaHeight = self.scrollFrame:GetHeight() or 0
+    local areaWidth = self.contentFrame:GetWidth() or 0
+    local areaHeight = self.contentFrame:GetHeight() or 0
     local columnPixelWidth = self.columnPixelWidth
     local firstColumnStartX = self.firstColumnStartX
     if columnCount <= 0 or areaWidth <= 0 or areaHeight <= 0 or not columnPixelWidth or not firstColumnStartX then
@@ -470,7 +578,7 @@ local function updateDropAreaOverlays(self, scope)
         local overlay = ensureDropAreaOverlay(self, index)
         local startX = firstColumnStartX + (index - 1) * columnPixelWidth
         overlay:ClearAllPoints()
-        overlay:SetPoint("TOPLEFT", self.scrollFrame, "TOPLEFT", startX, 0)
+        overlay:SetPoint("TOPLEFT", self.contentFrame, "TOPLEFT", startX, 0)
         overlay:SetSize(columnPixelWidth, areaHeight)
         overlay.label:SetText(index)
         overlay:Show()
@@ -495,71 +603,24 @@ local function ensureBackground(self, parentFrame)
     self.backgroundFrame = backgroundFrame
 end
 
-local function ensureScrollArea(self, panel)
-    if self.scrollFrame then
+local function ensureContentArea(self, panel)
+    if self.contentFrame then
         return
     end
 
-    local viewportBackdrop = CreateFrame("Frame", nil, panel, "BackdropTemplate")
-    viewportBackdrop:SetPoint("TOPLEFT", panel, "TOPLEFT", BANK_VIEWPORT_LEFT, BANK_VIEWPORT_TOP)
-    viewportBackdrop:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", BANK_VIEWPORT_RIGHT, BANK_VIEWPORT_BOTTOM)
-    viewportBackdrop:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
-    viewportBackdrop:SetBackdropColor(0.02, 0.02, 0.02, 0.82)
-    viewportBackdrop:EnableMouse(false)
-    viewportBackdrop:SetClipsChildren(false)
+    local contentFrame = CreateFrame("Frame", nil, panel, "BackdropTemplate")
+    contentFrame:SetPoint("TOPLEFT", panel, "TOPLEFT", BANK_VIEWPORT_LEFT, BANK_VIEWPORT_TOP)
+    contentFrame:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", BANK_VIEWPORT_RIGHT, BANK_VIEWPORT_BOTTOM)
+    contentFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
+    contentFrame:SetBackdropColor(0.02, 0.02, 0.02, 0.82)
+    contentFrame:EnableMouse(true)
+    contentFrame:SetClipsChildren(false)
+    contentFrame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
+    contentFrame:SetScript("OnMouseUp", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
+    contentFrame.myBagAddonHooked = true
 
-    local scrollFrame = CreateFrame("ScrollFrame", nil, viewportBackdrop)
-    scrollFrame:SetPoint("TOPLEFT", viewportBackdrop, "TOPLEFT", 0, 0)
-    scrollFrame:SetPoint("BOTTOMRIGHT", viewportBackdrop, "BOTTOMRIGHT", 0, 0)
-    scrollFrame:EnableMouseWheel(true)
-    scrollFrame:EnableMouse(true)
-    scrollFrame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
-    scrollFrame:SetScript("OnMouseUp", AddonNS.DragAndDrop.backgroundOnReceiveDrag)
-    scrollFrame.myBagAddonHooked = true
-
-    local scrollBar = CreateFrame("EventFrame", nil, panel, "MinimalScrollBar")
-    scrollBar:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", 5, -8)
-    scrollBar:SetPoint("BOTTOMLEFT", scrollFrame, "BOTTOMRIGHT", 5, 5)
-    scrollBar:SetFrameStrata(scrollFrame:GetFrameStrata())
-    scrollBar:SetFrameLevel(scrollFrame:GetFrameLevel() + 10)
-
-    ScrollUtil.InitScrollFrameWithScrollBar(scrollFrame, scrollBar)
-    scrollFrame:HookScript("OnVerticalScroll", function(_, offset)
-        self.scrollOffset = offset
-    end)
-
-    local scrollContentFrame = CreateFrame("Frame", nil, scrollFrame)
-    scrollContentFrame:SetPoint("TOPLEFT", scrollFrame, "TOPLEFT", 0, 0)
-    scrollContentFrame:SetPoint("TOPRIGHT", scrollFrame, "TOPRIGHT", 0, 0)
-    scrollContentFrame:SetHeight(1)
-    scrollContentFrame:SetClipsChildren(false)
-    scrollFrame:SetScrollChild(scrollContentFrame)
-
-    self.scrollViewportBackdrop = viewportBackdrop
-    self.scrollFrame = scrollFrame
-    self.scrollBar = scrollBar
-    self.scrollContentFrame = scrollContentFrame
+    self.contentFrame = contentFrame
     self.dropAreaOverlays = self.dropAreaOverlays or {}
-end
-
-local function updateScrollMetrics(self, contentBottomY)
-    local viewportHeight = self.scrollFrame:GetHeight() or 0
-    local viewportWidth = self.scrollFrame:GetWidth() or 0
-    local contentHeight = math.max(viewportHeight, contentBottomY + BANK_CONTENT_PADDING_BOTTOM)
-    local maxScroll = math.max(0, contentHeight - viewportHeight)
-
-    self.scrollContentFrame:SetWidth(math.max(1, viewportWidth))
-    self.scrollContentFrame:SetHeight(contentHeight)
-
-    local clampedOffset = self.scrollOffset
-    if clampedOffset > maxScroll then
-        clampedOffset = maxScroll
-    end
-    if clampedOffset < 0 then
-        clampedOffset = 0
-    end
-    self.scrollOffset = clampedOffset
-    self.scrollFrame:SetVerticalScroll(clampedOffset)
 end
 
 local function ensureHeaderFrame(self, index)
@@ -684,11 +745,6 @@ local function ensureHeaderFrame(self, index)
         AddonNS.gui:StopCategoryDragVisual()
         PlaySound(1200)
     end)
-    headerFrame:EnableMouseWheel(true)
-    headerFrame:SetScript("OnMouseWheel", function(_, delta)
-        self.scrollBar:ScrollStepInDirection(-delta)
-    end)
-
     function headerFrame:SetText(text)
         label:SetText(text)
     end
@@ -1054,9 +1110,12 @@ function BankView:Refresh(scope)
     if not BankFrame:IsShown() or not panel:IsShown() then
         AddonNS.printDebug("MyBags BankView:Refresh skipped; frame hidden")
         hideHeaders(self)
-        hideScrollArea(self)
+        hideContentArea(self)
         hideEditModeButton(self)
         hideBottomBarControls(self)
+        if self.resizeController then
+            self.resizeController:Refresh()
+        end
         return
     end
 
@@ -1068,16 +1127,16 @@ function BankView:Refresh(scope)
     self.currentScope = activeScope
     AddonNS:SetCurrentLayoutScope(activeScope)
 
-    ensureScrollArea(self, panel)
+    ensureContentArea(self, panel)
     panel.Header:Hide()
-    self.scrollFrame.MyBagsScope = activeScope
-    ensureBackground(self, self.scrollContentFrame)
+    self.contentFrame.MyBagsScope = activeScope
+    ensureBackground(self, self.contentFrame)
     hideBlizzardBankTabs(panel)
     showEditModeButton(self, panel)
     refreshBottomBar(self, panel, activeBankType, tabIds)
-    self.scrollViewportBackdrop:Show()
-    self.scrollFrame:Show()
+    self.contentFrame:Show()
     self.backgroundFrame:Show()
+    refreshResizeHandle(self, panel)
     updateDropAreaOverlays(self, activeScope)
     local itemButtonsSignature = buildItemButtonsSignature(activeBankType, tabIds)
     local expectedButtons = countExpectedButtonsForTabs(tabIds)
@@ -1151,9 +1210,10 @@ function BankView:Refresh(scope)
     local positions, categoryPositions, contentBottom = placeItemsAndBuildHeaders(activeScope, panel, categoryAssignments, itemSize)
     AddonNS.printDebug("MyBags BankView:Refresh rendered categories", #categoryPositions, "scope", activeScope)
 
-    updateScrollMetrics(self, contentBottom)
+    updateFrameSizeForContent(self, panel, contentBottom)
+    refreshResizeHandle(self, panel)
     updateDropAreaOverlays(self, activeScope)
-    applyItemPositions(panel, self.scrollContentFrame, positions)
+    applyItemPositions(panel, self.backgroundFrame, positions)
     renderHeaders(self, activeScope, panel, categoryPositions)
 end
 
@@ -1191,10 +1251,14 @@ local function tryInstallHooks()
     end)
     BankFrame:HookScript("OnHide", function()
         hideHeaders(BankView)
-        hideScrollArea(BankView)
+        hideContentArea(BankView)
         hideDropAreaOverlays(BankView)
         hideEditModeButton(BankView)
         hideBottomBarControls(BankView)
+        if BankView.resizeController then
+            BankView.resizeController:Stop()
+            BankView.resizeController:Refresh()
+        end
         if ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsShown() then
             AddonNS:SetCurrentLayoutScope("bag")
         end
@@ -1252,6 +1316,19 @@ local function tryInstallHooks()
         end
     end)
 
+    AddonNS.Events:RegisterEvent("PLAYER_REGEN_DISABLED", function()
+        if BankView.resizeController then
+            BankView.resizeController:Stop()
+            BankView.resizeController:Refresh()
+        end
+    end)
+
+    AddonNS.Events:RegisterEvent("PLAYER_REGEN_ENABLED", function()
+        if BankView.resizeController then
+            BankView.resizeController:Refresh()
+        end
+    end)
+
     AddonNS.printDebug("MyBags BankView:hooks installed")
     BankView.hooksInstalled = true
     return true
@@ -1274,11 +1351,10 @@ AddonNS.BankViewTestHooks = {
     end,
     EvaluateSearchVisibility = evaluateSearchVisibility,
     ApplySearchUnionMatchState = applySearchUnionMatchState,
+    ApplySharedBankColumnCount = applySharedBankColumnCount,
 }
 
 AddonNS.Events:OnInitialize(function()
-    AddonNS.Categories:SetColumnCount(4, BANK_CHARACTER_SCOPE)
-    AddonNS.Categories:SetColumnCount(4, BANK_ACCOUNT_SCOPE)
     tryInstallHooks()
     if BankFrame_Open then
         hooksecurefunc("BankFrame_Open", function()

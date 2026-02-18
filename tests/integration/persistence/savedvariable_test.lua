@@ -474,6 +474,20 @@ run("layout and collapsed state are isolated by scope", function()
     assert_true((snapshot.layout.bag.collapsed or {})[wrappedId] == nil, "bag collapsed map unaffected")
 end)
 
+run("bank scopes default to 4 and do not reset persisted values", function()
+    local first = harness.new()
+    assert_true(first.AddonNS.CategoryStore:GetColumnCount("bank-character") == 4, "bank-character defaults to 4")
+    assert_true(first.AddonNS.CategoryStore:GetColumnCount("bank-account") == 4, "bank-account defaults to 4")
+
+    first.AddonNS.Categories:SetColumnCount(6, "bank-character")
+    first.AddonNS.Categories:SetColumnCount(6, "bank-account")
+    first:events():fire_game("PLAYER_LOGOUT")
+
+    local second = harness.new({ saved = first:snapshot() })
+    assert_true(second.AddonNS.CategoryStore:GetColumnCount("bank-character") == 6, "bank-character keeps persisted count")
+    assert_true(second.AddonNS.CategoryStore:GetColumnCount("bank-account") == 6, "bank-account keeps persisted count")
+end)
+
 run("custom categories persist with namespaced layout", function()
     local ctx = harness.new()
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")

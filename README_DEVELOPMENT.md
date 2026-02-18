@@ -31,6 +31,13 @@ Disable profiling in-game:
 
 Use it only during diagnostics. Keep profiling disabled during normal play.
 
+## Bank Layout Notes
+
+- MyBags bank view is scroll-free. The panel resizes to content and uses frame scaling to stay within screen bounds.
+- Bank column resize uses the same drag thresholds/preview behavior as bags.
+- Bank resize applies column-count changes to both bank scopes together (`bank-character` and `bank-account`).
+- Bank scopes default to 4 columns only when no persisted value exists; saved values are not overwritten on initialization.
+
 ## Custom Query Priority Notes
 
 - Query-based matching inside custom categories is ordered by explicit per-category priority (higher score first).

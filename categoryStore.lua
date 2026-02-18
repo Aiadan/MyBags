@@ -10,6 +10,8 @@ CategoryStore.__index = CategoryStore
 local UNASSIGNED_ID = "unassigned"
 local SINGLETON_SUFFIX = "singleton"
 local DEFAULT_LAYOUT_SCOPE = "bag"
+local BANK_CHARACTER_SCOPE = "bank-character"
+local BANK_ACCOUNT_SCOPE = "bank-account"
 
 local function defaultIsProtected()
     return false
@@ -125,7 +127,10 @@ local function ensure_db(self)
     end
 end
 
-local function defaultColumnCount()
+local function defaultColumnCount(scope)
+    if scope == BANK_CHARACTER_SCOPE or scope == BANK_ACCOUNT_SCOPE then
+        return 4
+    end
     return AddonNS.Const.DEFAULT_NUM_COLUMNS
 end
 
@@ -137,8 +142,8 @@ local function maxColumnCount()
     return AddonNS.Const.MAX_NUM_COLUMNS
 end
 
-local function sanitizeColumnCount(count)
-    local numeric = tonumber(count) or defaultColumnCount()
+local function sanitizeColumnCount(count, scope)
+    local numeric = tonumber(count) or defaultColumnCount(scope)
     numeric = math.floor(numeric)
     if numeric < minColumnCount() then
         return minColumnCount()
@@ -201,7 +206,7 @@ local function get_scope_layout(layoutRoot, scope)
     layoutRoot[normalizedScope] = layoutRoot[normalizedScope] or {}
     local scopedLayout = layoutRoot[normalizedScope]
     ensure_layout_shape(scopedLayout)
-    scopedLayout.columnCount = sanitizeColumnCount(scopedLayout.columnCount)
+    scopedLayout.columnCount = sanitizeColumnCount(scopedLayout.columnCount, normalizedScope)
     scopedLayout.columns = normalize_columns_to_count(scopedLayout.columns, scopedLayout.columnCount)
     return scopedLayout
 end
