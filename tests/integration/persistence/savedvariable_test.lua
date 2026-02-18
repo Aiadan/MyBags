@@ -665,6 +665,100 @@ run("custom query matching uses priority order and manual assignment precedence"
         "diagnostic list includes same category twice when manual and query both match")
 end)
 
+run("manual assign to first query-match category via item-move is ignored", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+
+    ctx.AddonNS.QueryCategories:SetQuery(catA, "itemType = 3")
+    ctx.AddonNS.CustomCategories:SetPriority(catA, 100)
+    ctx.AddonNS.CustomCategories:AssignToCategory(catB, 2001)
+
+    _G.C_Item = {
+        GetItemInfo = function()
+            return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, 3, 0, 0, 0, 0, false
+        end,
+        GetItemInventoryTypeByID = function()
+            return 0
+        end,
+    }
+    rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
+        return {}
+    end)
+    rawset(_G.C_Container, "GetContainerItemInfo", function()
+        return { itemID = 2001, hyperlink = "item:2001" }
+    end)
+
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.ITEM_MOVED, 2001, nil, catB, catA, item_button(0, 1), nil)
+
+    assert_true(ctx.AddonNS.CustomCategories:IsManuallyAssignedToCategory(2001, catA) == false,
+        "manual assignment to first query-match category is ignored")
+    assert_true(ctx.AddonNS.CustomCategories:IsManuallyAssignedToCategory(2001, catB) == false,
+        "source manual assignment is cleared by move flow")
+    local category = ctx.AddonNS.Categories:Categorize(2001, item_button(0, 1))
+    assert_true(category:GetId() == catA:GetId(), "item still resolves to target category via query")
+end)
+
+run("manual assign is not ignored when global winner is not target category", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    ctx.AddonNS.QueryCategories:SetQuery(catA, "itemType = 3")
+    ctx.AddonNS.CustomCategories:SetPriority(catA, 100)
+    ctx.AddonNS.CustomCategories:AssignToCategory(catB, 2001)
+
+    _G.C_Item = {
+        GetItemInfo = function()
+            return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, 3, 0, 0, 0, 0, false
+        end,
+        GetItemInventoryTypeByID = function()
+            return 0
+        end,
+    }
+    rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
+        return {}
+    end)
+    rawset(_G.C_Container, "GetContainerItemInfo", function()
+        return { itemID = 2001, hyperlink = "item:2001" }
+    end)
+
+    local originalCategorize = ctx.AddonNS.Categories.Categorize
+    ctx.AddonNS.Categories.Categorize = function()
+        return catB
+    end
+    ctx:events():fire_custom(ctx.AddonNS.Const.Events.ITEM_MOVED, 2001, nil, catB, catA, item_button(0, 1), nil)
+    ctx.AddonNS.Categories.Categorize = originalCategorize
+
+    assert_true(ctx.AddonNS.CustomCategories:IsManuallyAssignedToCategory(2001, catA) == true,
+        "manual assignment is kept when global winner would otherwise be different")
+    local category = ctx.AddonNS.Categories:Categorize(2001, item_button(0, 1))
+    assert_true(category:GetId() == catA:GetId(), "manual assignment overrides external categorizer winner")
+end)
+
 run("always visible empty category stays empty in arranged output", function()
     local ctx = harness.new()
     local always = ctx.AddonNS.CustomCategories:NewCategory("Always")

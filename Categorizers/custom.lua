@@ -494,6 +494,13 @@ local function new_raw(id, data)
         if data.protected then
             return
         end
+        local sourceButton = context and (context.pickedItemButton or context.targetItemButton) or nil
+        if sourceButton then
+            local naturalCategory = AddonNS.Categories:Categorize(itemId, sourceButton)
+            if naturalCategory and naturalCategory:GetId() == CATEGORIZER_ID .. "-" .. id then
+                return
+            end
+        end
         local db = get_db()
         db.categories[id].items = db.categories[id].items or {}
         local previous = assignments[itemId]

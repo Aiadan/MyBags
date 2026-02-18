@@ -144,10 +144,11 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ category hover hint frame now matches the hovered bag/bank effective scale, and assign-hover text now uses toned-green `Assign` styling for consistency with existing toned status colors.
 * ✅ increased category hover hint readability (larger text/padding) and added dynamic width expansion so long category names can widen the hint when needed (capped to available UI width).
 * ✅ fixed Shift-tooltip category diagnostics via separate match-list path: `Categorize` is fast single-match only, while tooltip uses dedicated full-match collection (manual first + query candidates), including duplicate-category diagnostics when the same custom category matches both manually and by query (`X (Manual assignment)` + `X (Priority: ...)`).
+* ✅ custom manual assignment now silently ignores redundant assignment only when target custom category is already the global category winner (`Categories:Categorize`) for that item; if another categorizer would win otherwise, manual assignment is still persisted (move flow still clears previous manual source assignment).
 
 ### TODO
 
-*
+* When assigning an item to a group based on column background or category background it should be ordered as the last one in that category.
 
 #### Low priority
 
