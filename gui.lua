@@ -150,9 +150,10 @@ local function applyCategoryHint(frame, hint)
 end
 
 local hintTextFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-local HINT_TEXT_MIN_HEIGHT = 28
+local HINT_TEXT_MIN_HEIGHT = 32
 local HINT_TEXT_VERTICAL_GAP = 3
-local HINT_TEXT_PADDING = 8
+local HINT_TEXT_PADDING = 10
+local HINT_TEXT_MAX_WIDTH_MARGIN = 24
 hintTextFrame:SetBackdrop({
     bgFile = "Interface/Tooltips/UI-Tooltip-Background",
     edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -167,15 +168,19 @@ hintTextFrame:EnableMouse(false)
 hintTextFrame:SetSize(320, 34)
 hintTextFrame:Hide()
 
-hintTextFrame.label = hintTextFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-hintTextFrame.label:SetPoint("TOPLEFT", hintTextFrame, "TOPLEFT", 8, -8)
-hintTextFrame.label:SetPoint("BOTTOMRIGHT", hintTextFrame, "BOTTOMRIGHT", -8, 8)
+hintTextFrame.label = hintTextFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+hintTextFrame.label:SetPoint("TOPLEFT", hintTextFrame, "TOPLEFT", HINT_TEXT_PADDING, -HINT_TEXT_PADDING)
+hintTextFrame.label:SetPoint("BOTTOMRIGHT", hintTextFrame, "BOTTOMRIGHT", -HINT_TEXT_PADDING, HINT_TEXT_PADDING)
 hintTextFrame.label:SetJustifyH("LEFT")
 hintTextFrame.label:SetJustifyV("MIDDLE")
 hintTextFrame.label:SetWordWrap(true)
 hintTextFrame.label:SetTextColor(1, 1, 1, 1)
 
 local function layoutHintTextFrame(anchorFrame, text)
+    local uiScale = UIParent:GetEffectiveScale()
+    local anchorScale = anchorFrame:GetEffectiveScale()
+    hintTextFrame:SetScale(anchorScale / uiScale)
+
     local itemSize = AddonNS.container.Items[1]:GetHeight() + ITEM_SPACING
     local columnPixelWidth = itemSize * AddonNS.Const.ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
     local columnWidth = columnPixelWidth - AddonNS.Const.COLUMN_SPACING
@@ -193,8 +198,21 @@ local function layoutHintTextFrame(anchorFrame, text)
         hintWidth = anchorFrame:GetWidth()
     end
 
-    hintTextFrame:SetWidth(hintWidth)
+    local maxHintWidth = (UIParent:GetWidth() or 0) - HINT_TEXT_MAX_WIDTH_MARGIN
+    if maxHintWidth < hintWidth then
+        maxHintWidth = hintWidth
+    end
+
+    hintTextFrame:SetWidth(maxHintWidth)
     hintTextFrame.label:SetText(text)
+    local requiredTextWidth = math.ceil(hintTextFrame.label:GetStringWidth() or 0) + HINT_TEXT_PADDING * 2
+    if requiredTextWidth > hintWidth then
+        hintWidth = requiredTextWidth
+        if hintWidth > maxHintWidth then
+            hintWidth = maxHintWidth
+        end
+    end
+    hintTextFrame:SetWidth(hintWidth)
 
     local textHeight = math.ceil(hintTextFrame.label:GetStringHeight() or 0)
     local frameHeight = textHeight + HINT_TEXT_PADDING * 2

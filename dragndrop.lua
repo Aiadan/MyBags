@@ -122,7 +122,7 @@ function AddonNS.DragAndDrop:GetCategoryDropHint(category, isHovered)
     end
     return {
         tone = "assign",
-        text = "Assign to " .. category:GetName(),
+        text = "|cff57c67aAssign|r to " .. category:GetName(),
     }
 end
 

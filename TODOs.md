@@ -141,6 +141,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ bag/bank drag-hover parity is now aligned across resize changes: bank layout keeps scroll-free auto-resize + shared bank/warbank resize behavior, bank frame size stays locked during search filtering, bank top-right edit cog matches bag styling, and both bag + bank background drag flows now first hit-test the actual category group frame under cursor (including item-gap regions) with fallback to hovered-column last-category highlighting/assignment only when no specific group frame is under cursor.
 * ✅ fixed category hover hint placement regression by forcing bag header hint anchoring to the hovered category frame/title (matching bank behavior) instead of side/column anchoring fallback.
 * ✅ fixed category hover hint vertical placement to always anchor above the category title (removed below-category fallback branch).
+* ✅ category hover hint frame now matches the hovered bag/bank effective scale, and assign-hover text now uses toned-green `Assign` styling for consistency with existing toned status colors.
+* ✅ increased category hover hint readability (larger text/padding) and added dynamic width expansion so long category names can widen the hint when needed (capped to available UI width).
 
 ### TODO
 
