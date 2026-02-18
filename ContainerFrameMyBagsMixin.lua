@@ -127,7 +127,7 @@ local function updateItemSlots(self, ...)
 end;
 hooksecurefunc(ContainerFrameCombinedBags, "UpdateItemSlots", updateItemSlots)
 
--- Workaround: forcing OpenAllBags before the default bank open flow resolves the observed bank taint path.
+-- Workaround: forcing OpenAllBags before the default bank open flow avoids the observed bank taint path.
 local oldBankFrame_Open = BankFrame_Open
 function BankFrame_Open()
     OpenAllBags(BankFrame)
@@ -149,6 +149,28 @@ function TaintingContainerFrameMyBagsMixin:MatchesBagID(id) -- override to inclu
     return id >= Enum.BagIndex.Backpack and id <= Enum.BagIndex.ReagentBag;
 end
 
+-- ToggleAllBags closes backpack first, then checks IsBagOpen for reagent.
+-- Since reagent is merged into combined bags here, report it open to keep close/open accounting consistent.
+
+local reagentsOpen = false;
+function TaintingContainerFrameMyBagsMixin:IsBagOpen(id)
+    if id == Enum.BagIndex.ReagentBag then
+        local to_return = reagentsOpen;
+        reagentsOpen = false;
+        return to_return;
+    end
+    return ContainerFrameCombinedBagsMixin.IsBagOpen(self, id)
+end
+
+local orginal_ToggleAllBags = ToggleAllBags;
+
+function ToggleAllBags()
+    reagentsOpen = true;
+    orginal_ToggleAllBags();
+end
+
+-- ToggleAllBags end override
+
 function ContainerFrameMyBagsMixin:CalculateHeightForCategoriesTitles()
     return self.MyBags.height - self.MyBags.rows * (self.Items[1]:GetHeight() + ITEM_SPACING);
 end
@@ -169,7 +191,7 @@ end
 
 Mixin(ContainerFrameCombinedBags, ContainerFrameMyBagsMixin);
 
---[[ 
+--[[
 This is a workaround for quite and interesting tainting. MatchesBagID is called by MainMenuBarBagButtons (currently line 140)
 When this is done during during combat this flow gets tainted. Hence we would need to check if bag was opened in a safe space, ie. making sure all
 calls were made and then, and only then we can hook those functions. As matchesBagID does not seem to be critical, users might not notice it not working

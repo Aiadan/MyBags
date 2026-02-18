@@ -186,6 +186,7 @@ Tasks which after implementation user will not see.
 * ✅ added agent skill `.agent/skills/blizzard-code-explorer` to guide Blizzard UI source lookup (path resolution, targeted `rg` patterns, source-cited output contract).
 * ✅ updated `.agent/skills/blizzard-code-explorer` to default to `/mnt/c/Program Files (x86)/World of Warcraft/_retail_/BlizzardInterfaceCode`.
 * ✅ enabled `BankFrame_Open` override in `ContainerFrameMyBagsMixin.lua` (`OpenAllBags(BankFrame)` before calling original) as the current workaround that resolves the observed bank taint path.
+* ✅ replaced failed reagent `IsBagOpen` shim with a dedicated `ToggleAllBags` override in `ContainerFrameMyBagsMixin.lua` that mirrors Blizzard logic while excluding merged reagent from combined-mode close/open accounting.
 * ✅ refactored search-lock ownership so `ContainerFrameMyBagsMixin` is the single owner/mutator of search lock runtime state; `main.lua` now calls mixin methods instead of writing lock fields directly.
 * ✅ simplified search-lock internals in `ContainerFrameMyBagsMixin` (centralized pending check helper + reused capture/apply stored-lock methods) without behavior changes.
 * ✅ simplified search-lock flow further by removing pending-state bookkeeping; active lock now always captures/applies around layout updates while enabled.
@@ -200,6 +201,7 @@ Tasks which after implementation user will not see.
 * ✅ release workflow now removes `tools/` before packager runs, so dev scripts are excluded from shipped addon archives.
 * ✅ fixed bag resize regression introduced during bank-scope support: resize baseline now always reads bag scope column count (not current global layout scope), restoring correct preview sizing and release-to-column mapping.
 * ✅ disabled temporary bank column drop-area debug overlays by default (`SHOW_COLUMN_DROP_AREAS = false` in `bankView.lua`).
+* ✅ kept `BankFrame_Open` global override in `ContainerFrameMyBagsMixin.lua` with explicit taint-workaround documentation; open-all close behavior is handled separately by dedicated `ToggleAllBags` override.
 
 ### TODO
 
