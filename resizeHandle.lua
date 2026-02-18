@@ -35,6 +35,10 @@ local function classifyPreviewTarget(currentWidth, chromeOffset, columnPixelWidt
     return AddonNS.ColumnResize:ClassifyPreview(startColumns, visibleColumns, minColumns, maxColumns)
 end
 
+local function normalizeCursorX(cursorX, effectiveScale)
+    return cursorX / effectiveScale
+end
+
 function AddonNS.ResizeHandle:Create(config)
     local minColumns = config.minColumns or AddonNS.Const.MIN_NUM_COLUMNS
     local maxColumns = config.maxColumns or AddonNS.Const.MAX_NUM_COLUMNS
@@ -168,7 +172,7 @@ function AddonNS.ResizeHandle:Create(config)
             return
         end
 
-        local cursorX = GetCursorPosition() / state.uiScale
+        local cursorX = normalizeCursorX(GetCursorPosition(), state.uiScale)
         local deltaX = cursorX - state.startCursorX
         local desiredWidth = config.CalculateDesiredWidth(state.startWidth, deltaX)
         desiredWidth = clampWidth(desiredWidth, state.minWidth, state.maxWidth)
@@ -199,8 +203,8 @@ function AddonNS.ResizeHandle:Create(config)
         )
 
         activeResize = {
-            startCursorX = GetCursorPosition() / UIParent:GetEffectiveScale(),
-            uiScale = UIParent:GetEffectiveScale(),
+            startCursorX = normalizeCursorX(GetCursorPosition(), config.parentFrame:GetEffectiveScale()),
+            uiScale = config.parentFrame:GetEffectiveScale(),
             startWidth = startWidth,
             startHeight = config.GetHeight(),
             startColumns = startColumns,
@@ -253,4 +257,5 @@ AddonNS._Test.ResizeHandle = {
     CalculateWidthBounds = calculateWidthBounds,
     CalculateTargetColumns = calculateTargetColumns,
     ClassifyPreviewTarget = classifyPreviewTarget,
+    NormalizeCursorX = normalizeCursorX,
 }

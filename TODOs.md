@@ -203,6 +203,7 @@ Tasks which after implementation user will not see.
 * ✅ fixed bag resize regression introduced during bank-scope support: resize baseline now always reads bag scope column count (not current global layout scope), restoring correct preview sizing and release-to-column mapping.
 * ✅ disabled temporary bank column drop-area debug overlays by default (`SHOW_COLUMN_DROP_AREAS = false` in `bankView.lua`).
 * ✅ kept `BankFrame_Open` global override in `ContainerFrameMyBagsMixin.lua` with explicit taint-workaround documentation; open-all close behavior is handled separately by dedicated `ToggleAllBags` override.
+* ✅ fixed bag/bank resize-handle cursor drift under non-default frame scale by normalizing drag cursor X against the resized frame effective scale (not `UIParent` scale), keeping the dragged corner aligned with the mouse.
 
 ### TODO
 

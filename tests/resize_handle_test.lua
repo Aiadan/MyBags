@@ -44,4 +44,6 @@ local previewTarget, previewDelta = testHooks.ClassifyPreviewTarget(536, chromeO
 assertEqual(3, previewTarget, "preview shrinks below -0.5 threshold")
 assertEqual(-1, previewDelta, "preview shrink delta")
 
+assertEqual(400, testHooks.NormalizeCursorX(600, 1.5), "cursor normalization respects frame scale")
+
 print("All resize handle helper scenarios completed.")
