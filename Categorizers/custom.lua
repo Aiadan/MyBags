@@ -12,6 +12,8 @@ local RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX = "|CFFbbbbbb"
 local SELECTED_CUSTOM_CATEGORY_PREFIX = "|cffff2020>>|r "
 
 local assignments = {}
+local sortedQueryRawIds = nil
+local invalidate_sorted_query_raw_ids
 local categorizeProfile = {
     calls = 0,
     totalMs = 0,
@@ -382,6 +384,7 @@ function CustomCategories:LoadOrBootstrap(db, legacyDb)
     end
     storage = normalize_storage(storage)
     db[STORAGE_KEY] = storage
+    invalidate_sorted_query_raw_ids()
     normalize_layout_custom_ids(db, storage)
     prune_old_custom_shapes(db)
     if next(storage.categories) == nil then
@@ -421,6 +424,43 @@ local function rebuild_assignments()
             end
         end
     end
+end
+
+local function compare_query_raw_ids(db, leftRawId, rightRawId)
+    local leftPriority = effective_priority_for_raw_id(db, leftRawId)
+    local rightPriority = effective_priority_for_raw_id(db, rightRawId)
+    if leftPriority ~= rightPriority then
+        return leftPriority > rightPriority
+    end
+    local leftName = tostring((db.categories[leftRawId] and db.categories[leftRawId].name) or "")
+    local rightName = tostring((db.categories[rightRawId] and db.categories[rightRawId].name) or "")
+    local leftLower = string.lower(leftName)
+    local rightLower = string.lower(rightName)
+    if leftLower ~= rightLower then
+        return leftLower < rightLower
+    end
+    return tostring(leftRawId) < tostring(rightRawId)
+end
+
+invalidate_sorted_query_raw_ids = function()
+    sortedQueryRawIds = nil
+end
+
+local function get_sorted_query_raw_ids(db)
+    if sortedQueryRawIds then
+        return sortedQueryRawIds
+    end
+    local ordered = {}
+    for rawId, data in pairs(db.categories) do
+        if data.query then
+            table.insert(ordered, rawId)
+        end
+    end
+    table.sort(ordered, function(leftRawId, rightRawId)
+        return compare_query_raw_ids(db, leftRawId, rightRawId)
+    end)
+    sortedQueryRawIds = ordered
+    return sortedQueryRawIds
 end
 
 local function new_raw(id, data)
@@ -653,35 +693,38 @@ function CustomCategorizer:Categorize(itemID, itemButton)
     end
 
     local db = get_db()
-    local matches = {}
-    local matchedRawIds = {}
     local queryStartedAt = startedAt and profileNowMs() or nil
-    for rawId, data in pairs(db.categories) do
-        if data.query then
-            local evaluator = AddonNS.QueryCategories:GetCompiled(rawId)
-            if evaluator and evaluator(itemInfo) then
-                table.insert(matchedRawIds, rawId)
+    for _, rawId in ipairs(get_sorted_query_raw_ids(db)) do
+        local evaluator = AddonNS.QueryCategories:GetCompiled(rawId)
+        if evaluator and evaluator(itemInfo) then
+            if queryStartedAt then
+                categorizeProfile.queryMs = categorizeProfile.queryMs + (profileNowMs() - queryStartedAt)
             end
+            if startedAt then
+                local elapsed = profileNowMs() - startedAt
+                categorizeProfile.calls = categorizeProfile.calls + 1
+                categorizeProfile.totalMs = categorizeProfile.totalMs + elapsed
+                if elapsed > categorizeProfile.maxMs then
+                    categorizeProfile.maxMs = elapsed
+                end
+                if categorizeProfile.calls >= 100 then
+                    AddonNS.printDebug(
+                        "PROFILE CustomCategorizer:Categorize",
+                        "calls=" .. categorizeProfile.calls,
+                        string.format("avg=%.3fms", categorizeProfile.totalMs / categorizeProfile.calls),
+                        string.format("infoAvg=%.3fms", categorizeProfile.infoMs / categorizeProfile.calls),
+                        string.format("queryAvg=%.3fms", categorizeProfile.queryMs / categorizeProfile.calls),
+                        string.format("max=%.3fms", categorizeProfile.maxMs)
+                    )
+                    categorizeProfile.calls = 0
+                    categorizeProfile.totalMs = 0
+                    categorizeProfile.infoMs = 0
+                    categorizeProfile.queryMs = 0
+                    categorizeProfile.maxMs = 0
+                end
+            end
+            return new_raw(rawId, db.categories[rawId])
         end
-    end
-    table.sort(matchedRawIds, function(leftRawId, rightRawId)
-        local leftPriority = effective_priority_for_raw_id(db, leftRawId)
-        local rightPriority = effective_priority_for_raw_id(db, rightRawId)
-        if leftPriority ~= rightPriority then
-            return leftPriority > rightPriority
-        end
-        local leftName = tostring((db.categories[leftRawId] and db.categories[leftRawId].name) or "")
-        local rightName = tostring((db.categories[rightRawId] and db.categories[rightRawId].name) or "")
-        local leftLower = string.lower(leftName)
-        local rightLower = string.lower(rightName)
-        if leftLower ~= rightLower then
-            return leftLower < rightLower
-        end
-        return tostring(leftRawId) < tostring(rightRawId)
-    end)
-    for index = 1, #matchedRawIds do
-        local rawId = matchedRawIds[index]
-        table.insert(matches, new_raw(rawId, db.categories[rawId]))
     end
     if queryStartedAt then
         categorizeProfile.queryMs = categorizeProfile.queryMs + (profileNowMs() - queryStartedAt)
@@ -707,6 +750,30 @@ function CustomCategorizer:Categorize(itemID, itemButton)
             categorizeProfile.infoMs = 0
             categorizeProfile.queryMs = 0
             categorizeProfile.maxMs = 0
+        end
+    end
+    return nil
+end
+
+function CustomCategorizer:GetMatches(itemID, itemButton)
+    local assignedId = assignments[itemID]
+    local assigned = assignedId and find_by_id(assignedId) or nil
+    local matches = assigned and { assigned } or {}
+    local itemInfo = CustomCategories:GetItemQueryPayload(itemID, itemButton)
+    if not itemInfo then
+        if #matches > 0 then
+            return matches
+        end
+        return nil
+    end
+
+    local db = get_db()
+    for _, rawId in ipairs(get_sorted_query_raw_ids(db)) do
+        if rawId ~= assignedId then
+            local evaluator = AddonNS.QueryCategories:GetCompiled(rawId)
+            if evaluator and evaluator(itemInfo) then
+                table.insert(matches, new_raw(rawId, db.categories[rawId]))
+            end
         end
     end
     if #matches > 0 then
@@ -764,6 +831,7 @@ function CustomCategories:NewCategory(name, opts)
         items = {},
     }
     local wrappedId = CATEGORIZER_ID .. "-" .. rawId
+    invalidate_sorted_query_raw_ids()
     fireUpdate()
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_CREATED, wrappedId)
     return AddonNS.CategoryStore:GetWrapperForRaw(CATEGORIZER_ID, new_raw(rawId, db.categories[rawId]))
@@ -781,6 +849,7 @@ function CustomCategories:RenameCategory(categoryOrId, newName)
     end
     local previousName = entry.name or ""
     entry.name = newName
+    invalidate_sorted_query_raw_ids()
     fireUpdate()
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_RENAMED, rawId, newName, previousName)
 end
@@ -796,6 +865,7 @@ function CustomCategories:DeleteCategory(categoryOrId)
     end
     local db = get_db()
     db.categories[rawId] = nil
+    invalidate_sorted_query_raw_ids()
     fireUpdate()
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, CATEGORIZER_ID .. "-" .. rawId)
 end
@@ -822,6 +892,7 @@ function CustomCategories:SetQuery(rawId, query)
     end
     entry.query = (query and query ~= "") and query or nil
     AddonNS.QueryCategories:SyncCompiledQuery(resolvedRawId, entry.query)
+    invalidate_sorted_query_raw_ids()
     fireUpdate()
 end
 
@@ -836,6 +907,7 @@ function CustomCategories:SetPriority(categoryOrId, priorityOrNil)
         return
     end
     entry.priority = normalize_priority_override(resolvedRawId, priorityOrNil)
+    invalidate_sorted_query_raw_ids()
     fireUpdate()
 end
 
@@ -1165,6 +1237,7 @@ function CustomCategories:ApplyImportPreview(preview)
         rebuild_assignments()
     end
 
+    invalidate_sorted_query_raw_ids()
     fireUpdate()
 end
 

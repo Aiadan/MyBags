@@ -655,6 +655,8 @@ run("custom query matching uses priority order and manual assignment precedence"
     ctx.AddonNS.CustomCategories:AssignToCategory(catB, 2001)
     local manualMatches = ctx.AddonNS.Categories:GetMatches(2001, button)
     assert_true(manualMatches[1]:GetId() == catB:GetId(), "manual assignment takes precedence over query ordering")
+    assert_true(manualMatches[2]:GetId() == catA:GetId(),
+        "manual assignment still keeps additional query matches available")
 end)
 
 run("always visible empty category stays empty in arranged output", function()

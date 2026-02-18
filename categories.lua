@@ -28,6 +28,19 @@ local function wrap_raw_result(categorizerId, result, output, seen)
     table.insert(output, wrapper)
 end
 
+local function wrap_single_raw_result(categorizerId, result)
+    if not result then
+        return nil
+    end
+    if type(result) == "table" and result[1] then
+        result = result[1]
+    end
+    if type(result) ~= "table" or not result.GetId then
+        return nil
+    end
+    return AddonNS.CategoryStore:GetWrapperForRaw(categorizerId, result)
+end
+
 function AddonNS.Categories:RegisterCategorizer(name, categorizer, categorizerId)
     local id = categorizerId or name
     categorizers:set(id, { id = id, categorizer = categorizer, name = name })
@@ -79,16 +92,25 @@ function AddonNS.Categories:GetMatches(itemID, itemButton)
     local seen = {}
     for _, record in categorizers:iterate() do
         ensure_wrapped(record)
-        local result = record.categorizer:Categorize(itemID, itemButton)
+        local result
+        if record.categorizer.GetMatches then
+            result = record.categorizer:GetMatches(itemID, itemButton)
+        else
+            result = record.categorizer:Categorize(itemID, itemButton)
+        end
         wrap_raw_result(record.id, result, matches, seen)
     end
     return matches
 end
 
 function AddonNS.Categories:Categorize(itemID, itemButton)
-    local matches = self:GetMatches(itemID, itemButton)
-    if matches[1] then
-        return matches[1]
+    for _, record in categorizers:iterate() do
+        ensure_wrapped(record)
+        local result = record.categorizer:Categorize(itemID, itemButton)
+        local wrapped = wrap_single_raw_result(record.id, result)
+        if wrapped then
+            return wrapped
+        end
     end
     return AddonNS.CategoryStore:GetUnassigned()
 end

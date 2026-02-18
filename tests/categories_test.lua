@@ -34,6 +34,8 @@ end
 
 local cat1Raw = makeRaw("cat1", "cat1")
 local cat2Raw = makeRaw("cat2", "cat2")
+local diagRaw = makeRaw("diag", "diag")
+local diagCalls = { categorize = 0, getMatches = 0 }
 
 local function makeCategorizer(raw)
   return {
@@ -50,6 +52,21 @@ end
 
 addonEnv.Categories:RegisterCategorizer("cat1", makeCategorizer(cat1Raw), "cat1")
 addonEnv.Categories:RegisterCategorizer("cat2", makeCategorizer(cat2Raw), "cat2")
+addonEnv.Categories:RegisterCategorizer("diag", {
+  ListCategories = function() return { diagRaw } end,
+  GetAlwaysVisibleCategories = function() return {} end,
+  Categorize = function()
+    diagCalls.categorize = diagCalls.categorize + 1
+    return nil
+  end,
+  GetMatches = function(_, itemID)
+    diagCalls.getMatches = diagCalls.getMatches + 1
+    if itemID == 2 then
+      return diagRaw
+    end
+    return nil
+  end,
+}, "diag")
 local unassignedChunk = assert(loadfile("Categorizers/unassigned.lua"))
 unassignedChunk("MyBags", addonEnv)
 
@@ -67,6 +84,14 @@ assert(#matches == 3, "GetMatches returns all matching categories including unas
 assert(matches[1]:GetName() == "cat1", "first category is first in list")
 assert(matches[2]:GetName() == "cat2", "second category is second in list")
 assert(matches[3]:GetName() == "Unassigned", "unassigned is last catch-all")
+
+local category2 = addonEnv.Categories:Categorize(2, itemButton)
+local matches2 = addonEnv.Categories:GetMatches(2, itemButton)
+assert(category2:GetName() == "Unassigned", "categorize uses categorizer Categorize() contract only")
+assert(matches2[1]:GetName() == "diag", "GetMatches uses categorizer GetMatches() when available")
+assert(matches2[2]:GetName() == "Unassigned", "unassigned remains catch-all in GetMatches")
+assert(diagCalls.categorize >= 1, "diagnostic categorizer Categorize path is exercised")
+assert(diagCalls.getMatches >= 1, "diagnostic categorizer GetMatches path is exercised")
 
 local assigned = 0
 local unassigned = 0
