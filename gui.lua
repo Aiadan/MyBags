@@ -120,6 +120,22 @@ local function styleCategoryControl(frame, isHovered)
     frame:SetText(style.label)
 end
 
+function AddonNS.gui:EnsureCategoryControlBackdrop(frame)
+    if frame.addControlBackdrop then
+        return
+    end
+    frame.addControlBackdrop = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    frame.addControlBackdrop:SetBackdrop(ADD_CATEGORY_CONTROL_BACKDROP)
+    frame.addControlBackdrop:SetAllPoints(frame)
+    frame.addControlBackdrop:EnableMouse(false)
+    frame.addControlBackdrop:SetFrameLevel(frame:GetFrameLevel() - 1)
+    frame.addControlBackdrop:Hide()
+end
+
+function AddonNS.gui:StyleCategoryControl(frame, isHovered)
+    styleCategoryControl(frame, isHovered)
+end
+
 local function applyCategoryHint(frame, hint)
     if not frame.hintOverlay then
         return
@@ -785,12 +801,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.bg:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, AddonNS.Const.COLUMN_SPACING / 2)
             f.bg:Hide();
 
-            f.addControlBackdrop = CreateFrame("Frame", nil, f, "BackdropTemplate")
-            f.addControlBackdrop:SetBackdrop(ADD_CATEGORY_CONTROL_BACKDROP)
-            f.addControlBackdrop:SetAllPoints(f)
-            f.addControlBackdrop:EnableMouse(false)
-            f.addControlBackdrop:SetFrameLevel(f:GetFrameLevel() - 1)
-            f.addControlBackdrop:Hide()
+            AddonNS.gui:EnsureCategoryControlBackdrop(f)
 
             f.hintOverlay = CreateFrame("Frame", nil, f, "BackdropTemplate")
             f.hintOverlay:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })

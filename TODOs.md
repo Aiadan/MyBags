@@ -137,7 +137,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ bank MyBags view now renders all purchased tabs at once per active bank type (character/account), hides Blizzard bank tab strip while active, tracks visible tab IDs for `BAG_UPDATE` refreshes, and shows purchase-next-tab via a dedicated `+` button instead of an `Actions` menu.
 * ✅ fixed bank move-to-empty-slot icon bug: MyBags bank refresh now calls Blizzard `BankPanelItemButtonMixin:Refresh()` for each active button so icons/count/lock state update immediately when an item is moved into a previously empty bank slot.
 * ✅ fixed bank<->bag drag transfer regression by normalizing cross-scope item drags to merchant-style (`cross-scope => pickedItemButton = nil`) across `OnDragStop`, `OnReceiveDrag`, and `PreClick`; category/background drops now use the standard available empty slot path, while same-scope drags keep fast-path swap behavior.
-* ✅ bank/bags edit-mode UI parity is now implemented: bank cleanup button is replaced by a MyBags edit toggle, bank search width matches bags, bank edit mode now shows category header `Edit/Delete` plus in-grid `+ Add Category`/`Export`/`Import`, bag and bank capacity labels both use `taken / total` format with full tooltips, bank auto-deposit controls are anchored in the bottom strip, and the old bank `Actions` dropdown is replaced by a bottom-strip `+` purchase-tab button visible only when purchase is possible.
+* ✅ bank/bags edit-mode UI parity is now implemented: bank cleanup button is replaced by a MyBags edit toggle, bank search width matches bags, bank edit mode now shows category header `Edit/Delete` plus in-grid `+ Add Category`/`Export`/`Import`, bag and bank capacity labels both use `taken / total` format with full tooltips, bank auto-deposit controls are anchored in the bottom strip (deposit centered, capacity on the left), bank tab header text is hidden in MyBags bank view, and the old bank `Actions` dropdown is replaced by a bottom-strip `+` purchase-tab button visible only when purchase is possible.
 
 ### TODO
 
@@ -199,6 +199,7 @@ Tasks which after implementation user will not see.
 * ✅ bag column resize handle is now always visible/usable while bags are open (not gated to edit mode; still hidden in combat lockdown).
 * ✅ release workflow now removes `tools/` before packager runs, so dev scripts are excluded from shipped addon archives.
 * ✅ fixed bag resize regression introduced during bank-scope support: resize baseline now always reads bag scope column count (not current global layout scope), restoring correct preview sizing and release-to-column mapping.
+* ✅ disabled temporary bank column drop-area debug overlays by default (`SHOW_COLUMN_DROP_AREAS = false` in `bankView.lua`).
 
 ### TODO
 

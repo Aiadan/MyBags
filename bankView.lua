@@ -24,14 +24,9 @@ local BANK_VIEWPORT_BOTTOM = 40
 local BANK_VIEWPORT_LEFT = 26
 local BANK_VIEWPORT_RIGHT = -28
 local BANK_CONTENT_PADDING_BOTTOM = 8
-local SHOW_COLUMN_DROP_AREAS = true
+local SHOW_COLUMN_DROP_AREAS = false
 local BANK_CONTENT_LEFT_PADDING = 6
 local BANK_CONTENT_FIRST_ROW_Y = 30
-local CONTROL_LABELS = {
-    add = "|cff90ff90+ Add Category|r",
-    export = "|cff8ec5ffExport Categories|r",
-    import = "|cffffd27fImport Categories|r",
-}
 local EDIT_CATEGORY_TOOLTIP = "Edit"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Shift-click to delete without confirmation."
@@ -313,7 +308,7 @@ local function ensureCapacityOverlay(self, panel)
 
     local overlay = CreateFrame("Frame", nil, panel)
     overlay:SetSize(120, 20)
-    overlay:SetPoint("RIGHT", panel.MoneyFrame, "LEFT", -8, 0)
+    overlay:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 26, 7)
     overlay:EnableMouse(true)
 
     local label = overlay:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -387,7 +382,7 @@ local function refreshBottomBar(self, panel, activeBankType, tabIds)
     purchaseButton:SetShown(shouldShowPurchaseTabButton(activeBankType))
 
     panel.AutoDepositFrame:ClearAllPoints()
-    panel.AutoDepositFrame:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 26, 3)
+    panel.AutoDepositFrame:SetPoint("BOTTOM", panel, "BOTTOM", 0, 3)
 end
 
 local function hideBottomBarControls(self)
@@ -664,9 +659,15 @@ local function ensureHeaderFrame(self, index)
     headerFrame:EnableMouse(true)
     headerFrame:RegisterForDrag("LeftButton")
     headerFrame:SetScript("OnEnter", function(frame)
+        if frame.isAddCategoryControl then
+            AddonNS.gui:StyleCategoryControl(frame, true)
+        end
         AddonNS.gui:SetHoveredCategoryFrame(frame)
     end)
     headerFrame:SetScript("OnLeave", function(frame)
+        if frame.isAddCategoryControl then
+            AddonNS.gui:StyleCategoryControl(frame, false)
+        end
         AddonNS.gui:ClearHoveredCategoryFrame(frame)
     end)
     headerFrame:HookScript("OnHide", function(frame)
@@ -732,6 +733,8 @@ local function ensureHeaderFrame(self, index)
     headerFrame.editButton = editButton
     headerFrame.deleteButton = deleteButton
     headerFrame.hintOverlay = hintOverlay
+    headerFrame.isAddCategoryControl = false
+    AddonNS.gui:EnsureCategoryControlBackdrop(headerFrame)
     self.headerFrames[index] = headerFrame
     return headerFrame
 end
@@ -953,6 +956,7 @@ local function renderHeaders(self, scope, panel, categoryPositions)
 
         if categoryPosition.isAddCategoryControl or categoryPosition.isExportCategoryControl or categoryPosition.isImportCategoryControl then
             frame.ItemCategory = nil
+            frame.isAddCategoryControl = true
             frame.editButton:Hide()
             frame.deleteButton:Hide()
             frame:RegisterForDrag("LeftButton")
@@ -973,18 +977,23 @@ local function renderHeaders(self, scope, panel, categoryPositions)
                 end
                 AddonNS.CategoriesGUI:ToggleImportFrame()
             end)
-            if categoryPosition.isAddCategoryControl then
-                frame:SetText(CONTROL_LABELS.add)
-            elseif categoryPosition.isExportCategoryControl then
-                frame:SetText(CONTROL_LABELS.export)
+            if categoryPosition.isExportCategoryControl then
+                frame.controlKind = "export"
+            elseif categoryPosition.isImportCategoryControl then
+                frame.controlKind = "import"
             else
-                frame:SetText(CONTROL_LABELS.import)
+                frame.controlKind = "add"
             end
+            frame.addControlBackdrop:Show()
             frame:ApplyAddControlTextLayout()
+            AddonNS.gui:StyleCategoryControl(frame, false)
             frame:Show()
             dropFrame:Hide()
         else
             frame.ItemCategory = categoryPosition.category
+            frame.isAddCategoryControl = false
+            frame.controlKind = nil
+            frame.addControlBackdrop:Hide()
             frame:RegisterForDrag("LeftButton")
             frame:SetScript("OnMouseUp", AddonNS.DragAndDrop.categoryOnMouseUp)
             frame:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.categoryOnReceiveDrag)
@@ -1060,6 +1069,7 @@ function BankView:Refresh(scope)
     AddonNS:SetCurrentLayoutScope(activeScope)
 
     ensureScrollArea(self, panel)
+    panel.Header:Hide()
     self.scrollFrame.MyBagsScope = activeScope
     ensureBackground(self, self.scrollContentFrame)
     hideBlizzardBankTabs(panel)
