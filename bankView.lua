@@ -250,6 +250,34 @@ local function ensureItemButtonHooks(itemButton)
     itemButton:HookScript("OnDragStop", AddonNS.DragAndDrop.itemStopDrag)
     itemButton:HookScript("PreClick", AddonNS.DragAndDrop.itemOnClick)
     itemButton:HookScript("OnReceiveDrag", AddonNS.DragAndDrop.itemOnReceiveDrag)
+    itemButton:HookScript("OnEnter", function(button)
+        local category = button.ItemCategory
+        if not category then
+            return
+        end
+        local bankView = AddonNS.BankView
+        if not bankView or not bankView.dropFrameByCategoryId then
+            return
+        end
+        local hintFrame = bankView.dropFrameByCategoryId[category:GetId()]
+        if hintFrame and hintFrame:IsShown() then
+            AddonNS.gui:SetHoveredCategoryFrame(hintFrame)
+        end
+    end)
+    itemButton:HookScript("OnLeave", function(button)
+        local category = button.ItemCategory
+        if not category then
+            return
+        end
+        local bankView = AddonNS.BankView
+        if not bankView or not bankView.dropFrameByCategoryId then
+            return
+        end
+        local hintFrame = bankView.dropFrameByCategoryId[category:GetId()]
+        if hintFrame then
+            AddonNS.gui:ClearHoveredCategoryFrame(hintFrame)
+        end
+    end)
 
     itemButton.myBagAddonHooked = true
 end
@@ -266,6 +294,7 @@ local function hideHeaders(self)
     for index = 1, #self.dropFrames do
         self.dropFrames[index]:Hide()
     end
+    self.dropFrameByCategoryId = {}
 end
 
 local function hideContentArea(self)
@@ -1018,6 +1047,7 @@ end
 local function renderHeaders(self, scope, panel, categoryPositions)
     self.backgroundFrame.MyBagsScope = scope
     local customCategories = AddonNS.CustomCategories:GetCategories()
+    local dropFrameByCategoryId = {}
 
     for index = 1, #categoryPositions do
         local categoryPosition = categoryPositions[index]
@@ -1107,6 +1137,7 @@ local function renderHeaders(self, scope, panel, categoryPositions)
             dropFrame:SetPoint("TOPLEFT", self.backgroundFrame, "TOPLEFT", categoryPosition.x, -categoryPosition.y)
             dropFrame:SetSize(categoryPosition.width, categoryPosition.blockHeight)
             dropFrame:Show()
+            dropFrameByCategoryId[categoryId] = dropFrame
 
             local label = categoryPosition.category:GetDisplayName(categoryPosition.itemsCount) or categoryPosition.category:GetName()
             if AddonNS.Collapsed.isCollapsed(categoryPosition.category, scope) then
@@ -1123,6 +1154,7 @@ local function renderHeaders(self, scope, panel, categoryPositions)
     for index = #categoryPositions + 1, #self.dropFrames do
         self.dropFrames[index]:Hide()
     end
+    self.dropFrameByCategoryId = dropFrameByCategoryId
 end
 
 function BankView:Refresh(scope)
