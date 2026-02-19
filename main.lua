@@ -574,19 +574,30 @@ local function newIterator(container, index)
                 defaultMatch = not info.isFiltered
             end
             local includeInSearch = evaluateSearchVisibility(defaultMatch, searchQueryState.evaluator, info, itemButton)
+            local category = nil
+            if bagSearchActive then
+                local categorizeStartedAt = refreshProfile and profileNowMs() or nil
+                category = resolveCachedOrComputeBagCategory(itemButton, info)
+                if refreshProfile then
+                    refreshProfile.categorizeMs = refreshProfile.categorizeMs + (profileNowMs() - categorizeStartedAt)
+                end
+                AddonNS.SearchCategoryBaseline:Add(arrangedItems, category, itemButton, false, true)
+            end
             if includeInSearch then
                 itemButton:SetMatchesSearch(true)
                 itemButton._myBagsItemId = info.itemID
-                local categorizeStartedAt = refreshProfile and profileNowMs() or nil
-                itemButton.ItemCategory = resolveCachedOrComputeBagCategory(itemButton, info)
+                if not category then
+                    local categorizeStartedAt = refreshProfile and profileNowMs() or nil
+                    category = resolveCachedOrComputeBagCategory(itemButton, info)
+                    if refreshProfile then
+                        refreshProfile.categorizeMs = refreshProfile.categorizeMs + (profileNowMs() - categorizeStartedAt)
+                    end
+                end
+                itemButton.ItemCategory = category
                 if refreshProfile then
                     refreshProfile.itemsSeen = refreshProfile.itemsSeen + 1
-                    refreshProfile.categorizeMs = refreshProfile.categorizeMs + (profileNowMs() - categorizeStartedAt)
                 end
-                arrangedItems[itemButton.ItemCategory] = arrangedItems[itemButton.ItemCategory] or
-                    {}
-
-                table.insert(arrangedItems[itemButton.ItemCategory], itemButton);
+                AddonNS.SearchCategoryBaseline:Add(arrangedItems, category, itemButton, true, bagSearchActive)
             elseif itemButton:GetBagID() ~= Enum.BagIndex.ReagentBag then
                 AddonNS.emptyItemButton = itemButton;
             end

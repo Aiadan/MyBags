@@ -717,20 +717,6 @@ local function shouldRetryForMissingItemData(hasAnyButtons, hadAnyItemData, retr
     return hasAnyButtons and (not hadAnyItemData) and retryCount < 6
 end
 
-local function seedArrangedItemsFromPersistedLayout(arrangedItems, scope)
-    local columns = AddonNS.CategoryStore:GetLayoutColumns(scope)
-    for columnIndex = 1, #columns do
-        local column = columns[columnIndex]
-        for categoryIndex = 1, #column do
-            local categoryId = column[categoryIndex]
-            local category = AddonNS.CategoryStore:Get(categoryId)
-            if category and category:IsVisibleInScope(scope) then
-                arrangedItems[category] = arrangedItems[category] or {}
-            end
-        end
-    end
-end
-
 local function buildCategoryCacheKey(itemButton, itemInfo, scope, categorizationVersion)
     return table.concat({
         tostring(itemButton:GetBagID()),
@@ -1601,10 +1587,6 @@ function BankView:Refresh(scope)
     local buttonCount = 0
     local matchedCount = 0
 
-    if searchActive then
-        seedArrangedItemsFromPersistedLayout(arrangedItems, activeScope)
-    end
-
     if profileSearchRefresh then
         profileSetupMs = profileNowMs() - profileStartedAt
     end
@@ -1649,6 +1631,16 @@ function BankView:Refresh(scope)
                     profileLoopSearchEvalMs = profileLoopSearchEvalMs + (profileNowMs() - searchEvalStartedAt)
                 end
                 itemButton._myBagsItemId = info.itemID
+                local category = nil
+                if searchActive then
+                    local categoryStartedAt = profileSearchRefresh and profileNowMs() or nil
+                    category = resolveCachedOrComputeCategory(self, itemButton, info, activeScope)
+                    if categoryStartedAt then
+                        profileLoopCategoryMs = profileLoopCategoryMs + (profileNowMs() - categoryStartedAt)
+                    end
+                    itemButton.ItemCategory = category
+                    AddonNS.SearchCategoryBaseline:Add(arrangedItems, category, itemButton, false, true)
+                end
                 if includeInSearch then
                     local setMatchStartedAt = profileSearchRefresh and profileNowMs() or nil
                     itemButton:SetMatchesSearch(true)
@@ -1656,15 +1648,16 @@ function BankView:Refresh(scope)
                         profileLoopSetMatchMs = profileLoopSetMatchMs + (profileNowMs() - setMatchStartedAt)
                     end
                     matchedCount = matchedCount + 1
-                    local categoryStartedAt = profileSearchRefresh and profileNowMs() or nil
-                    local category = resolveCachedOrComputeCategory(self, itemButton, info, activeScope)
-                    if categoryStartedAt then
-                        profileLoopCategoryMs = profileLoopCategoryMs + (profileNowMs() - categoryStartedAt)
+                    if not category then
+                        local categoryStartedAt = profileSearchRefresh and profileNowMs() or nil
+                        category = resolveCachedOrComputeCategory(self, itemButton, info, activeScope)
+                        if categoryStartedAt then
+                            profileLoopCategoryMs = profileLoopCategoryMs + (profileNowMs() - categoryStartedAt)
+                        end
                     end
                     itemButton.ItemCategory = category
                     local insertStartedAt = profileSearchRefresh and profileNowMs() or nil
-                    arrangedItems[itemButton.ItemCategory] = arrangedItems[itemButton.ItemCategory] or {}
-                    table.insert(arrangedItems[itemButton.ItemCategory], itemButton)
+                    AddonNS.SearchCategoryBaseline:Add(arrangedItems, category, itemButton, true, searchActive)
                     if insertStartedAt then
                         profileLoopInsertMs = profileLoopInsertMs + (profileNowMs() - insertStartedAt)
                     end
@@ -1904,7 +1897,6 @@ AddonNS.BankViewTestHooks = {
     end,
     EvaluateSearchVisibility = evaluateSearchVisibility,
     ShouldRetryForMissingItemData = shouldRetryForMissingItemData,
-    SeedArrangedItemsFromPersistedLayout = seedArrangedItemsFromPersistedLayout,
     ApplySearchUnionMatchState = applySearchUnionMatchState,
     ApplySharedBankColumnCount = applySharedBankColumnCount,
     ResolveTargetPanelSize = resolveTargetPanelSize,

@@ -44,6 +44,9 @@ local addonEnv = {
     printDebug = function() end,
 }
 
+local baselineChunk = assert(loadfile("utils/searchCategoryBaseline.lua"))
+baselineChunk("MyBags", addonEnv)
+
 _G.C_Container = {
     GetContainerItemInfo = function(bagID, slotID)
         if bagID == 1 and slotID == 1 then
