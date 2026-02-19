@@ -159,6 +159,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ completed search performance and correctness rework for bags+bank: stabilized query-editor/search sync, removed one-keystroke stale-filter delays (queued+deduped search refresh), introduced shared `ContainerItemInfoCache` with strict invalidation, kept filtering correctness via captured Blizzard default-match state, fixed bank empty-result header spacing fallback, and resolved regressions from unsafe intermediate caching; final profiling dropped bank search from ~20ms avg to ~3.3ms avg.
 * ✅ stabilized bag/bank search clear resize behavior: search-anchor/size lock now avoids transient unlock/re-anchor races (including clear via `x`), preventing frame fly-away/oversize jumps when clearing filter text.
 * ✅ filtering now preserves visible category headers in both bags and bank by seeding search baseline categories from live item categorization (not persisted layout), while header counts remain filtered counts.
+* ✅ fixed bank resize-handle visibility during active filtering: the handle now stays visible while search is active (matching bag behavior), but remains non-interactive until filtering ends.
+* ✅ reduced bank auto-deposit button width to 70% of Blizzard baseline width to free footer space while preserving existing anchors/behavior, and fixed a Lua local-function-order regression in that path.
+* ✅ locked bank and warbank minimum column count to 5 across persisted layout clamping and resize interactions.
+* ✅ set scope-specific max column limits: bags stay capped at 8, while bank and warbank can resize up to 10 (including bank resize-handle max cap + persistence/resize test coverage).
 
 ### TODO
 

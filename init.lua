@@ -63,14 +63,20 @@ end
 
 AddonNS.Events:OnDbLoaded(AddonNS.init)
 
-local function normalizeColumnCount(value)
+local function normalizeColumnCount(value, scope)
     local numeric = tonumber(value) or AddonNS.Const.DEFAULT_NUM_COLUMNS
     numeric = math.floor(numeric)
-    if numeric < AddonNS.Const.MIN_NUM_COLUMNS then
-        return AddonNS.Const.MIN_NUM_COLUMNS
+    local minColumns = AddonNS.Const.MIN_NUM_COLUMNS
+    local maxColumns = AddonNS.Const.MAX_NUM_COLUMNS
+    if scope == "bank-character" or scope == "bank-account" then
+        minColumns = 5
+        maxColumns = 10
     end
-    if numeric > AddonNS.Const.MAX_NUM_COLUMNS then
-        return AddonNS.Const.MAX_NUM_COLUMNS
+    if numeric < minColumns then
+        return minColumns
+    end
+    if numeric > maxColumns then
+        return maxColumns
     end
     return numeric
 end
@@ -93,7 +99,7 @@ end
 
 function AddonNS:SetNumColumns(count, scope)
     local layoutScope = scope or AddonNS:GetCurrentLayoutScope()
-    local normalized = normalizeColumnCount(count)
+    local normalized = normalizeColumnCount(count, layoutScope)
     AddonNS.Categories:SetColumnCount(normalized, layoutScope)
     if layoutScope == "bag" then
         AddonNS.QueueContainerUpdateItemLayout()

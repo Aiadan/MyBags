@@ -334,6 +334,18 @@ run("ResolveTargetPanelSize uses locked size when search lock is active", functi
     assertEqual(height, 520, "computed height should be used without lock")
 end)
 
+run("CalculateScaledDepositButtonWidth uses 70 percent width", function()
+    assertEqual(hooks.CalculateScaledDepositButtonWidth(100), 70, "100 width should scale to 70")
+    assertEqual(hooks.CalculateScaledDepositButtonWidth(87), 61, "width should round to nearest integer")
+end)
+
+run("ShouldShowBankResizeHandle stays visible during filtering preconditions", function()
+    assertTrue(hooks.ShouldShowBankResizeHandle(true, true, false), "handle should show while frame and panel are visible out of combat")
+    assertTrue(not hooks.ShouldShowBankResizeHandle(false, true, false), "handle should hide when bank frame is hidden")
+    assertTrue(not hooks.ShouldShowBankResizeHandle(true, false, false), "handle should hide when panel is hidden")
+    assertTrue(not hooks.ShouldShowBankResizeHandle(true, true, true), "handle should hide in combat")
+end)
+
 run("ShouldRetryForMissingItemData retries only when data is missing", function()
     assertTrue(hooks.ShouldRetryForMissingItemData(true, false, 0), "retry should occur while data is not ready")
     assertTrue(hooks.ShouldRetryForMissingItemData(true, false, 5), "retry should continue before max attempts")

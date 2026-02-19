@@ -42,6 +42,11 @@ local CATEGORY_HIDDEN_TEXTURE = "Interface\\FriendsFrame\\StatusIcon-Offline"
 local CAPACITY_LABEL_FORMAT = "%d/%d"
 local BANK_DEFAULT_ITEM_SIZE = 41
 local BANK_RESIZE_HANDLE_SIZE = 16
+local BANK_MIN_NUM_COLUMNS = 5
+local BANK_MAX_NUM_COLUMNS = 10
+local AUTO_DEPOSIT_BUTTON_WIDTH_SCALE = 0.7
+local calculateScaledDepositButtonWidth
+local applyScaledDepositButtonWidth
 
 local function profilingEnabled()
     return AddonNS.Profiling and AddonNS.Profiling.enabled
@@ -512,6 +517,7 @@ local function refreshBottomBar(self, panel, activeBankType, tabIds)
     local includeReagentsCheckbox = autoDepositFrame.IncludeReagentsCheckbox
     local includeReagentsLabel = includeReagentsCheckbox.Text
 
+    applyScaledDepositButtonWidth(autoDepositButton)
     autoDepositButton:ClearAllPoints()
     includeReagentsCheckbox:ClearAllPoints()
     includeReagentsLabel:ClearAllPoints()
@@ -569,6 +575,21 @@ local function refreshBankFrameScale()
     if AddonNS.ApplyBankFrameScale then
         AddonNS.ApplyBankFrameScale()
     end
+end
+
+calculateScaledDepositButtonWidth = function(baseWidth)
+    return math.floor(baseWidth * AUTO_DEPOSIT_BUTTON_WIDTH_SCALE + 0.5)
+end
+
+applyScaledDepositButtonWidth = function(autoDepositButton)
+    if autoDepositButton._myBagsBaseWidth == nil then
+        autoDepositButton._myBagsBaseWidth = autoDepositButton:GetWidth()
+    end
+    autoDepositButton:SetWidth(calculateScaledDepositButtonWidth(autoDepositButton._myBagsBaseWidth))
+end
+
+local function shouldShowBankResizeHandle(bankFrameShown, panelShown, inCombat)
+    return bankFrameShown and panelShown and not inCombat
 end
 
 local function resolveTargetPanelSize(computedWidth, computedHeight, lockedWidth, lockedHeight, lockActive)
@@ -641,6 +662,8 @@ local function ensureResizeController(self, panel)
     local controller = AddonNS.ResizeHandle:Create({
         parentFrame = panel,
         previewParent = self.backgroundFrame,
+        minColumns = BANK_MIN_NUM_COLUMNS,
+        maxColumns = BANK_MAX_NUM_COLUMNS,
         anchor = {
             point = "BOTTOMRIGHT",
             relativeTo = panel,
@@ -684,7 +707,7 @@ local function ensureResizeController(self, panel)
             self:RefreshNow(self.currentScope)
         end,
         ShouldShow = function()
-            return BankFrame:IsShown() and panel:IsShown() and not InCombatLockdown() and not self.searchSizeLockActive
+            return shouldShowBankResizeHandle(BankFrame:IsShown(), panel:IsShown(), InCombatLockdown())
         end,
         IsDisabled = function()
             return InCombatLockdown() or self.searchSizeLockActive
@@ -1950,6 +1973,8 @@ AddonNS.BankViewTestHooks = {
     ApplySearchUnionMatchState = applySearchUnionMatchState,
     ApplySharedBankColumnCount = applySharedBankColumnCount,
     ResolveTargetPanelSize = resolveTargetPanelSize,
+    CalculateScaledDepositButtonWidth = calculateScaledDepositButtonWidth,
+    ShouldShowBankResizeHandle = shouldShowBankResizeHandle,
     PlaceItemsAndBuildHeaders = function(scope, panel, categoryAssignments, itemSize)
         return placeItemsAndBuildHeaders(scope, panel, categoryAssignments, itemSize)
     end,

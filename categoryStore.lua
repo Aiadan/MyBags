@@ -12,6 +12,8 @@ local SINGLETON_SUFFIX = "singleton"
 local DEFAULT_LAYOUT_SCOPE = "bag"
 local BANK_CHARACTER_SCOPE = "bank-character"
 local BANK_ACCOUNT_SCOPE = "bank-account"
+local BANK_MIN_NUM_COLUMNS = 5
+local BANK_MAX_NUM_COLUMNS = 10
 
 local function defaultIsProtected()
     return false
@@ -137,27 +139,35 @@ end
 
 local function defaultColumnCount(scope)
     if scope == BANK_CHARACTER_SCOPE or scope == BANK_ACCOUNT_SCOPE then
-        return 4
+        return BANK_MIN_NUM_COLUMNS
     end
     return AddonNS.Const.DEFAULT_NUM_COLUMNS
 end
 
-local function minColumnCount()
+local function minColumnCount(scope)
+    if scope == BANK_CHARACTER_SCOPE or scope == BANK_ACCOUNT_SCOPE then
+        return BANK_MIN_NUM_COLUMNS
+    end
     return AddonNS.Const.MIN_NUM_COLUMNS
 end
 
-local function maxColumnCount()
+local function maxColumnCount(scope)
+    if scope == BANK_CHARACTER_SCOPE or scope == BANK_ACCOUNT_SCOPE then
+        return BANK_MAX_NUM_COLUMNS
+    end
     return AddonNS.Const.MAX_NUM_COLUMNS
 end
 
 local function sanitizeColumnCount(count, scope)
     local numeric = tonumber(count) or defaultColumnCount(scope)
     numeric = math.floor(numeric)
-    if numeric < minColumnCount() then
-        return minColumnCount()
+    local minCount = minColumnCount(scope)
+    if numeric < minCount then
+        return minCount
     end
-    if numeric > maxColumnCount() then
-        return maxColumnCount()
+    local maxCount = maxColumnCount(scope)
+    if numeric > maxCount then
+        return maxCount
     end
     return numeric
 end
@@ -520,8 +530,9 @@ end
 function CategoryStore:SetColumnCount(count, scope)
     ensure_db(self)
     migrate_legacy_layout_root_to_scopes(self.db.layout)
-    local scopedLayout = get_scope_layout(self.db.layout, scope)
-    scopedLayout.columnCount = sanitizeColumnCount(count)
+    local normalizedScope = normalize_layout_scope(scope)
+    local scopedLayout = get_scope_layout(self.db.layout, normalizedScope)
+    scopedLayout.columnCount = sanitizeColumnCount(count, normalizedScope)
     self:EnsureLayoutColumnsCount(scope)
     sync_legacy_layout_root(self.db.layout)
 end
