@@ -164,10 +164,12 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ locked bank and warbank minimum column count to 5 across persisted layout clamping and resize interactions.
 * ✅ set scope-specific max column limits: bags stay capped at 8, while bank and warbank can resize up to 10 (including bank resize-handle max cap + persistence/resize test coverage).
 * ✅ fixed bank/warbank layout scope mixing on resize: resizing now updates only the active scope (`bank-character` or `bank-account`) so category layouts no longer cross-apply between tabs.
+* ✅ fixed `New` categorizer drag runtime error by aligning `OnItemUnassigned(itemId, context)` with the category wrapper callback contract.
 
 ### TODO
 
-
+  * draggin an item from vendor or inventory or another container should not show category higlight as this will not assign by default this item to a given category based on background afaik
+  
 #### Low priority
 
 * creating new category should assign that new category to last column in all contrainers at the same time. currently adding a category in bank results in category added in bank to the last column, but first in the bags

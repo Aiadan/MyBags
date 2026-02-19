@@ -12,7 +12,7 @@ local rawNew = {
     OnRightClick = function()
         return NewItemCategorizer:OnRightClick()
     end,
-    OnItemUnassigned = function(_, context)
+    OnItemUnassigned = function(_, _, context)
         if not context then
             return
         end
