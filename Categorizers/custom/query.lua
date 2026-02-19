@@ -390,22 +390,6 @@ local QueryTooltipDefinitions = {
     },
 }
 
-local function shouldIncludeTooltipValue(value)
-    if value == nil then
-        return false
-    end
-    if type(value) == "number" then
-        return value ~= 0
-    end
-    if type(value) == "boolean" then
-        return value == true
-    end
-    if type(value) == "string" then
-        return value ~= ""
-    end
-    return false
-end
-
 local function getTooltipValueMeaning(attributeName, value, payload)
     if attributeName == "itemSubType" and type(value) == "number" then
         local itemType = payload and payload.itemType or nil
@@ -718,7 +702,7 @@ function AddonNS.QueryCategories:GetTooltipAttributeRows(payload)
     for index = 1, #order do
         local attributeName = order[index]
         local value = payload[attributeName]
-        if shouldIncludeTooltipValue(value) then
+        if value ~= nil then
             rows[#rows + 1] = {
                 name = attributeName,
                 value = value,

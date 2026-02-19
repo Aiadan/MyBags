@@ -154,10 +154,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ fixed Shift tooltip refresh in bank/item tooltips by handling `MODIFIER_STATE_CHANGED` (`LSHIFT`/`RSHIFT`) and forcing tooltip bag-slot rebind; tooltip owner resolution now walks parent frames to find the actual item button.
 * ✅ tightened bank footer capacity/purchase-tab spacing: switched capacity text to compact `taken/total`, constrained the capacity label width so it cannot overlap the purchase control, and switched the purchase icon to `128-RedButton-Plus` for stronger visibility.
 * ✅ fixed warband-bank footer overlap and anchor-dependency error: account/warband mode now anchors controls in explicit left-to-right order `Deposit All Warbound Items` -> include-reagents checkbox -> include-reagents label -> `MoneyFrame`, computes checkbox-to-money spacing from live label width, and avoids anchoring the checkbox to its own label region (`Cannot anchor to a region dependent on it`).
+* ✅ removed Shift tooltip query-attribute noise filtering; tooltip now shows every non-`nil` payload field (including `0`, `false`, and empty strings).
 
 ### TODO
 
-* if item has a field expansionId  with value 0 it does not show on item details when holding shift
 * bank filtering does not show always show categories or those initiated by being in edit mode. No categories titles should be hidden whem items without filering applied would be there. So all categories in all containers, both bags and bank should remain visible.
 * when filtering holding shift to show details of items is not working in bank. It works when there is no filtering applied for some reason.
 

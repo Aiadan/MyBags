@@ -125,8 +125,10 @@ local tooltipRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
   itemSubType = 15,
   bindType = 2,
   isQuestItem = true,
+  hasLoot = false,
+  itemName = "",
 })
-assert(#tooltipRows >= 4, "GetTooltipAttributeRows returns visible non-zero attributes")
+assert(#tooltipRows >= 6, "GetTooltipAttributeRows returns all non-nil attributes")
 local rowByName = {}
 for _, row in ipairs(tooltipRows) do
   rowByName[row.name] = row
@@ -134,6 +136,22 @@ end
 assert(rowByName.expansionID and rowByName.expansionID.meaning == "The War Within", "expansionID meaning is resolved")
 assert(rowByName.itemType and rowByName.itemType.meaning == "Weapon", "itemType meaning is resolved")
 assert(rowByName.itemSubType and rowByName.itemSubType.meaning == "Dagger", "itemSubType meaning is resolved by itemType")
+assert(rowByName.stackCount and rowByName.stackCount.value == 0, "numeric zero values are included")
+assert(rowByName.hasLoot and rowByName.hasLoot.value == false, "boolean false values are included")
+assert(rowByName.itemName and rowByName.itemName.value == "", "empty string values are included")
+
+local classicRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
+  expansionID = 0,
+})
+local classicExpansionRow = nil
+for _, row in ipairs(classicRows) do
+  if row.name == "expansionID" then
+    classicExpansionRow = row
+    break
+  end
+end
+assert(classicExpansionRow ~= nil, "GetTooltipAttributeRows keeps expansionID when value is 0")
+assert(classicExpansionRow.meaning == "Classic", "expansionID value 0 meaning is resolved")
 
 local order = addonEnv.QueryCategories.TooltipAttributeDefinitions.order
 local orderPosByName = {}
