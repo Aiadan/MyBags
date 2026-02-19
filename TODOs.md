@@ -165,13 +165,12 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ set scope-specific max column limits: bags stay capped at 8, while bank and warbank can resize up to 10 (including bank resize-handle max cap + persistence/resize test coverage).
 * ✅ fixed bank/warbank layout scope mixing on resize: resizing now updates only the active scope (`bank-character` or `bank-account`) so category layouts no longer cross-apply between tabs.
 * ✅ fixed `New` categorizer drag runtime error by aligning `OnItemUnassigned(itemId, context)` with the category wrapper callback contract.
+* ✅ when item is matched against a category which is disabled we now continue to the next eligible match (manual/query within custom categorizer) instead of falling back directly to unassigned.
 * ✅ the bank again is tainting the bags :/// need to see what regression was introduced - fixed by changing ToggleAllBags function override
 
 ### TODO
 
-* ✅ when item is matched against a category which is disabled we now continue to the next eligible match (manual/query within custom categorizer) instead of falling back directly to unassigned.
-
-* draggin an item from vendor or inventory or another container should not show category higlight as this will not assign by default this item to a given category based on background afaik
+* draggin an item from vendor or inventory or another container should not show category highlight as this will not assign by default (at least from vendor) this item to a given category based on background afaik. If that is true then in other cases it also should not reassign category when dropping on background
 
 #### Low priority
 
