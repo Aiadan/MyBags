@@ -157,9 +157,13 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 ### TODO
 
+* if item has a field expansionId  with value 0 it does not show on item details when holding shift
+* bank filtering does not show always show categories or those initiated by being in edit mode. No categories titles should be hidden whem items without filering applied would be there. So all categories in all containers, both bags and bank should remain visible.
+* when filtering holding shift to show details of items is not working in bank. It works when there is no filtering applied for some reason.
+
 #### Low priority
 
-*
+* creating new category should assign that new category to last column in all contrainers at the same time. currently adding a category in bank results in category added in bank to the last column, but first in the bags
 
 ### DOUBTFUL - to check at later stages
 
