@@ -75,9 +75,6 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
     local point, relativeTo, relativePoint, x, y = anchor:Get();
     AddonNS.printDebug("Anchor", x, y)
 
-    if self:IsSearchAnchorLockActive() then
-        self:CaptureSearchAnchorLockPosition()
-    end
     self:UpdateFrameSize();
     if self:IsSearchAnchorLockActive() then
         self:ApplyStoredSearchAnchorLock()

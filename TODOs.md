@@ -157,11 +157,11 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ removed Shift tooltip query-attribute noise filtering; tooltip now shows every non-`nil` payload field (including `0`, `false`, and empty strings).
 * ✅ fixed bank search/category-query sync targeting so custom category query editing mirrors to the active container search (bank when bank is open, otherwise bags), and fixed bank-search blanking by keeping category headers/layout visible when search yields zero visible items (retry/hide only while bank item data is still loading).
 * ✅ completed search performance and correctness rework for bags+bank: stabilized query-editor/search sync, removed one-keystroke stale-filter delays (queued+deduped search refresh), introduced shared `ContainerItemInfoCache` with strict invalidation, kept filtering correctness via captured Blizzard default-match state, fixed bank empty-result header spacing fallback, and resolved regressions from unsafe intermediate caching; final profiling dropped bank search from ~20ms avg to ~3.3ms avg.
+* ✅ stabilized bag/bank search clear resize behavior: search-anchor/size lock now avoids transient unlock/re-anchor races (including clear via `x`), preventing frame fly-away/oversize jumps when clearing filter text.
 
 ### TODO
 
 * bank filtering does not show always show categories or those initiated by being in edit mode. No categories titles should be hidden whem items without filering applied would be there. So all categories in all containers, both bags and bank should remain visible.
-* when filtering holding shift to show details of items is not working in bank. It works when there is no filtering applied for some reason.
 
 #### Low priority
 

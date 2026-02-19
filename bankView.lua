@@ -20,6 +20,7 @@ local BankView = {
     searchSizeLockActive = false,
     searchLockedPanelWidth = nil,
     searchLockedPanelHeight = nil,
+    searchUnlockPending = false,
     needsInitialPositionUpdate = false,
     initialPositionUpdateQueued = false,
     categorizationVersion = 0,
@@ -580,6 +581,7 @@ end
 local function updateSearchSizeLock(self, panel, searchText)
     local searchActive = searchText ~= ""
     if searchActive then
+        self.searchUnlockPending = false
         if not self.searchSizeLockActive then
             self.searchSizeLockActive = true
             self.searchLockedPanelWidth = panel:GetWidth()
@@ -588,9 +590,15 @@ local function updateSearchSizeLock(self, panel, searchText)
         return
     end
 
+    if self.searchSizeLockActive and not self.searchUnlockPending then
+        self.searchUnlockPending = true
+        return
+    end
+
     self.searchSizeLockActive = false
     self.searchLockedPanelWidth = nil
     self.searchLockedPanelHeight = nil
+    self.searchUnlockPending = false
 end
 
 local function updateFrameSizeForContent(self, panel, contentBottom)
@@ -1789,6 +1797,7 @@ local function tryInstallHooks()
         BankView.searchSizeLockActive = false
         BankView.searchLockedPanelWidth = nil
         BankView.searchLockedPanelHeight = nil
+        BankView.searchUnlockPending = false
         BankView.lastSearchText = nil
         containerItemInfoCache:InvalidateAll()
         invalidateCategorizationCacheVersion(BankView)

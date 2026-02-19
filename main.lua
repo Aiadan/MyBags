@@ -252,6 +252,8 @@ AddonNS.Events:RegisterEvent("MODIFIER_STATE_CHANGED")
 local freeBagSlots = 10000;
 local lockedUpdates = false;
 local inventorySearchRefreshQueued = false
+local bagSearchUnlockPending = false
+local searchUnlockReanchorQueued = false
 
 local function getBagCapacityState()
     local freeItemSlots = 0
@@ -352,7 +354,6 @@ end
 
 function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
     AddonNS.printDebug("INVENTORY_SEARCH_UPDATE", bagID)
-    container:CaptureSearchAnchorLockPosition()
     if inventorySearchRefreshQueued then
         return
     end
@@ -386,13 +387,44 @@ end)
 
 local function refreshSearchAnchorLockState(searchBox)
     local queryEditorLockRequested = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
-    local shouldLock = searchBox.anchorBag == container and (searchBox:HasFocus() or searchBox:GetText() ~= "" or queryEditorLockRequested)
+    local isBagSearchBox = searchBox == BagItemSearchBox
+    local isContainerSearch = isBagSearchBox or searchBox.anchorBag == container
+    if not isContainerSearch then
+        return
+    end
+    local shouldLock = isContainerSearch and (searchBox:HasFocus() or searchBox:GetText() ~= "" or queryEditorLockRequested)
+    if shouldLock then
+        bagSearchUnlockPending = false
+    elseif container:IsSearchAnchorLockActive() and not bagSearchUnlockPending then
+        bagSearchUnlockPending = true
+        RunNextFrame(function()
+            if bagSearchUnlockPending then
+                refreshSearchAnchorLockState(searchBox)
+            end
+        end)
+        return
+    end
     local changed = container:SetSearchAnchorLockActive(shouldLock)
     if shouldLock then
-        container:CaptureSearchAnchorLockPosition()
+        if changed or not container.MyBags.searchLockedTop or not container.MyBags.searchLockedRight then
+            container:CaptureSearchAnchorLockPosition()
+        end
+    else
+        bagSearchUnlockPending = false
     end
     if changed and not shouldLock then
-        UpdateContainerFrameAnchors()
+        if not searchUnlockReanchorQueued then
+            searchUnlockReanchorQueued = true
+            RunNextFrame(function()
+                searchUnlockReanchorQueued = false
+                local queryEditorLockRequested = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
+                local stillUnlocked = not container:IsSearchAnchorLockActive()
+                local stableUnlockState = (BagItemSearchBox:GetText() == "") and (not BagItemSearchBox:HasFocus()) and (not queryEditorLockRequested)
+                if stillUnlocked and stableUnlockState then
+                    UpdateContainerFrameAnchors()
+                end
+            end)
+        end
     end
 end
 
@@ -423,10 +455,6 @@ BagItemSearchBox:HookScript("OnEditFocusLost", function(searchBox)
     refreshSearchAnchorLockState(searchBox)
 end)
 
-BagItemSearchBox:HookScript("OnTextChanged", function(searchBox)
-    refreshSearchAnchorLockState(searchBox)
-end)
-
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, function()
     refreshSearchAnchorLockState(BagItemSearchBox)
 end)
@@ -445,7 +473,15 @@ local function installSearchBoxWrapper(searchBox)
     searchBox:SetScript("OnTextChanged", function(box, userChanged)
         local text = box:GetText() or ""
         refreshSearchQueryState(text)
+        if box == BagItemSearchBox then
+            -- Keep anchor lock state in sync before Blizzard's handler mutates layout/anchors.
+            refreshSearchAnchorLockState(box)
+        end
         oldOnTextChanged(box, userChanged)
+        if box == BagItemSearchBox then
+            -- Re-assert lock/captured position after the built-in search update path runs.
+            refreshSearchAnchorLockState(box)
+        end
     end)
     searchBox.MyBagsSearchWrapped = true
 end
@@ -473,6 +509,8 @@ hooksecurefunc(container, "UpdateSearchResults", function()
 end)
 
 container:HookScript("OnHide", function()
+    bagSearchUnlockPending = false
+    searchUnlockReanchorQueued = false
     container:SetSearchAnchorLockActive(false)
 end)
 container:HookScript("OnShow", function()
