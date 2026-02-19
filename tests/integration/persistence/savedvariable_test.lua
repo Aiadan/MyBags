@@ -1241,6 +1241,49 @@ run("scope-disabled custom category is skipped in Categorize and filtered in Get
     assert_true(foundDisabledInDiagnosticMatches, "diagnostic matches include scope-disabled categories")
 end)
 
+run("scope-disabled custom query winner falls through to next visible query match", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
+    local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
+    local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    ctx.AddonNS.QueryCategories:SetQuery(catA, "itemType = 3")
+    ctx.AddonNS.QueryCategories:SetQuery(catB, "itemType = 3")
+    ctx.AddonNS.CustomCategories:SetPriority(catA, 100)
+    ctx.AddonNS.CustomCategories:SetPriority(catB, 10)
+    ctx.AddonNS.CustomCategories:SetVisibleInScope(catA, "bag", false)
+
+    _G.C_Item = {
+        GetItemInfo = function()
+            return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, 3, 0, 0, 0, 0, false
+        end,
+        GetItemInventoryTypeByID = function()
+            return 0
+        end,
+    }
+    rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
+        return {}
+    end)
+    rawset(_G.C_Container, "GetContainerItemInfo", function()
+        return { itemID = 1991, hyperlink = "item:1991" }
+    end)
+
+    local button = item_button(0, 1)
+    button.MyBagsScope = "bag"
+    local category = ctx.AddonNS.Categories:Categorize(1991, button)
+    assert_true(category:GetId() == catB:GetId(), "categorize skips disabled top query category and keeps scanning")
+end)
+
 run("always visible custom category obeys scope visibility", function()
     local ctx = harness.new()
     local category = ctx.AddonNS.CustomCategories:NewCategory("AlwaysScoped")

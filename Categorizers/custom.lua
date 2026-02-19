@@ -61,6 +61,13 @@ local function normalize_scope(scope)
     return tostring(scope)
 end
 
+local function scope_from_item_button(itemButton)
+    if itemButton and itemButton.MyBagsScope then
+        return normalize_scope(itemButton.MyBagsScope)
+    end
+    return BAG_SCOPE
+end
+
 local function scope_is_supported(scope)
     local normalizedScope = normalize_scope(scope)
     for index = 1, #SCOPE_KEYS do
@@ -516,6 +523,18 @@ local function get_sorted_query_raw_ids(db)
     return sortedQueryRawIds
 end
 
+local function is_raw_visible_in_scope(db, rawId, scope)
+    local normalizedScope = normalize_scope(scope)
+    if not scope_is_supported(normalizedScope) then
+        return true
+    end
+    local entry = db.categories[rawId]
+    if not entry then
+        return false
+    end
+    return not (entry.scopes and entry.scopes[normalizedScope] == false)
+end
+
 local function new_raw(id, data)
     local raw = {}
     function raw:GetId()
@@ -652,6 +671,9 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
     if not itemButton then
         return nil, nil
     end
+    if type(itemButton.GetBagID) ~= "function" or type(itemButton.GetID) ~= "function" then
+        return nil, nil
+    end
     local bagID = itemButton:GetBagID()
     local slotID = itemButton:GetID()
     local resolvedContainerInfo = containerInfo
@@ -734,8 +756,10 @@ end
 
 function CustomCategorizer:Categorize(itemID, itemButton)
     local startedAt = profilingEnabled() and profileNowMs() or nil
+    local db = get_db()
+    local normalizedScope = scope_from_item_button(itemButton)
     local assignedId = assignments[itemID]
-    if assignedId then
+    if assignedId and is_raw_visible_in_scope(db, assignedId, normalizedScope) then
         if startedAt then
             local elapsed = profileNowMs() - startedAt
             categorizeProfile.calls = categorizeProfile.calls + 1
@@ -759,11 +783,10 @@ function CustomCategorizer:Categorize(itemID, itemButton)
         return nil
     end
 
-    local db = get_db()
     local queryStartedAt = startedAt and profileNowMs() or nil
     for _, rawId in ipairs(get_sorted_query_raw_ids(db)) do
         local evaluator = AddonNS.QueryCategories:GetCompiled(rawId)
-        if evaluator and evaluator(itemInfo) then
+        if evaluator and evaluator(itemInfo) and is_raw_visible_in_scope(db, rawId, normalizedScope) then
             if queryStartedAt then
                 categorizeProfile.queryMs = categorizeProfile.queryMs + (profileNowMs() - queryStartedAt)
             end

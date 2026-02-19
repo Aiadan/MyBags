@@ -168,7 +168,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 ### TODO
 
-* when item is matched against a category which is disabled we should look for the next one, not just assign it to unassigned...
+* ✅ when item is matched against a category which is disabled we now continue to the next eligible match (manual/query within custom categorizer) instead of falling back directly to unassigned.
 * draggin an item from vendor or inventory or another container should not show category higlight as this will not assign by default this item to a given category based on background afaik
 
 #### Low priority
