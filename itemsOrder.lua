@@ -221,6 +221,31 @@ function AddonNS.ItemsOrder:Sort(itemButtonsList)
     end
 end
 
+function AddonNS.ItemsOrder:GetLastItemId(itemIds)
+    recreateAnOrderMapIfNeeded()
+    local lastMappedItemId = nil
+    local lastMappedPos = nil
+    local lastUnmappedItemId = nil
+    for index = 1, #itemIds do
+        local itemId = itemIds[index]
+        local pos = order_map[itemId]
+        if pos then
+            if not lastMappedPos or pos > lastMappedPos then
+                lastMappedPos = pos
+                lastMappedItemId = itemId
+            end
+        else
+            if not lastUnmappedItemId or itemId > lastUnmappedItemId then
+                lastUnmappedItemId = itemId
+            end
+        end
+    end
+    if lastUnmappedItemId then
+        return lastUnmappedItemId
+    end
+    return lastMappedItemId
+end
+
 local function ItemsMoved(previousItemID, pickedItemID, changedCategory)
     if not previousItemID then return end;
     AddonNS.printDebug("ItemsMoved", previousItemID, pickedItemID, changedCategory)

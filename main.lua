@@ -62,6 +62,23 @@ local function resolveTooltipItemId(owner)
     return info and info.itemID or nil
 end
 
+local function resolveTooltipItemFrame(owner)
+    local current = owner
+    local depth = 0
+    while current and depth < 6 do
+        if current.GetBagID and current.GetID then
+            local bagID = current:GetBagID()
+            local slotID = current:GetID()
+            if bagID ~= nil and slotID ~= nil then
+                return current
+            end
+        end
+        current = current.GetParent and current:GetParent() or nil
+        depth = depth + 1
+    end
+    return nil
+end
+
 local function formatCategoryReason(itemID, category, reasonKind)
     local categoryId = category:GetId()
     if not categoryId:match("^cus%-") then
@@ -110,7 +127,7 @@ local function addQueryAttributesToTooltip(tooltip, itemID, owner)
 end
 
 local function addCategoriesToTooltip(tooltip)
-    local owner = tooltip:GetOwner()
+    local owner = resolveTooltipItemFrame(tooltip:GetOwner())
     if not owner then
         return
     end
@@ -158,6 +175,32 @@ local function addCategoriesToTooltip(tooltip)
 end
 
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, addCategoriesToTooltip)
+
+local function refreshTooltipOnShiftStateChange()
+    if not GameTooltip:IsShown() then
+        return
+    end
+    local owner = resolveTooltipItemFrame(GameTooltip:GetOwner())
+    if not owner then
+        return
+    end
+    local bagID = owner:GetBagID()
+    local slotID = owner:GetID()
+    local info = C_Container.GetContainerItemInfo(bagID, slotID)
+    if not info then
+        return
+    end
+    GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+    GameTooltip:SetBagItem(bagID, slotID)
+end
+
+function AddonNS.Events:MODIFIER_STATE_CHANGED(eventName, key, state)
+    if key == "LSHIFT" or key == "RSHIFT" then
+        refreshTooltipOnShiftStateChange()
+    end
+end
+
+AddonNS.Events:RegisterEvent("MODIFIER_STATE_CHANGED")
 
 local freeBagSlots = 10000;
 local lockedUpdates = false;

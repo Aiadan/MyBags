@@ -150,10 +150,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ fixed query numeric comparators (`>`, `>=`, `<`, `<=`) to safely return `false` when attribute value is missing/non-numeric (for example `questid > 0`) instead of throwing runtime errors.
 * ✅ fixed bank-frame position drift during category/layout refreshes by removing forced `UpdateUIPanelPositions(BankFrame)` from MyBags bank content sizing, so moving/reordering categories no longer pushes the bank frame downward unexpectedly.
 * ✅ fixed first-open-after-reload bank bottom overflow edge case by making initial bank position correction run once on the next frame after first-size/scale pass (`UpdateUIPanelPositions(BankFrame)` + rescale), instead of repeating reposition on every refresh.
+* ✅ assigning an item via category background or column background now anchors to the target category tail (ordered as last in that category), while item-on-item drop ordering remains unchanged.
+* ✅ fixed Shift tooltip refresh in bank/item tooltips by handling `MODIFIER_STATE_CHANGED` (`LSHIFT`/`RSHIFT`) and forcing tooltip bag-slot rebind; tooltip owner resolution now walks parent frames to find the actual item button.
 
 ### TODO
-
-* When assigning an item to a group based on column background or category background it should be ordered as the last one in that category.
 
 #### Low priority
 

@@ -13,6 +13,8 @@ local clearCursorCalls = 0
 local pickupCalls = 0
 local emptyButtonClickCalls = 0
 local lastEmptyButtonClicked = nil
+local itemsOrderLastItemIdReturn = nil
+local itemsOrderLastItemIds = nil
 
 _G.C_Container = {
     GetContainerItemInfo = function(bagID, slotID)
@@ -57,7 +59,13 @@ _G.Enum = {
 }
 
 local addonEnv = {
-    container = {},
+    container = {
+        EnumerateValidItems = function()
+            return function()
+                return nil
+            end
+        end,
+    },
     CategoryStore = {
         GetColumnCount = function()
             return 3
@@ -108,6 +116,12 @@ local addonEnv = {
         end,
     },
     QueueContainerUpdateItemLayout = function() end,
+    ItemsOrder = {
+        GetLastItemId = function(_, itemIds)
+            itemsOrderLastItemIds = itemIds
+            return itemsOrderLastItemIdReturn
+        end,
+    },
 }
 
 local dragAndDropChunk = assert(loadfile("dragndrop.lua"))
@@ -163,7 +177,10 @@ local function resetDragTestState()
     pickupCalls = 0
     emptyButtonClickCalls = 0
     lastEmptyButtonClicked = nil
+    itemsOrderLastItemIdReturn = nil
+    itemsOrderLastItemIds = nil
     addonEnv.emptyItemButton = nil
+    _G.BankPanel = nil
 end
 
 local function hintCategory(id, isProtected)
@@ -339,7 +356,7 @@ run("GetCategoryDropHint returns assign tone when hovered assignable", function(
     local hint = addonEnv.DragAndDrop:GetCategoryDropHint(hintCategory("cus-2", false), true)
     assertTrue(hint ~= nil, "hint should be shown")
     assertEqual(hint.tone, "assign", "assignable hovered category should be assign tone")
-    assertEqual(hint.text, "Assign to cus-2", "assign tone should include target category name")
+    assertEqual(hint.text, "|cff57c67aAssign|r to cus-2", "assign tone should include target category name")
 end)
 
 run("GetCategoryDropHint hides protected category when not hovered", function()
@@ -675,4 +692,129 @@ run("backgroundOnReceiveDrag places item into available empty slot for cross-sco
 
     assertEqual(emptyButtonClickCalls, 1, "cross-scope background drop should use available empty slot")
     assertTrue(lastEmptyButtonClicked == targetEmptyButton, "should click available empty button")
+end)
+
+run("categoryOnReceiveDrag anchors move after last item in target category", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+    itemsOrderLastItemIdReturn = 4004
+
+    local sourceButton = {
+        ItemCategory = category("cus-11"),
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+    local targetItemA = {
+        ItemCategory = category("cus-22"),
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 2
+        end,
+    }
+    local targetItemB = {
+        ItemCategory = category("cus-22"),
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 3
+        end,
+    }
+    addonEnv.container = {
+        EnumerateValidItems = function()
+            return ipairs({ sourceButton, targetItemA, targetItemB })
+        end,
+    }
+
+    _G.C_Container.GetContainerItemInfo = function(bagID, slotID)
+        if bagID == 0 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        if bagID == 0 and slotID == 2 then
+            return { itemID = 3003 }
+        end
+        if bagID == 0 and slotID == 3 then
+            return { itemID = 4004 }
+        end
+        return nil
+    end
+
+    addonEnv.DragAndDrop.itemStartDrag(sourceButton)
+    addonEnv.DragAndDrop.categoryOnReceiveDrag({
+        ItemCategory = category("cus-22"),
+        MyBagsScope = "bag",
+    })
+
+    assertEqual(lastEvent.name, "ITEM_MOVED", "category assignment should emit item move")
+    assertEqual(lastEvent.args[2], 4004, "targeted item id should be destination tail item id")
+    assertTrue(itemsOrderLastItemIds ~= nil, "tail lookup should be performed")
+end)
+
+run("backgroundOnReceiveDrag anchors move after last item in target category", function()
+    resetDragTestState()
+    cursorInfoType = "item"
+    cursorItemId = 1001
+    itemsOrderLastItemIdReturn = 5005
+    cursorX = 50
+    cursorY = 50
+
+    local sourceButton = {
+        ItemCategory = category("cus-11"),
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 1
+        end,
+    }
+    local targetItemA = {
+        ItemCategory = category("target-bag"),
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 2
+        end,
+    }
+    local targetItemB = {
+        ItemCategory = category("target-bag"),
+        GetBagID = function()
+            return 0
+        end,
+        GetID = function()
+            return 3
+        end,
+    }
+    addonEnv.container = {
+        EnumerateValidItems = function()
+            return ipairs({ sourceButton, targetItemA, targetItemB })
+        end,
+    }
+
+    _G.C_Container.GetContainerItemInfo = function(bagID, slotID)
+        if bagID == 0 and slotID == 1 then
+            return { itemID = 1001 }
+        end
+        if bagID == 0 and slotID == 2 then
+            return { itemID = 3003 }
+        end
+        if bagID == 0 and slotID == 3 then
+            return { itemID = 5005 }
+        end
+        return nil
+    end
+
+    addonEnv.DragAndDrop.itemStartDrag(sourceButton)
+    addonEnv.DragAndDrop.backgroundOnReceiveDrag(frameForColumn(1), "LeftButton")
+
+    assertEqual(lastEvent.name, "ITEM_MOVED", "background assignment should emit item move")
+    assertEqual(lastEvent.args[2], 5005, "targeted item id should be destination tail item id")
+    assertTrue(itemsOrderLastItemIds ~= nil, "tail lookup should be performed")
 end)
