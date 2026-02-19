@@ -128,7 +128,10 @@ hooksecurefunc(ContainerFrameCombinedBags, "UpdateItemSlots", updateItemSlots)
 local oldBankFrame_Open = BankFrame_Open
 function BankFrame_Open()
     OpenAllBags(BankFrame)
+    local searchText = BankItemSearchBox:GetText();
+    BankItemSearchBox:SetText("");
     oldBankFrame_Open()
+    BankItemSearchBox:SetText(searchText);
 end
 
 -- need to overwrite this as it is used during enumeration of items in the bags so otherwise it would not incorporate reagentsContainer
