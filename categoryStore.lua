@@ -29,6 +29,10 @@ local function defaultOnLeftClickConfigMode()
     return false
 end
 
+local function defaultIsVisibleInScope()
+    return true
+end
+
 local function defaultNoop()
 end
 
@@ -52,6 +56,7 @@ local function default_raw_methods(raw)
     raw.GetDisplayName = raw.GetDisplayName or defaultGetDisplayName
     raw.OnRightClick = raw.OnRightClick or defaultOnRightClick
     raw.OnLeftClickConfigMode = raw.OnLeftClickConfigMode or defaultOnLeftClickConfigMode
+    raw.IsVisibleInScope = raw.IsVisibleInScope or defaultIsVisibleInScope
     raw.OnItemAssigned = raw.OnItemAssigned or defaultNoop
     raw.OnItemUnassigned = raw.OnItemUnassigned or defaultNoop
     return raw
@@ -95,6 +100,9 @@ local function wrap_category(store, categorizerId, rawCategory)
     end
     function wrapper:OnLeftClickConfigMode(...)
         return self._raw:OnLeftClickConfigMode(...)
+    end
+    function wrapper:IsVisibleInScope(scope)
+        return self._raw:IsVisibleInScope(scope)
     end
     function wrapper:OnItemAssigned(itemId, context)
         self._raw:OnItemAssigned(itemId, context)

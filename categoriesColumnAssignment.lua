@@ -179,7 +179,7 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, scope)
     ensureRuntimeColumns(normalizedScope)
     local runtimeColumns = runtimeColumnsByScope[normalizedScope]
     local constantsStartedAt = profile and profileNowMs() or nil
-    local constantCategories = AddonNS.Categories:GetConstantCategories()
+    local constantCategories = AddonNS.Categories:GetConstantCategories(normalizedScope)
     if profile then
         profile.constantsMs = profileNowMs() - constantsStartedAt
     end

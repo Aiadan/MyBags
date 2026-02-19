@@ -13,6 +13,9 @@ function AddonNS.createGUI()
     local container = AddonNS.container;
     local selectedCategoryId = nil
     local queryEditorFocused = false
+    local BAG_SCOPE = "bag"
+    local BANK_SCOPE = "bank-character"
+    local WARBANK_SCOPE = "bank-account"
     local COLOR_COG_NORMAL = { 0.78, 0.78, 0.78, 1 }
     local COLOR_COG_EDIT = { 1, 0.85, 0.2, 1 }
 
@@ -610,6 +613,47 @@ function AddonNS.createGUI()
     alwaysShowCheckbox.tooltip =
     "Enabling this will make this category always visible, even when no items currently associated with it."
 
+    local visibleInLabel = editorContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    visibleInLabel:SetPoint("LEFT", alwaysShowCheckbox.Text, "RIGHT", 18, 0)
+    visibleInLabel:SetText("Used in")
+    visibleInLabel:EnableMouse(true)
+
+    local visibleBagsCheckbox = CreateFrame("CheckButton", nil, editorContent, "ChatConfigCheckButtonTemplate")
+    visibleBagsCheckbox:SetPoint("LEFT", visibleInLabel, "RIGHT", 8, 0)
+    visibleBagsCheckbox:SetSize(30, 30)
+    visibleBagsCheckbox:SetHitRectInsets(7, 7, 7, 7)
+    visibleBagsCheckbox.Text:SetText("")
+    visibleBagsCheckbox.Text:Hide()
+
+    local visibleBagsLabel = editorContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    visibleBagsLabel:SetPoint("LEFT", visibleBagsCheckbox, "RIGHT", 2, 0)
+    visibleBagsLabel:SetText("Bags")
+    visibleBagsLabel:EnableMouse(false)
+
+    local visibleBankCheckbox = CreateFrame("CheckButton", nil, editorContent, "ChatConfigCheckButtonTemplate")
+    visibleBankCheckbox:SetPoint("LEFT", visibleBagsLabel, "RIGHT", 14, 0)
+    visibleBankCheckbox:SetSize(30, 30)
+    visibleBankCheckbox:SetHitRectInsets(7, 7, 7, 7)
+    visibleBankCheckbox.Text:SetText("")
+    visibleBankCheckbox.Text:Hide()
+
+    local visibleBankLabel = editorContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    visibleBankLabel:SetPoint("LEFT", visibleBankCheckbox, "RIGHT", 2, 0)
+    visibleBankLabel:SetText("Bank")
+    visibleBankLabel:EnableMouse(false)
+
+    local visibleWarbankCheckbox = CreateFrame("CheckButton", nil, editorContent, "ChatConfigCheckButtonTemplate")
+    visibleWarbankCheckbox:SetPoint("LEFT", visibleBankLabel, "RIGHT", 14, 0)
+    visibleWarbankCheckbox:SetSize(30, 30)
+    visibleWarbankCheckbox:SetHitRectInsets(7, 7, 7, 7)
+    visibleWarbankCheckbox.Text:SetText("")
+    visibleWarbankCheckbox.Text:Hide()
+
+    local visibleWarbankLabel = editorContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    visibleWarbankLabel:SetPoint("LEFT", visibleWarbankCheckbox, "RIGHT", 2, 0)
+    visibleWarbankLabel:SetText("Warbank")
+    visibleWarbankLabel:EnableMouse(false)
+
     local priorityLabel = editorContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     priorityLabel:SetPoint("TOPLEFT", alwaysShowCheckbox, "BOTTOMLEFT", 2, -14)
     priorityLabel:SetText("Priority")
@@ -680,11 +724,17 @@ function AddonNS.createGUI()
     revertButton:SetText("Revert Changes")
 
     local function normalizeCategoryState(category)
+        local scopeVisibility = AddonNS.CustomCategories:GetScopeVisibility(category)
         return {
             name = category:GetName() or "",
             query = AddonNS.CustomCategories:GetQuery(category),
             priority = AddonNS.CustomCategories:GetEffectivePriority(category),
             alwaysShow = AddonNS.CategorShowAlways:ShouldAlwaysShow(category) == true,
+            scopeVisibility = {
+                [BAG_SCOPE] = scopeVisibility[BAG_SCOPE] == true,
+                [BANK_SCOPE] = scopeVisibility[BANK_SCOPE] == true,
+                [WARBANK_SCOPE] = scopeVisibility[WARBANK_SCOPE] == true,
+            },
         }
     end
 
@@ -695,6 +745,9 @@ function AddonNS.createGUI()
             and left.query == right.query
             and left.priority == right.priority
             and left.alwaysShow == right.alwaysShow
+            and left.scopeVisibility[BAG_SCOPE] == right.scopeVisibility[BAG_SCOPE]
+            and left.scopeVisibility[BANK_SCOPE] == right.scopeVisibility[BANK_SCOPE]
+            and left.scopeVisibility[WARBANK_SCOPE] == right.scopeVisibility[WARBANK_SCOPE]
     end
 
     local function applyQueryTextToBagSearch(queryText)
@@ -745,6 +798,11 @@ function AddonNS.createGUI()
             query = queryEditBox:GetText() or "",
             priority = rawPriority ~= "" and tonumber(rawPriority) or nil,
             alwaysShow = alwaysShowCheckbox:GetChecked() == true,
+            scopeVisibility = {
+                [BAG_SCOPE] = visibleBagsCheckbox:GetChecked() == true,
+                [BANK_SCOPE] = visibleBankCheckbox:GetChecked() == true,
+                [WARBANK_SCOPE] = visibleWarbankCheckbox:GetChecked() == true,
+            },
         }
     end
 
@@ -778,6 +836,9 @@ function AddonNS.createGUI()
         queryEditBox:SetText(state.query)
         priorityEditBox:SetText(tostring(state.priority))
         alwaysShowCheckbox:SetChecked(state.alwaysShow)
+        visibleBagsCheckbox:SetChecked(state.scopeVisibility[BAG_SCOPE] == true)
+        visibleBankCheckbox:SetChecked(state.scopeVisibility[BANK_SCOPE] == true)
+        visibleWarbankCheckbox:SetChecked(state.scopeVisibility[WARBANK_SCOPE] == true)
         suspendControlHandlers = false
         refreshQueryValidationState(state.query)
         refreshActionButtonsState()
@@ -814,6 +875,18 @@ function AddonNS.createGUI()
         end
         if draftState.alwaysShow ~= currentState.alwaysShow then
             AddonNS.CategorShowAlways:SetAlwaysShow(category, draftState.alwaysShow)
+            changed = true
+        end
+        if draftState.scopeVisibility[BAG_SCOPE] ~= currentState.scopeVisibility[BAG_SCOPE] then
+            AddonNS.CustomCategories:SetVisibleInScope(category, BAG_SCOPE, draftState.scopeVisibility[BAG_SCOPE])
+            changed = true
+        end
+        if draftState.scopeVisibility[BANK_SCOPE] ~= currentState.scopeVisibility[BANK_SCOPE] then
+            AddonNS.CustomCategories:SetVisibleInScope(category, BANK_SCOPE, draftState.scopeVisibility[BANK_SCOPE])
+            changed = true
+        end
+        if draftState.scopeVisibility[WARBANK_SCOPE] ~= currentState.scopeVisibility[WARBANK_SCOPE] then
+            AddonNS.CustomCategories:SetVisibleInScope(category, WARBANK_SCOPE, draftState.scopeVisibility[WARBANK_SCOPE])
             changed = true
         end
         if changed then
@@ -901,6 +974,48 @@ function AddonNS.createGUI()
         refreshActionButtonsState()
     end)
 
+    local function onScopeVisibilityCheckboxClick()
+        if suspendControlHandlers then
+            return
+        end
+        refreshActionButtonsState()
+    end
+    visibleBagsCheckbox:SetScript("OnClick", onScopeVisibilityCheckboxClick)
+    visibleBankCheckbox:SetScript("OnClick", onScopeVisibilityCheckboxClick)
+    visibleWarbankCheckbox:SetScript("OnClick", onScopeVisibilityCheckboxClick)
+
+    local function showScopeVisibilityTooltip(owner, scopeLabel)
+        showAnchorTooltip(
+            owner,
+            "Used in " .. scopeLabel,
+            "When disabled, this category is not considered for categorization or display in " .. scopeLabel .. "."
+        )
+    end
+    visibleInLabel:SetScript("OnEnter", function(self)
+        showScopeVisibilityTooltip(self, "this container type")
+    end)
+    visibleInLabel:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    visibleBagsCheckbox:SetScript("OnEnter", function(self)
+        showScopeVisibilityTooltip(self, "Bags")
+    end)
+    visibleBagsCheckbox:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    visibleBankCheckbox:SetScript("OnEnter", function(self)
+        showScopeVisibilityTooltip(self, "Bank")
+    end)
+    visibleBankCheckbox:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    visibleWarbankCheckbox:SetScript("OnEnter", function(self)
+        showScopeVisibilityTooltip(self, "Warbank")
+    end)
+    visibleWarbankCheckbox:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
     priorityEditBox:SetScript("OnTextChanged", function(self, userInput)
         if suspendControlHandlers or not userInput then
             return
@@ -974,6 +1089,9 @@ function AddonNS.createGUI()
             selectedCategoryTitle:SetText("|cffffd34fCategory:|r " .. categoryName)
             nameEditBox:Enable()
             alwaysShowCheckbox:Enable()
+            visibleBagsCheckbox:Enable()
+            visibleBankCheckbox:Enable()
+            visibleWarbankCheckbox:Enable()
             priorityEditBox:Enable()
             queryEditBox:Enable()
             local state = normalizeCategoryState(category)
@@ -985,11 +1103,17 @@ function AddonNS.createGUI()
         selectedCategoryTitle:SetText("|cffffd34fCategory:|r |cffbbbbbb(none)|r")
         nameEditBox:SetText("")
         alwaysShowCheckbox:SetChecked(false)
+        visibleBagsCheckbox:SetChecked(false)
+        visibleBankCheckbox:SetChecked(false)
+        visibleWarbankCheckbox:SetChecked(false)
         queryEditBox:SetText("")
         priorityEditBox:SetText("")
         refreshQueryValidationState("")
         nameEditBox:Disable()
         alwaysShowCheckbox:Disable()
+        visibleBagsCheckbox:Disable()
+        visibleBankCheckbox:Disable()
+        visibleWarbankCheckbox:Disable()
         priorityEditBox:Disable()
         queryEditBox:Disable()
         suspendControlHandlers = false

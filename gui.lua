@@ -53,6 +53,8 @@ local backgroundFrame = nil
 local EDIT_CATEGORY_TOOLTIP = "Edit"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Hold-shift to skip confirmation prompt"
+local CATEGORY_VISIBLE_TEXTURE = "Interface\\FriendsFrame\\StatusIcon-Online"
+local CATEGORY_HIDDEN_TEXTURE = "Interface\\FriendsFrame\\StatusIcon-Offline"
 local HINT_TONE_STYLE = {
     unassigned = { 0.35, 0.58, 0.94, 0.24 },
     assign = { 0.20, 0.85, 0.35, 0.30 },
@@ -223,6 +225,16 @@ local function layoutHintTextFrame(anchorFrame, text)
 
     hintTextFrame:ClearAllPoints()
     hintTextFrame:SetPoint("BOTTOMLEFT", anchorFrame, "TOPLEFT", offsetX, HINT_TEXT_VERTICAL_GAP)
+end
+
+local function getScopeVisibilityLabel(scope)
+    if scope == "bank-character" then
+        return "Bank"
+    end
+    if scope == "bank-account" then
+        return "Warbank"
+    end
+    return "Bags"
 end
 
 local function getCategoryHoverText(frame)
@@ -705,6 +717,50 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                 AddonNS.CategoriesGUI:SelectCategoryById(category:GetId())
             end)
 
+            local scopeVisibilityButton = CreateFrame("Button", nil, f)
+            scopeVisibilityButton:SetSize(16, 16)
+            scopeVisibilityButton:SetPoint("TOPRIGHT", editButton, "TOPLEFT", -2, 0)
+            scopeVisibilityButton:SetFrameLevel(f:GetFrameLevel() + 25)
+            scopeVisibilityButton:Hide()
+
+            scopeVisibilityButton.Icon = scopeVisibilityButton:CreateTexture(nil, "ARTWORK")
+            scopeVisibilityButton.Icon:SetAllPoints()
+            scopeVisibilityButton.Icon:SetTexture(CATEGORY_VISIBLE_TEXTURE)
+
+            scopeVisibilityButton.Highlight = scopeVisibilityButton:CreateTexture(nil, "HIGHLIGHT")
+            scopeVisibilityButton.Highlight:SetAllPoints()
+            scopeVisibilityButton.Highlight:SetTexture(CATEGORY_VISIBLE_TEXTURE)
+            scopeVisibilityButton.Highlight:SetAlpha(0.45)
+            scopeVisibilityButton.Highlight:SetBlendMode("ADD")
+
+            scopeVisibilityButton:SetScript("OnEnter", function(self)
+                local category = self:GetParent().ItemCategory
+                local scope = self:GetParent().MyBagsScope or "bag"
+                local scopeLabel = getScopeVisibilityLabel(scope)
+                local visible = AddonNS.CustomCategories:IsVisibleInScope(category, scope)
+                GameTooltip:SetOwner(self, "ANCHOR_TOP")
+                if visible then
+                    GameTooltip:SetText("Visible in " .. scopeLabel)
+                else
+                    GameTooltip:SetText("Hidden in " .. scopeLabel)
+                end
+                GameTooltip:AddLine(
+                    "When hidden, this category is not considered for categorization or display in " .. scopeLabel .. ".",
+                    1, 1, 1, true
+                )
+                GameTooltip:Show()
+            end)
+            scopeVisibilityButton:SetScript("OnLeave", function()
+                GameTooltip:Hide()
+            end)
+            scopeVisibilityButton:SetScript("OnClick", function(self)
+                local parent = self:GetParent()
+                local category = parent.ItemCategory
+                local scope = parent.MyBagsScope or "bag"
+                local visible = AddonNS.CustomCategories:IsVisibleInScope(category, scope)
+                AddonNS.CustomCategories:SetVisibleInScope(category, scope, not visible)
+            end)
+
             deleteButton:SetScript("OnEnter", function(self)
                 local category = self:GetParent().ItemCategory
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -755,10 +811,19 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                 fs:SetFontObject("GameFontNormal")
             end
 
+            local function applyCategoryTextLayoutWithScopeAndEditButtons()
+                fs:ClearAllPoints()
+                fs:SetPoint("TOPLEFT", f, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
+                fs:SetPoint("TOPRIGHT", scopeVisibilityButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
+                fs:SetJustifyH("LEFT")
+                fs:SetJustifyV("TOP")
+                fs:SetFontObject("GameFontNormal")
+            end
+
             local function applyCategoryTextLayoutWithEditAndDeleteButtons()
                 fs:ClearAllPoints()
                 fs:SetPoint("TOPLEFT", f, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
-                fs:SetPoint("TOPRIGHT", editButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
+                fs:SetPoint("TOPRIGHT", scopeVisibilityButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
                 fs:SetJustifyH("LEFT")
                 fs:SetJustifyV("TOP")
                 fs:SetFontObject("GameFontNormal")
@@ -791,6 +856,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.ApplyCategoryTextLayout = applyCategoryTextLayout
             f.ApplyCategoryTextLayoutWithDeleteButton = applyCategoryTextLayoutWithDeleteButton
             f.ApplyCategoryTextLayoutWithEditButton = applyCategoryTextLayoutWithEditButton
+            f.ApplyCategoryTextLayoutWithScopeAndEditButtons = applyCategoryTextLayoutWithScopeAndEditButtons
             f.ApplyCategoryTextLayoutWithEditAndDeleteButtons = applyCategoryTextLayoutWithEditAndDeleteButtons
             f.ApplyAddControlTextLayout = applyAddControlTextLayout
             f.isAddCategoryControl = false
@@ -798,6 +864,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.MyBagsContainerRef = AddonNS.container
             f.deleteButton = deleteButton
             f.editButton = editButton
+            f.scopeVisibilityButton = scopeVisibilityButton
 
             f:EnableMouse(true)
             f:SetScript("OnEnter",
@@ -869,6 +936,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.addControlBackdrop:Show()
             f.editButton:Hide()
             f.deleteButton:Hide()
+            f.scopeVisibilityButton:Hide()
             f:ApplyAddControlTextLayout()
             styleCategoryControl(f, false)
             f:RegisterForDrag("LeftButton")
@@ -900,12 +968,22 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             local categoryId = f.ItemCategory:GetId()
             local canEditCategory = AddonNS.BagViewState:IsCategoriesConfigMode() and
                 customCategories[categoryId] ~= nil
+            local canToggleScopeVisibility = canEditCategory
             local canDeleteCategory = canEditCategory and
                 not f.ItemCategory:IsProtected()
             f.editButton:SetShown(canEditCategory)
+            f.scopeVisibilityButton:SetShown(canToggleScopeVisibility)
             f.deleteButton:SetShown(canDeleteCategory)
-            if canEditCategory and canDeleteCategory then
+            if canToggleScopeVisibility then
+                local visible = AddonNS.CustomCategories:IsVisibleInScope(f.ItemCategory, f.MyBagsScope)
+                local texture = visible and CATEGORY_VISIBLE_TEXTURE or CATEGORY_HIDDEN_TEXTURE
+                f.scopeVisibilityButton.Icon:SetTexture(texture)
+                f.scopeVisibilityButton.Highlight:SetTexture(texture)
+            end
+            if canToggleScopeVisibility and canDeleteCategory then
                 f:ApplyCategoryTextLayoutWithEditAndDeleteButtons()
+            elseif canToggleScopeVisibility then
+                f:ApplyCategoryTextLayoutWithScopeAndEditButtons()
             elseif canEditCategory then
                 f:ApplyCategoryTextLayoutWithEditButton()
             elseif canDeleteCategory then

@@ -785,6 +785,7 @@ run("categories config mode makes all custom categories visible without persisti
     local ctx = harness.new()
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
     local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
+    ctx.AddonNS.CustomCategories:SetVisibleInScope(catB, "bag", false)
 
     local before = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
     assert_true(not has_category_entry(before, catA), "custom category A hidden by default when empty")
@@ -793,7 +794,7 @@ run("categories config mode makes all custom categories visible without persisti
     ctx.AddonNS.BagViewState:SetMode("categories_config")
     local during = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
     assert_true(has_category_entry(during, catA), "custom category A visible while categories GUI mode enabled")
-    assert_true(has_category_entry(during, catB), "custom category B visible while categories GUI mode enabled")
+    assert_true(has_category_entry(during, catB), "scope-disabled custom category B still visible while categories GUI mode enabled")
 
     ctx.AddonNS.BagViewState:SetMode("normal")
     local after = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
@@ -1160,6 +1161,81 @@ run("migrates from legacy global and maps layout names", function()
     assert_equal({ { "cus-" .. rawId }, {}, {} }, layout_columns(snapshot), "legacy layout names converted to cus ids")
     assert_true(snapshot.layout.collapsed["cus-" .. rawId] == true, "legacy collapsed names converted to cus ids")
     assert_equal({ 1001, 1002 }, snapshot.itemOrder, "legacy item order migrated")
+end)
+
+run("custom category scope visibility defaults to enabled and persists false-only overrides", function()
+    local first = harness.new()
+    local category = first.AddonNS.CustomCategories:NewCategory("ScopedVisibility")
+    local visibilityDefault = first.AddonNS.CustomCategories:GetScopeVisibility(category)
+    assert_true(visibilityDefault.bag == true, "bag scope enabled by default")
+    assert_true(visibilityDefault["bank-character"] == true, "bank-character scope enabled by default")
+    assert_true(visibilityDefault["bank-account"] == true, "bank-account scope enabled by default")
+
+    first.AddonNS.CustomCategories:SetVisibleInScope(category, "bank-account", false)
+    first:events():fire_game("PLAYER_LOGOUT")
+    local firstSnapshot = first:snapshot()
+    local rawId, rawData = raw_by_name(firstSnapshot, "ScopedVisibility")
+    assert_true(rawId ~= nil, "scoped category persisted")
+    assert_true(rawData.scopes["bank-account"] == false, "disabled bank-account override persisted")
+    assert_true(rawData.scopes["bag"] == nil, "enabled bag scope is not redundantly persisted")
+    assert_true(rawData.scopes["bank-character"] == nil, "enabled bank-character scope is not redundantly persisted")
+
+    local second = harness.new({ saved = firstSnapshot })
+    local secondRawId, _ = raw_by_name(second:snapshot(), "ScopedVisibility")
+    local secondCategory = second.AddonNS.Categories:GetCategoryById("cus-" .. secondRawId)
+    local visibilityAfterReload = second.AddonNS.CustomCategories:GetScopeVisibility(secondCategory)
+    assert_true(visibilityAfterReload.bag == true, "bag scope remains enabled after reload")
+    assert_true(visibilityAfterReload["bank-character"] == true, "bank-character remains enabled after reload")
+    assert_true(visibilityAfterReload["bank-account"] == false, "bank-account remains disabled after reload")
+end)
+
+run("scope-disabled custom category is skipped in Categorize and filtered in GetMatches by default", function()
+    local ctx = harness.new()
+    local category = ctx.AddonNS.CustomCategories:NewCategory("ScopedMatch")
+    ctx.AddonNS.CustomCategories:AssignToCategory(category, 991)
+    ctx.AddonNS.CustomCategories:SetVisibleInScope(category, "bank-character", false)
+
+    local bagCategory = ctx.AddonNS.Categories:Categorize(991, { MyBagsScope = "bag" })
+    assert_true(bagCategory:GetId() == category:GetId(), "bag scope keeps manual assignment category")
+
+    local bankCategory = ctx.AddonNS.Categories:Categorize(991, { MyBagsScope = "bank-character" })
+    assert_true(bankCategory:GetId() == "unassigned", "bank-character scope ignores disabled assignment and falls back")
+
+    local bankMatchesDefault = ctx.AddonNS.Categories:GetMatches(991, nil, {
+        scope = "bank-character",
+    })
+    local foundDisabledInDefaultMatches = false
+    for _, match in ipairs(bankMatchesDefault) do
+        if match:GetId() == category:GetId() then
+            foundDisabledInDefaultMatches = true
+        end
+    end
+    assert_true(not foundDisabledInDefaultMatches, "default matches filter scope-disabled categories")
+
+    local bankMatchesWithDisabled = ctx.AddonNS.Categories:GetMatches(991, nil, {
+        scope = "bank-character",
+        includeScopeDisabled = true,
+    })
+    local foundDisabledInDiagnosticMatches = false
+    for _, match in ipairs(bankMatchesWithDisabled) do
+        if match:GetId() == category:GetId() then
+            foundDisabledInDiagnosticMatches = true
+        end
+    end
+    assert_true(foundDisabledInDiagnosticMatches, "diagnostic matches include scope-disabled categories")
+end)
+
+run("always visible custom category obeys scope visibility", function()
+    local ctx = harness.new()
+    local category = ctx.AddonNS.CustomCategories:NewCategory("AlwaysScoped")
+    ctx.AddonNS.CategorShowAlways:SetAlwaysShow(category, true)
+    ctx.AddonNS.CustomCategories:SetVisibleInScope(category, "bank-character", false)
+
+    local bagAssignments = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({}, "bag")
+    assert_true(has_category_entry(bagAssignments, category), "always visible category appears in enabled bag scope")
+
+    local bankAssignments = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({}, "bank-character")
+    assert_true(not has_category_entry(bankAssignments, category), "always visible category is hidden in disabled bank scope")
 end)
 
 print("All integration scenarios completed.")

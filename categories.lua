@@ -4,6 +4,20 @@ AddonNS.Categories = AddonNS.Categories or {}
 
 local categorizers = OrderedMap:new()
 
+local function normalizeScope(scope)
+    if scope == nil or scope == "" then
+        return "bag"
+    end
+    return scope
+end
+
+local function scopeFromItemButton(itemButton)
+    if itemButton and itemButton.MyBagsScope then
+        return normalizeScope(itemButton.MyBagsScope)
+    end
+    return "bag"
+end
+
 local function wrap_raw_result(categorizerId, result, output, seen, allowDuplicateCategoryIds)
     if not result then
         return
@@ -70,7 +84,9 @@ local function ensure_wrapped(record)
     end
 end
 
-function AddonNS.Categories:GetConstantCategories()
+function AddonNS.Categories:GetConstantCategories(scope)
+    local normalizedScope = normalizeScope(scope)
+    local configModeActive = AddonNS.BagViewState and AddonNS.BagViewState:IsCategoriesConfigMode()
     local constant = {}
     local seen = {}
     for _, record in categorizers:iterate() do
@@ -79,7 +95,11 @@ function AddonNS.Categories:GetConstantCategories()
             local rawList = record.categorizer:GetAlwaysVisibleCategories() or {}
             for index = 1, #rawList do
                 local wrapper = AddonNS.CategoryStore:GetWrapperForRaw(record.id, rawList[index])
-                if wrapper and not seen[wrapper:GetId()] then
+                local includeInScope = wrapper and wrapper:IsVisibleInScope(normalizedScope)
+                if (not includeInScope) and configModeActive and record.id == "cus" then
+                    includeInScope = true
+                end
+                if wrapper and includeInScope and not seen[wrapper:GetId()] then
                     table.insert(constant, wrapper)
                     seen[wrapper:GetId()] = true
                 end
@@ -90,9 +110,12 @@ function AddonNS.Categories:GetConstantCategories()
 end
 
 function AddonNS.Categories:GetMatches(itemID, itemButton, options)
+    options = options or {}
+    local normalizedScope = normalizeScope(options.scope or scopeFromItemButton(itemButton))
+    local includeScopeDisabled = options.includeScopeDisabled == true
     local matches = {}
     local seen = {}
-    local allowDuplicateCategoryIds = options and options.allowDuplicateCategoryIds
+    local allowDuplicateCategoryIds = options.allowDuplicateCategoryIds
     for _, record in categorizers:iterate() do
         ensure_wrapped(record)
         local result
@@ -103,15 +126,26 @@ function AddonNS.Categories:GetMatches(itemID, itemButton, options)
         end
         wrap_raw_result(record.id, result, matches, seen, allowDuplicateCategoryIds)
     end
-    return matches
+    if includeScopeDisabled then
+        return matches
+    end
+    local filtered = {}
+    for index = 1, #matches do
+        local category = matches[index]
+        if category:IsVisibleInScope(normalizedScope) then
+            table.insert(filtered, category)
+        end
+    end
+    return filtered
 end
 
 function AddonNS.Categories:Categorize(itemID, itemButton)
+    local normalizedScope = scopeFromItemButton(itemButton)
     for _, record in categorizers:iterate() do
         ensure_wrapped(record)
         local result = record.categorizer:Categorize(itemID, itemButton)
         local wrapped = wrap_single_raw_result(record.id, result)
-        if wrapped then
+        if wrapped and wrapped:IsVisibleInScope(normalizedScope) then
             return wrapped
         end
     end
@@ -150,7 +184,11 @@ function AddonNS.Categories:HandleItemReassignment(eventName, itemId, targetedIt
         return
     end
     local target = targetCategory or AddonNS.CategoryStore:GetUnassigned()
+    local scope = scopeFromItemButton(targetButton or sourceButton)
     if target and target.IsProtected and target:IsProtected() then
+        return
+    end
+    if target and not target:IsVisibleInScope(scope) then
         return
     end
     if sourceCategory and target and sourceCategory:GetId() == target:GetId() then

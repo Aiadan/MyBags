@@ -34,7 +34,9 @@ local BANK_CONTENT_FIRST_ROW_Y = 30
 local EDIT_CATEGORY_TOOLTIP = "Edit"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Shift-click to delete without confirmation."
-local CAPACITY_LABEL_FORMAT = "%d / %d"
+local CATEGORY_VISIBLE_TEXTURE = "Interface\\FriendsFrame\\StatusIcon-Online"
+local CATEGORY_HIDDEN_TEXTURE = "Interface\\FriendsFrame\\StatusIcon-Offline"
+local CAPACITY_LABEL_FORMAT = "%d/%d"
 local BANK_DEFAULT_ITEM_SIZE = 41
 local BANK_RESIZE_HANDLE_SIZE = 16
 
@@ -43,6 +45,16 @@ local function getScopeForBankType(bankType)
         return BANK_ACCOUNT_SCOPE
     end
     return BANK_CHARACTER_SCOPE
+end
+
+local function getScopeVisibilityLabel(scope)
+    if scope == BANK_CHARACTER_SCOPE then
+        return "Bank"
+    end
+    if scope == BANK_ACCOUNT_SCOPE then
+        return "Warbank"
+    end
+    return "Bags"
 end
 
 local function ensureItemButtonBagMethods(itemButton)
@@ -317,12 +329,13 @@ local function ensureCapacityOverlay(self, panel)
     end
 
     local overlay = CreateFrame("Frame", nil, panel)
-    overlay:SetSize(120, 20)
+    overlay:SetSize(50, 20)
     overlay:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 26, 7)
     overlay:EnableMouse(true)
 
     local label = overlay:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     label:SetPoint("LEFT", overlay, "LEFT", 0, 0)
+    label:SetPoint("RIGHT", overlay, "RIGHT", 0, 0)
     label:SetJustifyH("LEFT")
     label:SetTextColor(1, 0.82, 0.2, 1)
 
@@ -352,13 +365,13 @@ local function ensurePurchaseTabButton(self, panel)
 
     local icon = button:CreateTexture(nil, "ARTWORK")
     icon:SetAllPoints()
-    icon:SetAtlas("Garr_Building-AddFollowerPlus")
+    icon:SetAtlas("128-RedButton-Plus")
     button.icon = icon
 
     local highlight = button:CreateTexture(nil, "HIGHLIGHT")
     highlight:SetAllPoints()
-    highlight:SetAtlas("Garr_Building-AddFollowerPlus")
-    highlight:SetAlpha(0.4)
+    highlight:SetAtlas("128-RedButton-Plus")
+    highlight:SetAlpha(0.55)
     highlight:SetBlendMode("ADD")
 
     button:Hide()
@@ -387,12 +400,34 @@ local function refreshBottomBar(self, panel, activeBankType, tabIds)
 
     local purchaseButton = ensurePurchaseTabButton(self, panel)
     purchaseButton:ClearAllPoints()
-    purchaseButton:SetPoint("LEFT", capacityOverlay, "RIGHT", 3, 0)
+    purchaseButton:SetPoint("LEFT", capacityOverlay, "RIGHT", 4, 0)
     purchaseButton.bankType = activeBankType
     purchaseButton:SetShown(shouldShowPurchaseTabButton(activeBankType))
 
     panel.AutoDepositFrame:ClearAllPoints()
     panel.AutoDepositFrame:SetPoint("BOTTOM", panel, "BOTTOM", 0, 3)
+
+    local autoDepositFrame = panel.AutoDepositFrame
+    local autoDepositButton = autoDepositFrame.DepositButton
+    local includeReagentsCheckbox = autoDepositFrame.IncludeReagentsCheckbox
+    local includeReagentsLabel = includeReagentsCheckbox.Text
+
+    autoDepositButton:ClearAllPoints()
+    includeReagentsCheckbox:ClearAllPoints()
+    includeReagentsLabel:ClearAllPoints()
+    if activeBankType == Enum.BankType.Account then
+        local labelWidth = includeReagentsLabel:GetStringWidth() or 0
+        local checkboxToMoneyGap = math.ceil(labelWidth) + 8
+        includeReagentsCheckbox:SetPoint("RIGHT", panel.MoneyFrame, "LEFT", -checkboxToMoneyGap, 0)
+        autoDepositButton:SetPoint("RIGHT", includeReagentsCheckbox, "LEFT", -10, 0)
+        includeReagentsLabel:SetPoint("LEFT", includeReagentsCheckbox, "RIGHT", 4, 0)
+        includeReagentsLabel:SetJustifyH("LEFT")
+    else
+        autoDepositButton:SetPoint("CENTER", autoDepositFrame, "CENTER", 0, 0)
+        includeReagentsCheckbox:SetPoint("LEFT", autoDepositButton, "RIGHT", 10, 0)
+        includeReagentsLabel:SetPoint("LEFT", includeReagentsCheckbox, "RIGHT", 4, 0)
+        includeReagentsLabel:SetJustifyH("LEFT")
+    end
 end
 
 local function hideBottomBarControls(self)
@@ -865,6 +900,50 @@ local function ensureHeaderFrame(self, index)
         AddonNS.CategoriesGUI:SelectCategoryById(category:GetId())
     end)
 
+    local scopeVisibilityButton = CreateFrame("Button", nil, headerFrame)
+    scopeVisibilityButton:SetSize(16, 16)
+    scopeVisibilityButton:SetPoint("TOPRIGHT", editButton, "TOPLEFT", -2, 0)
+    scopeVisibilityButton:SetFrameLevel(headerFrame:GetFrameLevel() + 25)
+    scopeVisibilityButton:Hide()
+
+    scopeVisibilityButton.Icon = scopeVisibilityButton:CreateTexture(nil, "ARTWORK")
+    scopeVisibilityButton.Icon:SetAllPoints()
+    scopeVisibilityButton.Icon:SetTexture(CATEGORY_VISIBLE_TEXTURE)
+
+    scopeVisibilityButton.Highlight = scopeVisibilityButton:CreateTexture(nil, "HIGHLIGHT")
+    scopeVisibilityButton.Highlight:SetAllPoints()
+    scopeVisibilityButton.Highlight:SetTexture(CATEGORY_VISIBLE_TEXTURE)
+    scopeVisibilityButton.Highlight:SetAlpha(0.45)
+    scopeVisibilityButton.Highlight:SetBlendMode("ADD")
+
+    scopeVisibilityButton:SetScript("OnEnter", function(selfButton)
+        local category = selfButton:GetParent().ItemCategory
+        local scope = selfButton:GetParent().MyBagsScope or BANK_CHARACTER_SCOPE
+        local scopeLabel = getScopeVisibilityLabel(scope)
+        local visible = AddonNS.CustomCategories:IsVisibleInScope(category, scope)
+        GameTooltip:SetOwner(selfButton, "ANCHOR_TOP")
+        if visible then
+            GameTooltip:SetText("Visible in " .. scopeLabel)
+        else
+            GameTooltip:SetText("Hidden in " .. scopeLabel)
+        end
+        GameTooltip:AddLine(
+            "When hidden, this category is not considered for categorization or display in " .. scopeLabel .. ".",
+            1, 1, 1, true
+        )
+        GameTooltip:Show()
+    end)
+    scopeVisibilityButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    scopeVisibilityButton:SetScript("OnClick", function(selfButton)
+        local parent = selfButton:GetParent()
+        local category = parent.ItemCategory
+        local scope = parent.MyBagsScope or BANK_CHARACTER_SCOPE
+        local visible = AddonNS.CustomCategories:IsVisibleInScope(category, scope)
+        AddonNS.CustomCategories:SetVisibleInScope(category, scope, not visible)
+    end)
+
     deleteButton:SetScript("OnEnter", function(selfButton)
         local category = selfButton:GetParent().ItemCategory
         GameTooltip:SetOwner(selfButton, "ANCHOR_TOP")
@@ -940,7 +1019,16 @@ local function ensureHeaderFrame(self, index)
     function headerFrame:ApplyCategoryTextLayoutWithEditAndDeleteButtons()
         label:ClearAllPoints()
         label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
-        label:SetPoint("TOPRIGHT", editButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
+        label:SetPoint("TOPRIGHT", scopeVisibilityButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
+        label:SetJustifyH("LEFT")
+        label:SetJustifyV("TOP")
+        label:SetFontObject("GameFontNormal")
+    end
+
+    function headerFrame:ApplyCategoryTextLayoutWithScopeAndEditButtons()
+        label:ClearAllPoints()
+        label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
+        label:SetPoint("TOPRIGHT", scopeVisibilityButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
         label:SetJustifyH("LEFT")
         label:SetJustifyV("TOP")
         label:SetFontObject("GameFontNormal")
@@ -958,6 +1046,7 @@ local function ensureHeaderFrame(self, index)
     headerFrame.label = label
     headerFrame.editButton = editButton
     headerFrame.deleteButton = deleteButton
+    headerFrame.scopeVisibilityButton = scopeVisibilityButton
     headerFrame.hintOverlay = hintOverlay
     headerFrame.isAddCategoryControl = false
     AddonNS.gui:EnsureCategoryControlBackdrop(headerFrame)
@@ -1186,6 +1275,7 @@ local function renderHeaders(self, scope, panel, categoryPositions)
             frame.isAddCategoryControl = true
             frame.editButton:Hide()
             frame.deleteButton:Hide()
+            frame.scopeVisibilityButton:Hide()
             frame:RegisterForDrag("LeftButton")
             frame:SetScript("OnReceiveDrag", nil)
             frame:SetScript("OnDragStart", nil)
@@ -1236,12 +1326,22 @@ local function renderHeaders(self, scope, panel, categoryPositions)
 
             local categoryId = categoryPosition.category:GetId()
             local canEditCategory = AddonNS.BagViewState:IsCategoriesConfigMode() and customCategories[categoryId] ~= nil
+            local canToggleScopeVisibility = canEditCategory
             local canDeleteCategory = canEditCategory and not categoryPosition.category:IsProtected()
             frame.editButton:SetShown(canEditCategory)
+            frame.scopeVisibilityButton:SetShown(canToggleScopeVisibility)
             frame.deleteButton:SetShown(canDeleteCategory)
+            if canToggleScopeVisibility then
+                local visible = AddonNS.CustomCategories:IsVisibleInScope(categoryPosition.category, scope)
+                local texture = visible and CATEGORY_VISIBLE_TEXTURE or CATEGORY_HIDDEN_TEXTURE
+                frame.scopeVisibilityButton.Icon:SetTexture(texture)
+                frame.scopeVisibilityButton.Highlight:SetTexture(texture)
+            end
 
-            if canEditCategory and canDeleteCategory then
+            if canToggleScopeVisibility and canDeleteCategory then
                 frame:ApplyCategoryTextLayoutWithEditAndDeleteButtons()
+            elseif canToggleScopeVisibility then
+                frame:ApplyCategoryTextLayoutWithScopeAndEditButtons()
             elseif canEditCategory then
                 frame:ApplyCategoryTextLayoutWithEditButton()
             else

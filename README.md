@@ -50,6 +50,7 @@ Other notable features:
 * Bank uses the same category-based organization flow as bags.
 * Bank has separate layout scopes for character bank and account/warband bank.
 * Bank view uses the same edit-mode affordances as bags (category header edit/delete and in-grid add/export/import controls).
+* Custom categories support per-scope visibility (`Bags`, `Bank`, `Warbank`) via category config and edit-mode header toggles.
 * Bank purchase-next-tab is exposed through a `+` button in the bottom strip (shown only when a new tab can be purchased).
 * Bag and bank footer capacity now uses `taken / total` formatting with tooltip details.
 * While editing a custom category query, the text is mirrored into bag search for live preview.

@@ -79,6 +79,7 @@ local matches = addonEnv.Categories:GetMatches(1, itemButton)
 
 assert(category:GetName() == "cat1", "returns first matching category")
 assert(category:GetDisplayName(0) == "cat1", "display name defaults to name for categories without custom formatter")
+assert(category:IsVisibleInScope("bag") == true, "visibility defaults to true when raw method is missing")
 assert(itemButton.ItemCategories == nil, "categorize no longer stores all matches on item buttons")
 assert(#matches == 3, "GetMatches returns all matching categories including unassigned")
 assert(matches[1]:GetName() == "cat1", "first category is first in list")
@@ -129,6 +130,17 @@ assert(unassigned == 1, "unassign hook fires for source category")
 assert(targetSeen == catB, "target category is passed through")
 assert(wrappedA:OnRightClick() == true and rightClicks == 1, "right-click passes through to raw category")
 assert(wrappedA:GetDisplayName(3) == "A[3]", "display-name formatter passes through to raw category")
+assert(wrappedA:IsVisibleInScope("bag") == true, "visibility defaults to true for wrapped categories without explicit visibility method")
+
+local scopedVisibilityRaw = {
+  GetId = function() return "hook:scope" end,
+  GetName = function() return "Scope" end,
+  IsProtected = function() return false end,
+  IsVisibleInScope = function(_, scope) return scope ~= "bank-character" end,
+}
+local wrappedScope = addonEnv.CategoryStore:GetWrapperForRaw("hook", scopedVisibilityRaw)
+assert(wrappedScope:IsVisibleInScope("bag") == true, "wrapped category forwards scope visibility for bag")
+assert(wrappedScope:IsVisibleInScope("bank-character") == false, "wrapped category forwards scope visibility for bank-character")
 
 local protectedTrigger = {
   GetId = function() return "hook:protected" end,

@@ -13,8 +13,6 @@ local clearCursorCalls = 0
 local pickupCalls = 0
 local emptyButtonClickCalls = 0
 local lastEmptyButtonClicked = nil
-local itemsOrderLastItemIdReturn = nil
-local itemsOrderLastItemIds = nil
 
 _G.C_Container = {
     GetContainerItemInfo = function(bagID, slotID)
@@ -116,12 +114,6 @@ local addonEnv = {
         end,
     },
     QueueContainerUpdateItemLayout = function() end,
-    ItemsOrder = {
-        GetLastItemId = function(_, itemIds)
-            itemsOrderLastItemIds = itemIds
-            return itemsOrderLastItemIdReturn
-        end,
-    },
 }
 
 local dragAndDropChunk = assert(loadfile("dragndrop.lua"))
@@ -177,8 +169,6 @@ local function resetDragTestState()
     pickupCalls = 0
     emptyButtonClickCalls = 0
     lastEmptyButtonClicked = nil
-    itemsOrderLastItemIdReturn = nil
-    itemsOrderLastItemIds = nil
     addonEnv.emptyItemButton = nil
     _G.BankPanel = nil
 end
@@ -694,11 +684,10 @@ run("backgroundOnReceiveDrag places item into available empty slot for cross-sco
     assertTrue(lastEmptyButtonClicked == targetEmptyButton, "should click available empty button")
 end)
 
-run("categoryOnReceiveDrag anchors move after last item in target category", function()
+run("categoryOnReceiveDrag emits non-item-target move anchor", function()
     resetDragTestState()
     cursorInfoType = "item"
     cursorItemId = 1001
-    itemsOrderLastItemIdReturn = 4004
 
     local sourceButton = {
         ItemCategory = category("cus-11"),
@@ -753,15 +742,13 @@ run("categoryOnReceiveDrag anchors move after last item in target category", fun
     })
 
     assertEqual(lastEvent.name, "ITEM_MOVED", "category assignment should emit item move")
-    assertEqual(lastEvent.args[2], 4004, "targeted item id should be destination tail item id")
-    assertTrue(itemsOrderLastItemIds ~= nil, "tail lookup should be performed")
+    assertEqual(lastEvent.args[2], nil, "category assignment should not target a hovered item")
 end)
 
-run("backgroundOnReceiveDrag anchors move after last item in target category", function()
+run("backgroundOnReceiveDrag emits non-item-target move anchor", function()
     resetDragTestState()
     cursorInfoType = "item"
     cursorItemId = 1001
-    itemsOrderLastItemIdReturn = 5005
     cursorX = 50
     cursorY = 50
 
@@ -815,6 +802,5 @@ run("backgroundOnReceiveDrag anchors move after last item in target category", f
     addonEnv.DragAndDrop.backgroundOnReceiveDrag(frameForColumn(1), "LeftButton")
 
     assertEqual(lastEvent.name, "ITEM_MOVED", "background assignment should emit item move")
-    assertEqual(lastEvent.args[2], 5005, "targeted item id should be destination tail item id")
-    assertTrue(itemsOrderLastItemIds ~= nil, "tail lookup should be performed")
+    assertEqual(lastEvent.args[2], nil, "background assignment should not target a hovered item")
 end)

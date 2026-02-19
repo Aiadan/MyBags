@@ -8,6 +8,14 @@ AddonNS.UserCategorizer = CustomCategorizer
 local CATEGORIZER_ID = "cus"
 local STORAGE_KEY = "userCategories"
 local STORAGE_SCHEMA_VERSION = 2
+local BAG_SCOPE = "bag"
+local BANK_CHARACTER_SCOPE = "bank-character"
+local BANK_ACCOUNT_SCOPE = "bank-account"
+local SCOPE_KEYS = {
+    BAG_SCOPE,
+    BANK_CHARACTER_SCOPE,
+    BANK_ACCOUNT_SCOPE,
+}
 local RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX = "|CFFbbbbbb"
 local SELECTED_CUSTOM_CATEGORY_PREFIX = "|cffff2020>>|r "
 
@@ -44,6 +52,48 @@ end
 
 local function fail(message)
     error(message, 0)
+end
+
+local function normalize_scope(scope)
+    if scope == nil or scope == "" then
+        return BAG_SCOPE
+    end
+    return tostring(scope)
+end
+
+local function scope_is_supported(scope)
+    local normalizedScope = normalize_scope(scope)
+    for index = 1, #SCOPE_KEYS do
+        if SCOPE_KEYS[index] == normalizedScope then
+            return true
+        end
+    end
+    return false
+end
+
+local function normalize_scope_overrides_from_storage(source)
+    if type(source) ~= "table" then
+        return nil
+    end
+    local overrides = nil
+    for index = 1, #SCOPE_KEYS do
+        local scope = SCOPE_KEYS[index]
+        if source[scope] == false then
+            overrides = overrides or {}
+            overrides[scope] = false
+        end
+    end
+    return overrides
+end
+
+local function build_scope_visibility(entry)
+    local visibility = {}
+    local overrides = entry and entry.scopes or nil
+    for index = 1, #SCOPE_KEYS do
+        local scope = SCOPE_KEYS[index]
+        visibility[scope] = not (overrides and overrides[scope] == false)
+    end
+    return visibility
 end
 
 local function default_priority_for_raw_id(rawId)
@@ -133,6 +183,7 @@ local function normalize_storage(storage)
             alwaysVisible = entry.alwaysVisible == true or nil,
             query = (entry.query and entry.query ~= "") and entry.query or nil,
             priority = normalize_priority_from_storage(normalizedRawId, entry.priority),
+            scopes = normalize_scope_overrides_from_storage(entry.scopes),
             items = normalize_array(entry.items),
         }
         local numeric = tonumber(normalizedRawId)
@@ -185,6 +236,7 @@ local function migrate_from_current_category_store_shape(db, storage)
             alwaysVisible = data.alwaysVisible == true or nil,
             query = (data.query and data.query ~= "") and data.query or nil,
             priority = normalize_priority_from_storage(tostring(rawId), data.priority),
+            scopes = normalize_scope_overrides_from_storage(data.scopes),
             items = normalize_array(data.items),
         }
     end
@@ -207,6 +259,7 @@ local function migrate_from_old_db_shape(db, storage)
                 alwaysVisible = sourceRecord.alwaysVisible == true or nil,
                 query = (sourceRecord.query and sourceRecord.query ~= "") and sourceRecord.query or nil,
                 priority = normalize_priority_from_storage(rawId, sourceRecord.priority),
+                scopes = normalize_scope_overrides_from_storage(sourceRecord.scopes),
                 items = normalize_array(sourceRecord.items),
             }
         end
@@ -486,6 +539,13 @@ local function new_raw(id, data)
     end
     function raw:OnLeftClickConfigMode()
         AddonNS.CategoriesGUI:SelectCategoryById(CATEGORIZER_ID .. "-" .. id)
+    end
+    function raw:IsVisibleInScope(scope)
+        local normalizedScope = normalize_scope(scope)
+        if not scope_is_supported(normalizedScope) then
+            return true
+        end
+        return not (data.scopes and data.scopes[normalizedScope] == false)
     end
     function raw:OnItemAssigned(itemId, context)
         if not itemId then
@@ -822,6 +882,54 @@ function CustomCategories:GetCategories()
         end
     end
     return map
+end
+
+function CustomCategories:GetScopeVisibility(categoryOrId)
+    local resolvedRawId = resolve_raw_id(categoryOrId)
+    if not resolvedRawId then
+        return build_scope_visibility(nil)
+    end
+    local db = get_db()
+    local entry = db.categories[resolvedRawId]
+    if not entry then
+        return build_scope_visibility(nil)
+    end
+    return build_scope_visibility(entry)
+end
+
+function CustomCategories:IsVisibleInScope(categoryOrId, scope)
+    local normalizedScope = normalize_scope(scope)
+    if not scope_is_supported(normalizedScope) then
+        return true
+    end
+    local visibility = self:GetScopeVisibility(categoryOrId)
+    return visibility[normalizedScope] == true
+end
+
+function CustomCategories:SetVisibleInScope(categoryOrId, scope, visible)
+    local resolvedRawId = resolve_raw_id(categoryOrId)
+    if not resolvedRawId then
+        return
+    end
+    local normalizedScope = normalize_scope(scope)
+    if not scope_is_supported(normalizedScope) then
+        error("Unsupported category visibility scope: " .. tostring(scope))
+    end
+    local db = get_db()
+    local entry = db.categories[resolvedRawId]
+    if not entry then
+        return
+    end
+    entry.scopes = entry.scopes or {}
+    if visible then
+        entry.scopes[normalizedScope] = nil
+    else
+        entry.scopes[normalizedScope] = false
+    end
+    if next(entry.scopes) == nil then
+        entry.scopes = nil
+    end
+    fireUpdate()
 end
 
 function CustomCategories:NewCategory(name, opts)

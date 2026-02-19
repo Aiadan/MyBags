@@ -150,8 +150,10 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ fixed query numeric comparators (`>`, `>=`, `<`, `<=`) to safely return `false` when attribute value is missing/non-numeric (for example `questid > 0`) instead of throwing runtime errors.
 * ✅ fixed bank-frame position drift during category/layout refreshes by removing forced `UpdateUIPanelPositions(BankFrame)` from MyBags bank content sizing, so moving/reordering categories no longer pushes the bank frame downward unexpectedly.
 * ✅ fixed first-open-after-reload bank bottom overflow edge case by making initial bank position correction run once on the next frame after first-size/scale pass (`UpdateUIPanelPositions(BankFrame)` + rescale), instead of repeating reposition on every refresh.
-* ✅ assigning an item via category background or column background now anchors to the target category tail (ordered as last in that category), while item-on-item drop ordering remains unchanged.
+* ✅ assigning an item via category background or column background now moves it to the end of the entire item order list, while item-on-item drop ordering remains unchanged.
 * ✅ fixed Shift tooltip refresh in bank/item tooltips by handling `MODIFIER_STATE_CHANGED` (`LSHIFT`/`RSHIFT`) and forcing tooltip bag-slot rebind; tooltip owner resolution now walks parent frames to find the actual item button.
+* ✅ tightened bank footer capacity/purchase-tab spacing: switched capacity text to compact `taken/total`, constrained the capacity label width so it cannot overlap the purchase control, and switched the purchase icon to `128-RedButton-Plus` for stronger visibility.
+* ✅ fixed warband-bank footer overlap and anchor-dependency error: account/warband mode now anchors controls in explicit left-to-right order `Deposit All Warbound Items` -> include-reagents checkbox -> include-reagents label -> `MoneyFrame`, computes checkbox-to-money spacing from live label width, and avoids anchoring the checkbox to its own label region (`Cannot anchor to a region dependent on it`).
 
 ### TODO
 
@@ -215,6 +217,10 @@ Tasks which after implementation user will not see.
 * ✅ disabled temporary bank column drop-area debug overlays by default (`SHOW_COLUMN_DROP_AREAS = false` in `bankView.lua`).
 * ✅ kept `BankFrame_Open` global override in `ContainerFrameMyBagsMixin.lua` with explicit taint-workaround documentation; open-all close behavior is handled separately by dedicated `ToggleAllBags` override.
 * ✅ fixed bag/bank resize-handle cursor drift under non-default frame scale by normalizing drag cursor X against the resized frame effective scale (not `UIParent` scale), keeping the dragged corner aligned with the mouse.
+* ✅ implemented scope-aware custom category visibility (`bag` / `bank-character` / `bank-account`) with config-panel checkboxes (Bags/Bank/Warbank), edit-mode header quick-toggle icons in bag+bank views, scope-filtered categorization/rendering, and Shift-tooltip diagnostics that still list disabled categories and mark when disabled in the current scope.
+* ✅ fixed edit-mode visibility behavior for scope-disabled custom categories: they now remain visible in categories-config mode (so they can be edited/toggled back) while still showing disabled-state icon and staying excluded from normal scope categorization.
+* ✅ adjusted category-config wording from `Visible in` to `Used in` to better reflect that scope toggles control categorizer usage, not just header visibility.
+* ✅ fixed category editor scope-toggle UI layout: `Used in` controls now share the `Always show` row, priority/query are no longer pushed into save/revert controls, scope checkboxes are aligned, and only checkbox icons (not text labels) are interactive.
 
 ### TODO
 

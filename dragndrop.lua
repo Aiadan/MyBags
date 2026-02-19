@@ -206,52 +206,6 @@ local function getItemIdFromButton(buttonItem)
     return info and info.itemID
 end
 
-local function getItemButtonFromIteratorValues(first, second)
-    return second or first
-end
-
-local function forEachVisibleItemButtonInScope(scope, visitor)
-    if scope == "bag" then
-        if not container or not container.EnumerateValidItems then
-            return
-        end
-        for first, second in container:EnumerateValidItems() do
-            local itemButton = getItemButtonFromIteratorValues(first, second)
-            if itemButton then
-                visitor(itemButton)
-            end
-        end
-        return
-    end
-    if not BankPanel or not BankPanel.EnumerateValidItems then
-        return
-    end
-    for first, second in BankPanel:EnumerateValidItems() do
-        local itemButton = getItemButtonFromIteratorValues(first, second)
-        if itemButton and itemButton.MyBagsScope == scope then
-            visitor(itemButton)
-        end
-    end
-end
-
-local function getLastCategoryItemIdInScope(targetCategory, scope, movingItemId)
-    local targetCategoryId = getCategoryId(targetCategory)
-    if not targetCategoryId then
-        return nil
-    end
-    local itemIds = {}
-    forEachVisibleItemButtonInScope(scope, function(itemButton)
-        local itemCategory = itemButton.ItemCategory
-        if itemCategory and getCategoryId(itemCategory) == targetCategoryId then
-            local itemId = getItemIdFromButton(itemButton)
-            if itemId and itemId ~= movingItemId then
-                table.insert(itemIds, itemId)
-            end
-        end
-    end)
-    return AddonNS.ItemsOrder:GetLastItemId(itemIds)
-end
-
 function AddonNS.DragAndDrop.itemOnClick(self, button)
     AddonNS.printDebug("itemOnClick")
     if button == "LeftButton" then
@@ -409,8 +363,7 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
                 ContainerFrameItemButton_OnClick(emptyItemButton, "LeftButton")
             end
         end
-        local targetedItemID = getLastCategoryItemIdInScope(targetItemCategory, targetScope, itemID)
-        triggerItemMoved(itemID, targetedItemID, pickedItemCategory, targetItemCategory, pickedItemButton, nil);
+        triggerItemMoved(itemID, nil, pickedItemCategory, targetItemCategory, pickedItemButton, nil);
         ClearCursor();
         queueRefreshForScope(targetScope);
     elseif isCategoryDragActive and pickedItemCategory and (pickedItemCategory ~= targetItemCategory) then -- category frame
@@ -489,8 +442,7 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self, mouseButtonName)
                 end
             end
             local targetCategory = AddonNS.Categories:GetLastCategoryInColumn(columnNo, scope);
-            local targetedItemID = getLastCategoryItemIdInScope(targetCategory, scope, itemID)
-            triggerItemMoved(itemID, targetedItemID, pickedItemCategory, targetCategory, pickedItemButton, nil);
+            triggerItemMoved(itemID, nil, pickedItemCategory, targetCategory, pickedItemButton, nil);
             ClearCursor();
             queueRefreshForScope(scope);
         elseif isCategoryDragActive and pickedItemCategory then -- category frame

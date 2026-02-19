@@ -79,6 +79,13 @@ local function resolveTooltipItemFrame(owner)
     return nil
 end
 
+local function getScopeFromTooltipOwner(owner)
+    if owner and owner.MyBagsScope then
+        return owner.MyBagsScope
+    end
+    return "bag"
+end
+
 local function formatCategoryReason(itemID, category, reasonKind)
     local categoryId = category:GetId()
     if not categoryId:match("^cus%-") then
@@ -135,6 +142,7 @@ local function addCategoriesToTooltip(tooltip)
     if not itemID then
         return
     end
+    local scope = getScopeFromTooltipOwner(owner)
     GameTooltip_AddBlankLineToTooltip(tooltip)
     if not IsShiftKeyDown() then
         GameTooltip_AddNormalLine(tooltip,  MYBAGS_TOOLTIP_TITLE .. MYBAGS_TOOLTIP_HINT_COLOR_PREFIX ..
@@ -143,7 +151,11 @@ local function addCategoriesToTooltip(tooltip)
         return
     end
 
-    local matches = AddonNS.Categories:GetMatches(itemID, owner, { allowDuplicateCategoryIds = true })
+    local matches = AddonNS.Categories:GetMatches(itemID, owner, {
+        allowDuplicateCategoryIds = true,
+        includeScopeDisabled = true,
+        scope = scope,
+    })
     if #matches == 0 then
         return
     end
@@ -164,6 +176,9 @@ local function addCategoriesToTooltip(tooltip)
         end
         local reason = formatCategoryReason(itemID, category, reasonKind)
         local line = i .. ". " .. category:GetName()
+        if categoryId:match("^cus%-") and not AddonNS.CustomCategories:IsVisibleInScope(category, scope) then
+            line = line .. " (disabled in this scope)"
+        end
         if reason then
             line = line .. " (" .. reason .. ")"
         end

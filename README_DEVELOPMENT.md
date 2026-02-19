@@ -48,8 +48,10 @@ Use it only during diagnostics. Keep profiling disabled during normal play.
 ## Category Editor Runtime Notes
 
 - The custom category editor is a centered movable `DefaultPanelFlatTemplate` frame (not bag-anchored).
-- Selection captures a per-category baseline snapshot (`name`, `query`, effective `priority`, `alwaysShow`) used by `Revert Changes`.
+- Selection captures a per-category baseline snapshot (`name`, `query`, effective `priority`, `alwaysShow`, `scopeVisibility`) used by `Revert Changes`.
 - Editor fields are staged in UI state; persistence updates only when `Save` is pressed.
+- Scope visibility is stored per custom category for `bag`, `bank-character`, and `bank-account`; storage persists only disabled-scope overrides (`false`) and omits enabled defaults.
+- In edit mode, each custom category header exposes a current-scope visibility toggle (Bags/Bank/Warbank depending on active container scope).
 - Name field `Escape` discards in-field draft text and restores the baseline category name.
 - Revert scope is per selected category at selection time (switching category resets baseline).
 - Closing the editor with pending changes opens a two-action confirmation (`Save and Exit` / `Exit`).
