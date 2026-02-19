@@ -169,6 +169,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 ### TODO
 
 * ✅ when item is matched against a category which is disabled we now continue to the next eligible match (manual/query within custom categorizer) instead of falling back directly to unassigned.
+* the bank again is tainting the bags :/// need to see what regression was introduced
 * draggin an item from vendor or inventory or another container should not show category higlight as this will not assign by default this item to a given category based on background afaik
 
 #### Low priority
