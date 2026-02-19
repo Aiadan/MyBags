@@ -6,6 +6,7 @@ local ITEMS_PER_ROW = AddonNS.Const.ITEMS_PER_ROW
 
 local BANK_CHARACTER_SCOPE = "bank-character"
 local BANK_ACCOUNT_SCOPE = "bank-account"
+local containerItemInfoCache = assert(AddonNS.ContainerItemInfoCache, "ContainerItemInfoCache missing")
 
 local BankView = {
     headerFrames = {},
@@ -281,6 +282,10 @@ end
 
 local function applyCachedIncludeInSearch(panel)
     for itemButton in panel:EnumerateValidItems() do
+        local defaultMatch = itemButton:GetMatchesSearch()
+        if type(defaultMatch) == "boolean" then
+            itemButton._myBagsDefaultSearchMatch = defaultMatch
+        end
         itemButton:SetMatchesSearch(true)
     end
 end
@@ -551,7 +556,7 @@ local function getCurrentItemSize(panel)
     for itemButton in panel:EnumerateValidItems() do
         return itemButton:GetHeight() + ITEM_SPACING
     end
-    return BANK_DEFAULT_ITEM_SIZE
+    return BANK_DEFAULT_ITEM_SIZE + ITEM_SPACING
 end
 
 local function applySharedBankColumnCount(target)
@@ -1615,36 +1620,21 @@ function BankView:Refresh(scope)
         itemButton.ItemCategory = nil
         local bagID, slotID = resolveBankButtonContainerSlot(itemButton)
         if bagID and slotID then
-            local info = nil
+            local infoStartedAt = profileSearchRefresh and profileNowMs() or nil
+            local info = containerItemInfoCache:Get(bagID, slotID)
+            if infoStartedAt then
+                profileLoopInfoFetchMs = profileLoopInfoFetchMs + (profileNowMs() - infoStartedAt)
+            end
             local defaultMatch = true
-            local usedCachedSearchState = searchTextChanged and not shouldRefreshItemButtonVisuals
-            if usedCachedSearchState then
-                local infoStartedAt = profileSearchRefresh and profileNowMs() or nil
-                info = itemButton.itemInfo
-                if infoStartedAt then
-                    profileLoopInfoFetchMs = profileLoopInfoFetchMs + (profileNowMs() - infoStartedAt)
-                end
-                local cachedMatch = itemButton:GetMatchesSearch()
-                if type(cachedMatch) == "boolean" then
-                    defaultMatch = cachedMatch
-                else
-                    usedCachedSearchState = false
-                end
-            end
-
-            if not usedCachedSearchState then
-                local infoStartedAt = profileSearchRefresh and profileNowMs() or nil
-                info = C_Container.GetContainerItemInfo(bagID, slotID)
-                if infoStartedAt then
-                    profileLoopInfoFetchMs = profileLoopInfoFetchMs + (profileNowMs() - infoStartedAt)
-                end
-                if info then
-                    defaultMatch = not info.isFiltered
-                end
-            end
-
             if info then
                 hadAnyItemData = true
+                local cachedDefaultMatch = itemButton._myBagsDefaultSearchMatch
+                defaultMatch = true
+                if searchActive and type(cachedDefaultMatch) == "boolean" then
+                    defaultMatch = cachedDefaultMatch
+                elseif searchActive then
+                    defaultMatch = not info.isFiltered
+                end
                 local searchEvalStartedAt = profileSearchRefresh and profileNowMs() or nil
                 local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
                 if searchEvalStartedAt then
@@ -1713,7 +1703,7 @@ function BankView:Refresh(scope)
     self.dataRetryCount = 0
 
     local arrangeStartedAt = profileSearchRefresh and profileNowMs() or nil
-    local itemSize = ((firstItemButton and firstItemButton:GetHeight()) or BANK_DEFAULT_ITEM_SIZE) + ITEM_SPACING
+    local itemSize = firstItemButton and (firstItemButton:GetHeight() + ITEM_SPACING) or getCurrentItemSize(panel)
     self.columnPixelWidth = itemSize * ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
     self.firstColumnStartX = BANK_CONTENT_LEFT_PADDING - ITEM_SPACING / 2
     local categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, activeScope)
@@ -1800,6 +1790,7 @@ local function tryInstallHooks()
         BankView.searchLockedPanelWidth = nil
         BankView.searchLockedPanelHeight = nil
         BankView.lastSearchText = nil
+        containerItemInfoCache:InvalidateAll()
         invalidateCategorizationCacheVersion(BankView)
         BankView.needsInitialPositionUpdate = false
         BankView.initialPositionUpdateQueued = false
@@ -1829,6 +1820,11 @@ local function tryInstallHooks()
             return
         end
         if shouldRefreshForBagUpdate(BankView.visibleTabIds, bagID) then
+            if bagID == nil then
+                containerItemInfoCache:InvalidateAll()
+            else
+                containerItemInfoCache:InvalidateBag(bagID)
+            end
             invalidateCategorizationCacheVersion(BankView)
             BankView:QueueRefresh()
         end
@@ -1836,7 +1832,7 @@ local function tryInstallHooks()
 
     AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE", function()
         if BankFrame:IsShown() then
-            BankView:RefreshNow(BankView.currentScope)
+            BankView:QueueRefresh(BankView.currentScope)
         end
     end)
 
@@ -1854,6 +1850,7 @@ local function tryInstallHooks()
     end)
 
     AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, function()
+        containerItemInfoCache:InvalidateAll()
         invalidateCategorizationCacheVersion(BankView)
     end)
 

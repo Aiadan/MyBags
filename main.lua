@@ -16,8 +16,11 @@ end
 
 local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
+local containerItemInfoCache = assert(AddonNS.ContainerItemInfoCache, "ContainerItemInfoCache missing")
 local triggerContainerUpdateItemLayout
 local bagCategorizationVersion = 0
+local bagSearchText = ""
+local bagSearchActive = false
 local searchQueryState = {
     text = "",
     evaluator = nil,
@@ -248,6 +251,7 @@ AddonNS.Events:RegisterEvent("MODIFIER_STATE_CHANGED")
 
 local freeBagSlots = 10000;
 local lockedUpdates = false;
+local inventorySearchRefreshQueued = false
 
 local function getBagCapacityState()
     local freeItemSlots = 0
@@ -307,6 +311,11 @@ function AddonNS.Events:BAG_UPDATE(event, bagID)
     if bagID and bagID > Enum.BagIndex.ReagentBag then
         return
     end
+    if bagID == nil then
+        containerItemInfoCache:InvalidateAll()
+    else
+        containerItemInfoCache:InvalidateBag(bagID)
+    end
     invalidateBagCategorizationCacheVersion()
 
     if (container.MyBags.updateItemLayoutCalledAtLeastOnce) then -- todo: reading this after a while - what the hell is this :D once i know i have to add here proper comments lol
@@ -344,7 +353,14 @@ end
 function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
     AddonNS.printDebug("INVENTORY_SEARCH_UPDATE", bagID)
     container:CaptureSearchAnchorLockPosition()
-    triggerContainerUpdateItemLayout();
+    if inventorySearchRefreshQueued then
+        return
+    end
+    inventorySearchRefreshQueued = true
+    RunNextFrame(function()
+        inventorySearchRefreshQueued = false
+        triggerContainerUpdateItemLayout();
+    end)
 end
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED,
@@ -354,6 +370,7 @@ AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_U
     invalidateBagCategorizationCacheVersion()
 end)
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, function()
+    containerItemInfoCache:InvalidateAll()
     invalidateBagCategorizationCacheVersion()
 end)
 
@@ -447,6 +464,10 @@ installSearchBoxWrapper(BagItemSearchBox)
 installSearchBoxWrapper(BankItemSearchBox)
 hooksecurefunc(container, "UpdateSearchResults", function()
     for _, itemButton in container:EnumerateValidItems() do
+        local defaultMatch = itemButton:GetMatchesSearch()
+        if type(defaultMatch) == "boolean" then
+            itemButton._myBagsDefaultSearchMatch = defaultMatch
+        end
         itemButton:SetMatchesSearch(true)
     end
 end)
@@ -473,6 +494,8 @@ local function newIterator(container, index)
     local index, itemButton = it(container, index);
     if (index == 1) then
         AddonNS.emptyItemButton = nil -- reset itemButom
+        bagSearchText = BagItemSearchBox:GetText() or ""
+        bagSearchActive = bagSearchText ~= ""
         if profilingEnabled() then
             refreshProfile = {
                 startedAt = profileNowMs(),
@@ -502,13 +525,19 @@ local function newIterator(container, index)
         itemButton.MyBagsScope = "bag"
 
         -- [[ CATEGORISATION ]]
-        local info = C_Container.GetContainerItemInfo(itemButton:GetBagID(), itemButton:GetID());
+        local info = containerItemInfoCache:Get(itemButton:GetBagID(), itemButton:GetID());
         itemButton.ItemCategory = nil;
         if (info) then
-            local defaultMatch = not info.isFiltered
+            local capturedDefaultMatch = itemButton._myBagsDefaultSearchMatch
+            local defaultMatch = true
+            if bagSearchActive and type(capturedDefaultMatch) == "boolean" then
+                defaultMatch = capturedDefaultMatch
+            elseif bagSearchActive then
+                defaultMatch = not info.isFiltered
+            end
             local includeInSearch = evaluateSearchVisibility(defaultMatch, searchQueryState.evaluator, info, itemButton)
-            itemButton:SetMatchesSearch(true)
             if includeInSearch then
+                itemButton:SetMatchesSearch(true)
                 itemButton._myBagsItemId = info.itemID
                 local categorizeStartedAt = refreshProfile and profileNowMs() or nil
                 itemButton.ItemCategory = resolveCachedOrComputeBagCategory(itemButton, info)

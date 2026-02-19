@@ -65,6 +65,13 @@ local addonEnv = {
     Events = {
         OnInitialize = function() end,
     },
+    ContainerItemInfoCache = {
+        Get = function(_, bagID, slotID)
+            return C_Container.GetContainerItemInfo(bagID, slotID)
+        end,
+        InvalidateBag = function() end,
+        InvalidateAll = function() end,
+    },
     SetNumColumns = function() end,
     GetBankCapacityState = function(tabIds)
         local total = 0

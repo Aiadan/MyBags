@@ -27,6 +27,7 @@
 #@end-non-debug@
 
 utils/orderedMap.lua
+utils/containerItemInfoCache.lua
 categoryStore.lua
 init.lua
 bagViewState.lua

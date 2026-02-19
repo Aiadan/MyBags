@@ -161,7 +161,11 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ reduced remaining bank-search loop cost by caching per-item category resolution across search keystrokes (slot/item/scope/version keyed) and invalidating cache on bank item updates and category updates.
 * ✅ added per-item category-resolution cache parity for both bank and bags (versioned keying + invalidation on bag updates/category updates/item-move reassignment), so repeated search typing avoids redundant recategorization in both containers.
 * ✅ deepened bank-search profiling to include loop sub-steps (`loopRefresh`, `loopInfo`, `loopSearchEval`, `loopCategory`, `loopInsert`, `loopSetMatch`) so remaining stutter can be traced to exact runtime costs.
-* ✅ optimized bank search keystroke path to reuse Blizzard-updated per-button search state (`GetMatchesSearch`) and existing button `itemInfo` cache during search-only refreshes, avoiding repeated `C_Container.GetContainerItemInfo` calls for unchanged slots.
+* ✅ optimized bank search keystroke path to reuse Blizzard `itemButton.itemInfo` plus captured default-match state (snapshotted before MyBags undim override), and reverted unsafe bag+bank container-info caching that caused stale item-button visuals/layout drift.
+* ✅ introduced shared `ContainerItemInfoCache` module (bag/slot keyed, centralized invalidation) and wired both bag + bank search paths to use it with captured default-match state for active-search filtering correctness.
+* ✅ fixed post-cache regressions: search clear now always prefers captured Blizzard default-match state over cached `info.isFiltered`, and bank no-results layout now uses `getCurrentItemSize(panel)` fallback to keep header column spacing stable.
+* ✅ applied stale-filter timing fix to both bag and bank: empty search always defaults to include-all, captured default-match is used only while search is active, and bank `INVENTORY_SEARCH_UPDATE` now queues refresh to avoid previous-keystroke filter state.
+* ✅ removed remaining bag-side one-keystroke search delay by queuing `INVENTORY_SEARCH_UPDATE` bag layout refresh to next frame with dedupe (mirrors bank behavior and avoids stale previous-key filter state).
 
 ### TODO
 
