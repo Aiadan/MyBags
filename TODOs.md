@@ -228,6 +228,7 @@ Tasks which after implementation user will not see.
 * ✅ fixed edit-mode visibility behavior for scope-disabled custom categories: they now remain visible in categories-config mode (so they can be edited/toggled back) while still showing disabled-state icon and staying excluded from normal scope categorization.
 * ✅ adjusted category-config wording from `Visible in` to `Used in` to better reflect that scope toggles control categorizer usage, not just header visibility.
 * ✅ fixed category editor scope-toggle UI layout: `Used in` controls now share the `Always show` row, priority/query are no longer pushed into save/revert controls, scope checkboxes are aligned, and only checkbox icons (not text labels) are interactive.
+* ✅ fixed bank category in-column row packing parity: in normal mode bank categories can now share a row within a column (matching bag behavior for small categories), while edit mode remains one-category-per-row with full-width headers.
 
 ### TODO
 

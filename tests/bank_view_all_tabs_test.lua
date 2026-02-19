@@ -93,6 +93,16 @@ local addonEnv = {
         }
     end,
     printDebug = function() end,
+    BagViewState = {
+        IsCategoriesConfigMode = function()
+            return false
+        end,
+    },
+    Collapsed = {
+        isCollapsed = function()
+            return false
+        end,
+    },
 }
 
 local baselineChunk = assert(loadfile("utils/searchCategoryBaseline.lua"))
@@ -122,6 +132,34 @@ local function run(name, fn)
         print("✗ " .. name)
         error(err)
     end
+end
+
+local function makeCategory(id)
+    return {
+        id = id,
+        GetId = function(self)
+            return self.id
+        end,
+    }
+end
+
+local function makeItems(prefix, count)
+    local items = {}
+    for index = 1, count do
+        items[index] = { id = prefix .. "-" .. tostring(index) }
+    end
+    return items
+end
+
+local function extractCategoryPositions(categoryPositions)
+    local list = {}
+    for index = 1, #categoryPositions do
+        local position = categoryPositions[index]
+        if position.category then
+            table.insert(list, position)
+        end
+    end
+    return list
 end
 
 run("getPurchasedTabIdsForActiveType prefers panel cached data", function()
@@ -317,6 +355,118 @@ run("SearchCategoryBaseline keeps header category visible under search even with
     inserted = addonEnv.SearchCategoryBaseline:Add(arrangedItems, catA, item, true, true)
     assertTrue(inserted == true, "matching item should be inserted")
     assertEqual(#arrangedItems[catA], 1, "seeded category should contain matching item")
+end)
+
+run("PlaceItemsAndBuildHeaders packs small categories on the same row in normal mode", function()
+    addonEnv.BagViewState.IsCategoriesConfigMode = function()
+        return false
+    end
+    addonEnv.Collapsed.isCollapsed = function()
+        return false
+    end
+
+    local catA = makeCategory("cus-a")
+    local catB = makeCategory("cus-b")
+    local aItems = makeItems("a", 2)
+    local bItems = makeItems("b", 1)
+    local assignments = {
+        {
+            { category = catA, items = aItems, itemsCount = #aItems },
+            { category = catB, items = bItems, itemsCount = #bItems },
+        },
+    }
+
+    local positions, categoryPositions = hooks.PlaceItemsAndBuildHeaders("bank-character", nil, assignments, 10)
+    local placedCategories = extractCategoryPositions(categoryPositions)
+    assertEqual(#placedCategories, 2, "two categories should be placed")
+    assertEqual(placedCategories[1].y, placedCategories[2].y, "categories should share the same row header")
+    assertTrue(placedCategories[2].x > placedCategories[1].x, "second category should start to the right")
+    assertTrue(positions[aItems[1]].y == positions[bItems[1]].y, "items should be placed on the same row")
+end)
+
+run("PlaceItemsAndBuildHeaders starts a new row when the next category would overflow", function()
+    addonEnv.BagViewState.IsCategoriesConfigMode = function()
+        return false
+    end
+    addonEnv.Collapsed.isCollapsed = function()
+        return false
+    end
+
+    local catA = makeCategory("cus-overflow-a")
+    local catB = makeCategory("cus-overflow-b")
+    local aItems = makeItems("oa", 3)
+    local bItems = makeItems("ob", 2)
+    local assignments = {
+        {
+            { category = catA, items = aItems, itemsCount = #aItems },
+            { category = catB, items = bItems, itemsCount = #bItems },
+        },
+    }
+
+    local _, categoryPositions = hooks.PlaceItemsAndBuildHeaders("bank-account", nil, assignments, 10)
+    local placedCategories = extractCategoryPositions(categoryPositions)
+    assertEqual(#placedCategories, 2, "two categories should be placed")
+    assertTrue(placedCategories[2].y > placedCategories[1].y, "second category should move to a lower row")
+    assertEqual(placedCategories[2].x, placedCategories[1].x, "new row category should restart at column left")
+end)
+
+run("PlaceItemsAndBuildHeaders keeps categories full-width and separated in config mode", function()
+    addonEnv.BagViewState.IsCategoriesConfigMode = function()
+        return true
+    end
+    addonEnv.Collapsed.isCollapsed = function()
+        return false
+    end
+
+    local catA = makeCategory("cus-edit-a")
+    local catB = makeCategory("cus-edit-b")
+    local aItems = makeItems("ea", 2)
+    local bItems = makeItems("eb", 1)
+    local assignments = {
+        {
+            { category = catA, items = aItems, itemsCount = #aItems },
+            { category = catB, items = bItems, itemsCount = #bItems },
+        },
+    }
+
+    local _, categoryPositions = hooks.PlaceItemsAndBuildHeaders("bank-character", nil, assignments, 10)
+    local placedCategories = extractCategoryPositions(categoryPositions)
+    assertEqual(#placedCategories, 2, "two categories should be placed")
+    assertTrue(placedCategories[2].y > placedCategories[1].y, "config mode should separate categories by rows")
+    assertEqual(placedCategories[1].width, 40, "config mode category width should span full row")
+    assertEqual(placedCategories[2].width, 40, "config mode category width should span full row")
+end)
+
+run("PlaceItemsAndBuildHeaders keeps collapsed headers full-width and row-isolated", function()
+    addonEnv.BagViewState.IsCategoriesConfigMode = function()
+        return false
+    end
+
+    local collapsedById = {
+        ["cus-collapsed"] = true,
+        ["cus-live"] = false,
+    }
+    addonEnv.Collapsed.isCollapsed = function(category)
+        return collapsedById[category:GetId()] == true
+    end
+
+    local collapsedCategory = makeCategory("cus-collapsed")
+    local liveCategory = makeCategory("cus-live")
+    local collapsedItems = makeItems("ca", 2)
+    local liveItems = makeItems("cb", 1)
+    local assignments = {
+        {
+            { category = collapsedCategory, items = collapsedItems, itemsCount = #collapsedItems },
+            { category = liveCategory, items = liveItems, itemsCount = #liveItems },
+        },
+    }
+
+    local _, categoryPositions = hooks.PlaceItemsAndBuildHeaders("bank-character", nil, assignments, 10)
+    local placedCategories = extractCategoryPositions(categoryPositions)
+    assertEqual(#placedCategories, 2, "two categories should be placed")
+    assertEqual(placedCategories[1].width, 40, "collapsed header should use full-width row")
+    assertEqual(placedCategories[1].blockHeight, 20, "collapsed header block height should only include header")
+    assertTrue(placedCategories[2].y > placedCategories[1].y, "next category should start on a separate row")
 end)
 
 run("GetBackgroundHintFrame resolves hovered category drop frame by hit-test", function()

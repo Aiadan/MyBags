@@ -1240,54 +1240,104 @@ local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, item
     local leftPadding = BANK_CONTENT_LEFT_PADDING
     local firstRowY = BANK_CONTENT_FIRST_ROW_Y
     local columnPixelWidth = itemSize * ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
+    local isCategoriesConfigMode = AddonNS.BagViewState:IsCategoriesConfigMode()
 
     local function placeColumn(columnIndex, categories)
         local columnStartX = leftPadding + (columnIndex - 1) * columnPixelWidth
-        local currentY = firstRowY
+        local currentRow = {}
+        local currentRowY = firstRowY
+        local rowWithNewCategory = false
+
+        local function flushCurrentRow()
+            local xOffset = 0
+            for rowIndex = 1, #currentRow do
+                local itemButton = currentRow[rowIndex]
+                if itemButton ~= AddonNS.itemButtonPlaceholder then
+                    positions[itemButton] = {
+                        x = columnStartX + xOffset,
+                        y = currentRowY,
+                    }
+                end
+                xOffset = xOffset + itemSize
+            end
+            currentRow = {}
+            currentRowY = currentRowY + itemSize
+            rowWithNewCategory = false
+        end
 
         for index, categoryObj in ipairs(categories) do
             local category = categoryObj.category
             local items = categoryObj.items
             local itemsCount = categoryObj.itemsCount or #items
             local collapsed = AddonNS.Collapsed.isCollapsed(category, scope)
-            local rowCount = collapsed and 0 or math.ceil(itemsCount / ITEMS_PER_ROW)
+            local isHeaderOnly = collapsed or itemsCount == 0
+            local categoryRequiresNewLine = isCategoriesConfigMode or isHeaderOnly or category.separateLine
+            local categoryRequiresFullRowWidth = isCategoriesConfigMode or isHeaderOnly
+            local requiredNewLine =
+                categoryRequiresNewLine
+                or #currentRow == 0
+                or (#currentRow > 0 and ((rowWithNewCategory and #currentRow + itemsCount > ITEMS_PER_ROW) or not rowWithNewCategory))
 
-            if index > 1 then
-                currentY = currentY + CATEGORY_HEIGHT + AddonNS.Const.COLUMN_SPACING
+            if index == 1 then
+                currentRowY = currentRowY + CATEGORY_HEIGHT
+            elseif requiredNewLine then
+                if #currentRow > 0 then
+                    flushCurrentRow()
+                end
+                currentRowY = currentRowY + CATEGORY_HEIGHT + AddonNS.Const.COLUMN_SPACING
             end
 
+            local nextCategoryObj = categories[index + 1]
+            local nextCategoryExists = nextCategoryObj ~= nil
+            local expandCategoryToRightColumnBoundary = 0
+            if not categoryRequiresFullRowWidth and #currentRow + itemsCount < ITEMS_PER_ROW then
+                local nextCategoryItemsCount = 0
+                if nextCategoryExists then
+                    nextCategoryItemsCount = nextCategoryObj.itemsCount or #(nextCategoryObj.items)
+                end
+                local shouldExpandToBoundary =
+                    (not nextCategoryExists)
+                    or AddonNS.Collapsed.isCollapsed(nextCategoryObj.category, scope)
+                    or nextCategoryItemsCount == 0
+                    or nextCategoryObj.category.separateLine
+                    or #currentRow + itemsCount + nextCategoryItemsCount > ITEMS_PER_ROW
+                if shouldExpandToBoundary then
+                    expandCategoryToRightColumnBoundary = ITEMS_PER_ROW - #currentRow - itemsCount
+                end
+            end
+
+            local categoryWidthSlots = ITEMS_PER_ROW
+            if not categoryRequiresFullRowWidth then
+                categoryWidthSlots = math.min(ITEMS_PER_ROW, itemsCount + expandCategoryToRightColumnBoundary)
+            end
             table.insert(categoryPositions, {
                 category = category,
                 itemsCount = itemsCount,
-                x = columnStartX - ITEM_SPACING / 2,
-                y = currentY - CATEGORY_HEIGHT,
-                width = itemSize * ITEMS_PER_ROW,
+                x = columnStartX + itemSize * #currentRow - ITEM_SPACING / 2,
+                y = currentRowY - CATEGORY_HEIGHT,
+                width = itemSize * categoryWidthSlots,
                 height = CATEGORY_HEIGHT,
-                blockHeight = CATEGORY_HEIGHT + rowCount * itemSize,
+                blockHeight = CATEGORY_HEIGHT + ((not isHeaderOnly and math.ceil(itemsCount / ITEMS_PER_ROW) * itemSize) or 0),
                 scope = scope,
             })
 
-            if not collapsed then
-                local rowIndex = 0
-                local colIndex = 0
+            rowWithNewCategory = true
+            if not isHeaderOnly then
                 for itemIndex = #items, 1, -1 do
                     local itemButton = items[itemIndex]
-                    if itemButton ~= AddonNS.itemButtonPlaceholder then
-                        local y = currentY + rowIndex * itemSize
-                        local x = columnStartX + colIndex * itemSize
-                        positions[itemButton] = { x = x, y = y }
-                    end
-                    colIndex = colIndex + 1
-                    if colIndex >= ITEMS_PER_ROW then
-                        colIndex = 0
-                        rowIndex = rowIndex + 1
+                    table.insert(currentRow, itemButton)
+                    if #currentRow >= ITEMS_PER_ROW then
+                        flushCurrentRow()
                     end
                 end
-                currentY = currentY + rowCount * itemSize
             end
         end
 
-        columnsBottom[columnIndex] = currentY
+        if #currentRow > 0 then
+            flushCurrentRow()
+        end
+
+        columnsBottom[columnIndex] = currentRowY
     end
 
     for columnIndex, categories in ipairs(categoryAssignments) do
@@ -1900,6 +1950,9 @@ AddonNS.BankViewTestHooks = {
     ApplySearchUnionMatchState = applySearchUnionMatchState,
     ApplySharedBankColumnCount = applySharedBankColumnCount,
     ResolveTargetPanelSize = resolveTargetPanelSize,
+    PlaceItemsAndBuildHeaders = function(scope, panel, categoryAssignments, itemSize)
+        return placeItemsAndBuildHeaders(scope, panel, categoryAssignments, itemSize)
+    end,
     GetBackgroundHintFrame = getBackgroundHintFrame,
     GetBackgroundColumnFallbackHintFrame = getBackgroundColumnFallbackHintFrame,
 }
