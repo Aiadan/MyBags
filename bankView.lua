@@ -610,6 +610,20 @@ local function shouldRetryForMissingItemData(hasAnyButtons, hadAnyItemData, retr
     return hasAnyButtons and (not hadAnyItemData) and retryCount < 6
 end
 
+local function seedArrangedItemsFromPersistedLayout(arrangedItems, scope)
+    local columns = AddonNS.CategoryStore:GetLayoutColumns(scope)
+    for columnIndex = 1, #columns do
+        local column = columns[columnIndex]
+        for categoryIndex = 1, #column do
+            local categoryId = column[categoryIndex]
+            local category = AddonNS.CategoryStore:Get(categoryId)
+            if category and category:IsVisibleInScope(scope) then
+                arrangedItems[category] = arrangedItems[category] or {}
+            end
+        end
+    end
+end
+
 local function applySearchUnionMatchState(panel, searchEvaluator)
     if not searchEvaluator then
         return
@@ -1427,20 +1441,29 @@ function BankView:Refresh(scope)
     end
     local searchText = BankItemSearchBox:GetText() or ""
     local searchActive = searchText ~= ""
+    local searchTextChanged = self.lastSearchText ~= searchText
+    self.lastSearchText = searchText
     updateSearchSizeLock(self, panel, searchText)
     local searchEvaluator = AddonNS.QueryCategories:CompileAdHoc(searchText)
+    local shouldRefreshItemButtonVisuals = shouldRegenerateButtons or not searchTextChanged
 
     local arrangedItems = {}
     local firstItemButton = nil
     local hadAnyButtons = false
     local hadAnyItemData = false
 
+    if searchActive then
+        seedArrangedItemsFromPersistedLayout(arrangedItems, activeScope)
+    end
+
     AddonNS.emptyItemButton = nil
     for itemButton in panel:EnumerateValidItems() do
         hadAnyButtons = true
         ensureItemButtonBagMethods(itemButton)
         ensureItemButtonHooks(itemButton)
-        itemButton:Refresh()
+        if shouldRefreshItemButtonVisuals then
+            itemButton:Refresh()
+        end
         itemButton.MyBagsScope = activeScope
 
         itemButton.ItemCategory = nil
@@ -1452,12 +1475,9 @@ function BankView:Refresh(scope)
                 local defaultMatch = not info.isFiltered
                 local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
                 itemButton._myBagsItemId = info.itemID
-                local category = AddonNS.Categories:Categorize(info.itemID, itemButton)
-                if searchActive then
-                    arrangedItems[category] = arrangedItems[category] or {}
-                end
                 itemButton:SetMatchesSearch(true)
                 if includeInSearch then
+                    local category = AddonNS.Categories:Categorize(info.itemID, itemButton)
                     itemButton.ItemCategory = category
                     arrangedItems[itemButton.ItemCategory] = arrangedItems[itemButton.ItemCategory] or {}
                     table.insert(arrangedItems[itemButton.ItemCategory], itemButton)
@@ -1547,6 +1567,7 @@ local function tryInstallHooks()
         BankView.searchSizeLockActive = false
         BankView.searchLockedPanelWidth = nil
         BankView.searchLockedPanelHeight = nil
+        BankView.lastSearchText = nil
         BankView.needsInitialPositionUpdate = false
         BankView.initialPositionUpdateQueued = false
     end)
@@ -1638,6 +1659,7 @@ AddonNS.BankViewTestHooks = {
     end,
     EvaluateSearchVisibility = evaluateSearchVisibility,
     ShouldRetryForMissingItemData = shouldRetryForMissingItemData,
+    SeedArrangedItemsFromPersistedLayout = seedArrangedItemsFromPersistedLayout,
     ApplySearchUnionMatchState = applySearchUnionMatchState,
     ApplySharedBankColumnCount = applySharedBankColumnCount,
     ResolveTargetPanelSize = resolveTargetPanelSize,

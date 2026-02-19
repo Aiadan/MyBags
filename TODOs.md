@@ -156,6 +156,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ fixed warband-bank footer overlap and anchor-dependency error: account/warband mode now anchors controls in explicit left-to-right order `Deposit All Warbound Items` -> include-reagents checkbox -> include-reagents label -> `MoneyFrame`, computes checkbox-to-money spacing from live label width, and avoids anchoring the checkbox to its own label region (`Cannot anchor to a region dependent on it`).
 * ✅ removed Shift tooltip query-attribute noise filtering; tooltip now shows every non-`nil` payload field (including `0`, `false`, and empty strings).
 * ✅ fixed bank search/category-query sync targeting so custom category query editing mirrors to the active container search (bank when bank is open, otherwise bags), and fixed bank-search blanking by keeping category headers/layout visible when search yields zero visible items (retry/hide only while bank item data is still loading).
+* ✅ reduced bank search typing lag spikes regression by restoring cheap bank search filtering (do not recategorize filtered-out bank items per keypress; seed headers from persisted layout instead) and by skipping expensive per-item `itemButton:Refresh()` passes during pure search-text updates.
 
 ### TODO
 

@@ -294,6 +294,30 @@ run("ShouldRetryForMissingItemData retries only when data is missing", function(
     assertTrue(not hooks.ShouldRetryForMissingItemData(false, false, 0), "do not retry when there are no buttons")
 end)
 
+run("SeedArrangedItemsFromPersistedLayout includes visible layout categories only", function()
+    local catA = { IsVisibleInScope = function() return true end }
+    local catB = { IsVisibleInScope = function() return false end }
+    addonEnv.CategoryStore = {
+        GetLayoutColumns = function()
+            return { { "cus-1", "cus-2" } }
+        end,
+        Get = function(_, categoryId)
+            if categoryId == "cus-1" then
+                return catA
+            end
+            if categoryId == "cus-2" then
+                return catB
+            end
+            return nil
+        end,
+    }
+
+    local arrangedItems = {}
+    hooks.SeedArrangedItemsFromPersistedLayout(arrangedItems, "bank-character")
+    assertTrue(arrangedItems[catA] ~= nil, "visible category seeded")
+    assertTrue(arrangedItems[catB] == nil, "hidden category skipped")
+end)
+
 run("GetBackgroundHintFrame resolves hovered category drop frame by hit-test", function()
     local view = {
         dropFrames = {
