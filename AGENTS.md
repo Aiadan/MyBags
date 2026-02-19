@@ -134,6 +134,9 @@ This policy also applies to generic or reusable components such as utility funct
 - Avoid introducing new state/metadata/abstractions unless the existing shape cannot support the requirement.
 - Default to surgical diffs: touch as few files/lines as possible and preserve existing flow/structure.
 - If a simpler implementation exists with identical behavior, choose the simpler one.
+- Debugging/change strategy: start at lifecycle entry points and state boundaries before adding internal lock/state machinery.
+  - Example: for bank first-open filter/scale issues, prefer adjusting `BankFrame_Open` open sequence first (for example open unfiltered, then restore search) rather than introducing extra search-lock fields in `bankView.lua`.
+  - Rationale: entry-point fixes are easier to reason about, more reversible, and less likely to break unrelated behavior (column count, resize handle visibility, anchor updates).
 
 ## ExecPlans
 

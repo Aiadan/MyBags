@@ -218,6 +218,7 @@ Tasks which after implementation user will not see.
 * ✅ addon freezes when opening bags or changing categories.
   * optimized item sorting, still CustomCategorizer:Categorize could be improved which was separated to another ticket
 * ✅ bag column resize handle is now always visible/usable while bags are open (not gated to edit mode; still hidden in combat lockdown).
+* ✅ documented new engineering principle in `AGENTS.md`: debug from lifecycle entry points/state boundaries first (with explicit bank `BankFrame_Open` example) before introducing deeper runtime lock/state machinery.
 * ✅ release workflow now removes `tools/` before packager runs, so dev scripts are excluded from shipped addon archives.
 * ✅ fixed bag resize regression introduced during bank-scope support: resize baseline now always reads bag scope column count (not current global layout scope), restoring correct preview sizing and release-to-column mapping.
 * ✅ disabled temporary bank column drop-area debug overlays by default (`SHOW_COLUMN_DROP_AREAS = false` in `bankView.lua`).
