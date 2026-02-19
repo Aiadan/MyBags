@@ -156,16 +156,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ fixed warband-bank footer overlap and anchor-dependency error: account/warband mode now anchors controls in explicit left-to-right order `Deposit All Warbound Items` -> include-reagents checkbox -> include-reagents label -> `MoneyFrame`, computes checkbox-to-money spacing from live label width, and avoids anchoring the checkbox to its own label region (`Cannot anchor to a region dependent on it`).
 * ✅ removed Shift tooltip query-attribute noise filtering; tooltip now shows every non-`nil` payload field (including `0`, `false`, and empty strings).
 * ✅ fixed bank search/category-query sync targeting so custom category query editing mirrors to the active container search (bank when bank is open, otherwise bags), and fixed bank-search blanking by keeping category headers/layout visible when search yields zero visible items (retry/hide only while bank item data is still loading).
-* ✅ reduced bank search typing lag spikes regression by restoring cheap bank search filtering (do not recategorize filtered-out bank items per keypress; seed headers from persisted layout instead) and by skipping expensive per-item `itemButton:Refresh()` passes during pure search-text updates.
-* ✅ added bank-search-only phase profiling (setup/loop/arrange/render/total, with slow-refresh warnings) behind `AddonNS.Profiling.enabled`, so remaining bank typing stutter can be diagnosed from in-game debug logs without behavior changes.
-* ✅ reduced remaining bank-search loop cost by caching per-item category resolution across search keystrokes (slot/item/scope/version keyed) and invalidating cache on bank item updates and category updates.
-* ✅ added per-item category-resolution cache parity for both bank and bags (versioned keying + invalidation on bag updates/category updates/item-move reassignment), so repeated search typing avoids redundant recategorization in both containers.
-* ✅ deepened bank-search profiling to include loop sub-steps (`loopRefresh`, `loopInfo`, `loopSearchEval`, `loopCategory`, `loopInsert`, `loopSetMatch`) so remaining stutter can be traced to exact runtime costs.
-* ✅ optimized bank search keystroke path to reuse Blizzard `itemButton.itemInfo` plus captured default-match state (snapshotted before MyBags undim override), and reverted unsafe bag+bank container-info caching that caused stale item-button visuals/layout drift.
-* ✅ introduced shared `ContainerItemInfoCache` module (bag/slot keyed, centralized invalidation) and wired both bag + bank search paths to use it with captured default-match state for active-search filtering correctness.
-* ✅ fixed post-cache regressions: search clear now always prefers captured Blizzard default-match state over cached `info.isFiltered`, and bank no-results layout now uses `getCurrentItemSize(panel)` fallback to keep header column spacing stable.
-* ✅ applied stale-filter timing fix to both bag and bank: empty search always defaults to include-all, captured default-match is used only while search is active, and bank `INVENTORY_SEARCH_UPDATE` now queues refresh to avoid previous-keystroke filter state.
-* ✅ removed remaining bag-side one-keystroke search delay by queuing `INVENTORY_SEARCH_UPDATE` bag layout refresh to next frame with dedupe (mirrors bank behavior and avoids stale previous-key filter state).
+* ✅ completed search performance and correctness rework for bags+bank: stabilized query-editor/search sync, removed one-keystroke stale-filter delays (queued+deduped search refresh), introduced shared `ContainerItemInfoCache` with strict invalidation, kept filtering correctness via captured Blizzard default-match state, fixed bank empty-result header spacing fallback, and resolved regressions from unsafe intermediate caching; final profiling dropped bank search from ~20ms avg to ~3.3ms avg.
 
 ### TODO
 
@@ -240,6 +231,7 @@ Tasks which after implementation user will not see.
 ### TODO
 
 * cahnge release process to produce only zip file with addon code, not release.json or Source code zips. Unless this would break population to wowuphub?
+* remove all logs, debug logs, profiling code, triggers etc.
 * remove defensive silent-guard anti-patterns (e.g. `if not x then return end` in internal domain flow) and replace with fail-fast preconditions so bugs are surfaced instead of hidden.
 * normalize naming convention across codebase: standalone/local functions to lower camel case (e.g. `doSomething`), and table methods defined with `:` to UpperCamelCase (e.g. `SomeTable:DoSomething()`).
 * extract bag-search anchor-lock behavior into a dedicated module/file (separate from `ContainerFrameMyBagsMixin.lua`/`main.lua`) with a clear interface for state transitions and anchor reapply hooks.
@@ -254,6 +246,7 @@ Tasks which after implementation user will not see.
   * ✅ completed: category column assignment now hydrates runtime layout state on load and serializes back on logout.
   * ✅ decision update: category move/layout event flow uses category ids in `categoriesColumnAssignment.lua` by design (stable persisted shape and lower load-order/wrapper coupling).
   * ⏳ remaining: continue reducing id-based handling where persistence/UI boundary still legitimately uses ids.
+
 
 #### Low priority
 
