@@ -152,21 +152,21 @@ end
 -- ToggleAllBags closes backpack first, then checks IsBagOpen for reagent.
 -- Since reagent is merged into combined bags here, report it open to keep close/open accounting consistent.
 
-local reagentsOpen = false;
-function TaintingContainerFrameMyBagsMixin:IsBagOpen(id)
-    if id == Enum.BagIndex.ReagentBag then
-        local to_return = reagentsOpen;
-        reagentsOpen = false;
-        return to_return;
-    end
-    return ContainerFrameCombinedBagsMixin.IsBagOpen(self, id)
-end
-
 local orginal_ToggleAllBags = ToggleAllBags;
 
 function ToggleAllBags()
-    reagentsOpen = true;
-    orginal_ToggleAllBags();
+    local isUsingCombinedBags = ContainerFrameSettingsManager:IsUsingCombinedBags();
+    if (isUsingCombinedBags) then
+        if IsBagOpen(Enum.BagIndex.Backpack) then
+            CloseBackpack();
+            CloseBag(5)
+            EventRegistry:TriggerEvent("ContainerFrame.CloseAllBags");
+        else
+            OpenBackpack()
+        end
+    else
+        orginal_ToggleAllBags()
+    end
 end
 
 -- ToggleAllBags end override
