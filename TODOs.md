@@ -163,6 +163,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ reduced bank auto-deposit button width to 70% of Blizzard baseline width to free footer space while preserving existing anchors/behavior, and fixed a Lua local-function-order regression in that path.
 * ✅ locked bank and warbank minimum column count to 5 across persisted layout clamping and resize interactions.
 * ✅ set scope-specific max column limits: bags stay capped at 8, while bank and warbank can resize up to 10 (including bank resize-handle max cap + persistence/resize test coverage).
+* ✅ fixed bank/warbank layout scope mixing on resize: resizing now updates only the active scope (`bank-character` or `bank-account`) so category layouts no longer cross-apply between tabs.
 
 ### TODO
 

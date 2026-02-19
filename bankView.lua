@@ -566,9 +566,9 @@ local function getCurrentItemSize(panel)
     return BANK_DEFAULT_ITEM_SIZE + ITEM_SPACING
 end
 
-local function applySharedBankColumnCount(target)
-    AddonNS:SetNumColumns(target, BANK_CHARACTER_SCOPE)
-    AddonNS:SetNumColumns(target, BANK_ACCOUNT_SCOPE)
+local function applyBankScopeColumnCount(target, scope)
+    local resolvedScope = scope or BANK_CHARACTER_SCOPE
+    AddonNS:SetNumColumns(target, resolvedScope)
 end
 
 local function refreshBankFrameScale()
@@ -699,7 +699,10 @@ local function ensureResizeController(self, panel)
         CalculateDesiredWidth = function(startWidth, deltaX)
             return startWidth + deltaX
         end,
-        ApplyTargetColumns = applySharedBankColumnCount,
+        ApplyTargetColumns = function(target)
+            local scope = self.currentScope or BANK_CHARACTER_SCOPE
+            applyBankScopeColumnCount(target, scope)
+        end,
         OnApplied = function()
             self:RefreshNow(self.currentScope)
         end,
@@ -1971,7 +1974,7 @@ AddonNS.BankViewTestHooks = {
     EvaluateSearchVisibility = evaluateSearchVisibility,
     ShouldRetryForMissingItemData = shouldRetryForMissingItemData,
     ApplySearchUnionMatchState = applySearchUnionMatchState,
-    ApplySharedBankColumnCount = applySharedBankColumnCount,
+    ApplyBankScopeColumnCount = applyBankScopeColumnCount,
     ResolveTargetPanelSize = resolveTargetPanelSize,
     CalculateScaledDepositButtonWidth = calculateScaledDepositButtonWidth,
     ShouldShowBankResizeHandle = shouldShowBankResizeHandle,

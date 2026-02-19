@@ -308,20 +308,18 @@ run("ShouldShowPurchaseTabButton is true only when purchase is possible", functi
     assertTrue(not hooks.ShouldShowPurchaseTabButton(Enum.BankType.Character), "button should be hidden when max tabs reached")
 end)
 
-run("ApplySharedBankColumnCount updates both bank scopes", function()
+run("ApplyBankScopeColumnCount updates only provided bank scope", function()
     local calls = {}
     addonEnv.SetNumColumns = function(selfRef, target, scope)
         table.insert(calls, { selfRef = selfRef, target = target, scope = scope })
     end
 
-    hooks.ApplySharedBankColumnCount(6)
+    hooks.ApplyBankScopeColumnCount(6, "bank-account")
 
-    assertEqual(#calls, 2, "shared apply should update two scopes")
+    assertEqual(#calls, 1, "scope apply should update one scope")
     assertTrue(calls[1].selfRef == addonEnv, "method call should preserve AddonNS receiver")
-    assertEqual(calls[1].target, 6, "first call target")
-    assertEqual(calls[1].scope, "bank-character", "first call scope")
-    assertEqual(calls[2].target, 6, "second call target")
-    assertEqual(calls[2].scope, "bank-account", "second call scope")
+    assertEqual(calls[1].target, 6, "call target")
+    assertEqual(calls[1].scope, "bank-account", "provided scope should be used")
 end)
 
 run("ResolveTargetPanelSize uses locked size when search lock is active", function()
