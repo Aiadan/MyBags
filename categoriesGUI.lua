@@ -750,10 +750,21 @@ function AddonNS.createGUI()
             and left.scopeVisibility[WARBANK_SCOPE] == right.scopeVisibility[WARBANK_SCOPE]
     end
 
-    local function applyQueryTextToBagSearch(queryText)
+    local function getActiveContainerSearchBox()
+        if BankFrame and BankFrame:IsShown() and BankItemSearchBox then
+            return BankItemSearchBox
+        end
+        return BagItemSearchBox
+    end
+
+    local function applyQueryTextToActiveSearch(queryText, searchBox)
         queryText = queryText or ""
-        if BagItemSearchBox:GetText() ~= queryText then
-            BagItemSearchBox:SetText(queryText)
+        local targetSearchBox = searchBox or getActiveContainerSearchBox()
+        if not targetSearchBox then
+            return
+        end
+        if targetSearchBox:GetText() ~= queryText then
+            targetSearchBox:SetText(queryText)
             return
         end
     end
@@ -1039,16 +1050,21 @@ function AddonNS.createGUI()
         GameTooltip:Hide()
     end)
 
+    local mirroredSearchBox = nil
+
     queryEditBox:HookScript("OnEditFocusGained", function(self)
         queryEditorFocused = true
+        mirroredSearchBox = getActiveContainerSearchBox()
         AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, true)
-        applyQueryTextToBagSearch(self:GetText())
+        applyQueryTextToActiveSearch(self:GetText(), mirroredSearchBox)
     end)
     queryEditBox:HookScript("OnEditFocusLost", function()
         local queryText = queryEditBox:GetText() or ""
-        if BagItemSearchBox:GetText() == queryText then
-            applyQueryTextToBagSearch("")
+        local targetSearchBox = mirroredSearchBox or getActiveContainerSearchBox()
+        if targetSearchBox and targetSearchBox:GetText() == queryText then
+            applyQueryTextToActiveSearch("", targetSearchBox)
         end
+        mirroredSearchBox = nil
         queryEditorFocused = false
         AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, false)
     end)
@@ -1058,7 +1074,10 @@ function AddonNS.createGUI()
         end
         refreshQueryValidationState(self:GetText())
         if userInput then
-            applyQueryTextToBagSearch(self:GetText())
+            if not mirroredSearchBox then
+                mirroredSearchBox = getActiveContainerSearchBox()
+            end
+            applyQueryTextToActiveSearch(self:GetText(), mirroredSearchBox)
             refreshActionButtonsState()
         end
     end)

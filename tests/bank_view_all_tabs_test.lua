@@ -286,6 +286,14 @@ run("ResolveTargetPanelSize uses locked size when search lock is active", functi
     assertEqual(height, 520, "computed height should be used without lock")
 end)
 
+run("ShouldRetryForMissingItemData retries only when data is missing", function()
+    assertTrue(hooks.ShouldRetryForMissingItemData(true, false, 0), "retry should occur while data is not ready")
+    assertTrue(hooks.ShouldRetryForMissingItemData(true, false, 5), "retry should continue before max attempts")
+    assertTrue(not hooks.ShouldRetryForMissingItemData(true, false, 6), "retry should stop at max attempts")
+    assertTrue(not hooks.ShouldRetryForMissingItemData(true, true, 0), "do not retry when data exists")
+    assertTrue(not hooks.ShouldRetryForMissingItemData(false, false, 0), "do not retry when there are no buttons")
+end)
+
 run("GetBackgroundHintFrame resolves hovered category drop frame by hit-test", function()
     local view = {
         dropFrames = {

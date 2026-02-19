@@ -155,6 +155,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ tightened bank footer capacity/purchase-tab spacing: switched capacity text to compact `taken/total`, constrained the capacity label width so it cannot overlap the purchase control, and switched the purchase icon to `128-RedButton-Plus` for stronger visibility.
 * ✅ fixed warband-bank footer overlap and anchor-dependency error: account/warband mode now anchors controls in explicit left-to-right order `Deposit All Warbound Items` -> include-reagents checkbox -> include-reagents label -> `MoneyFrame`, computes checkbox-to-money spacing from live label width, and avoids anchoring the checkbox to its own label region (`Cannot anchor to a region dependent on it`).
 * ✅ removed Shift tooltip query-attribute noise filtering; tooltip now shows every non-`nil` payload field (including `0`, `false`, and empty strings).
+* ✅ fixed bank search/category-query sync targeting so custom category query editing mirrors to the active container search (bank when bank is open, otherwise bags), and fixed bank-search blanking by keeping category headers/layout visible when search yields zero visible items (retry/hide only while bank item data is still loading).
 
 ### TODO
 

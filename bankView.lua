@@ -606,6 +606,10 @@ local function evaluateSearchVisibility(defaultMatch, searchEvaluator, itemInfo,
     return includeInSearch, queryMatch
 end
 
+local function shouldRetryForMissingItemData(hasAnyButtons, hadAnyItemData, retryCount)
+    return hasAnyButtons and (not hadAnyItemData) and retryCount < 6
+end
+
 local function applySearchUnionMatchState(panel, searchEvaluator)
     if not searchEvaluator then
         return
@@ -1422,14 +1426,18 @@ function BankView:Refresh(scope)
         self.itemButtonsSignature = itemButtonsSignature
     end
     local searchText = BankItemSearchBox:GetText() or ""
+    local searchActive = searchText ~= ""
     updateSearchSizeLock(self, panel, searchText)
     local searchEvaluator = AddonNS.QueryCategories:CompileAdHoc(searchText)
 
     local arrangedItems = {}
     local firstItemButton = nil
+    local hadAnyButtons = false
+    local hadAnyItemData = false
 
     AddonNS.emptyItemButton = nil
     for itemButton in panel:EnumerateValidItems() do
+        hadAnyButtons = true
         ensureItemButtonBagMethods(itemButton)
         ensureItemButtonHooks(itemButton)
         itemButton:Refresh()
@@ -1440,12 +1448,17 @@ function BankView:Refresh(scope)
         if bagID and slotID then
             local info = C_Container.GetContainerItemInfo(bagID, slotID)
             if info then
+                hadAnyItemData = true
                 local defaultMatch = not info.isFiltered
                 local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
+                itemButton._myBagsItemId = info.itemID
+                local category = AddonNS.Categories:Categorize(info.itemID, itemButton)
+                if searchActive then
+                    arrangedItems[category] = arrangedItems[category] or {}
+                end
                 itemButton:SetMatchesSearch(true)
                 if includeInSearch then
-                    itemButton._myBagsItemId = info.itemID
-                    itemButton.ItemCategory = AddonNS.Categories:Categorize(info.itemID, itemButton)
+                    itemButton.ItemCategory = category
                     arrangedItems[itemButton.ItemCategory] = arrangedItems[itemButton.ItemCategory] or {}
                     table.insert(arrangedItems[itemButton.ItemCategory], itemButton)
                     firstItemButton = firstItemButton or itemButton
@@ -1460,24 +1473,17 @@ function BankView:Refresh(scope)
 
     if not firstItemButton then
         AddonNS.printDebug("MyBags BankView:Refresh no visible item buttons after classify")
-        local hadAnyButtons = false
-        for _ in panel:EnumerateValidItems() do
-            hadAnyButtons = true
-            break
-        end
-        if hadAnyButtons and self.dataRetryCount < 6 then
+        if shouldRetryForMissingItemData(hadAnyButtons, hadAnyItemData, self.dataRetryCount) then
             self.dataRetryCount = self.dataRetryCount + 1
             self:QueueRefresh(activeScope)
-        else
-            self.dataRetryCount = 0
+            hideHeaders(self)
+            hideAllItemButtons(panel)
+            return
         end
-        hideHeaders(self)
-        hideAllItemButtons(panel)
-        return
     end
     self.dataRetryCount = 0
 
-    local itemSize = firstItemButton:GetHeight() + ITEM_SPACING
+    local itemSize = ((firstItemButton and firstItemButton:GetHeight()) or BANK_DEFAULT_ITEM_SIZE) + ITEM_SPACING
     self.columnPixelWidth = itemSize * ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
     self.firstColumnStartX = BANK_CONTENT_LEFT_PADDING - ITEM_SPACING / 2
     local categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, activeScope)
@@ -1631,6 +1637,7 @@ AddonNS.BankViewTestHooks = {
         return AddonNS.GetBankCapacityState(tabIds)
     end,
     EvaluateSearchVisibility = evaluateSearchVisibility,
+    ShouldRetryForMissingItemData = shouldRetryForMissingItemData,
     ApplySearchUnionMatchState = applySearchUnionMatchState,
     ApplySharedBankColumnCount = applySharedBankColumnCount,
     ResolveTargetPanelSize = resolveTargetPanelSize,
