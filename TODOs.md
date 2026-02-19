@@ -157,6 +157,11 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ removed Shift tooltip query-attribute noise filtering; tooltip now shows every non-`nil` payload field (including `0`, `false`, and empty strings).
 * ✅ fixed bank search/category-query sync targeting so custom category query editing mirrors to the active container search (bank when bank is open, otherwise bags), and fixed bank-search blanking by keeping category headers/layout visible when search yields zero visible items (retry/hide only while bank item data is still loading).
 * ✅ reduced bank search typing lag spikes regression by restoring cheap bank search filtering (do not recategorize filtered-out bank items per keypress; seed headers from persisted layout instead) and by skipping expensive per-item `itemButton:Refresh()` passes during pure search-text updates.
+* ✅ added bank-search-only phase profiling (setup/loop/arrange/render/total, with slow-refresh warnings) behind `AddonNS.Profiling.enabled`, so remaining bank typing stutter can be diagnosed from in-game debug logs without behavior changes.
+* ✅ reduced remaining bank-search loop cost by caching per-item category resolution across search keystrokes (slot/item/scope/version keyed) and invalidating cache on bank item updates and category updates.
+* ✅ added per-item category-resolution cache parity for both bank and bags (versioned keying + invalidation on bag updates/category updates/item-move reassignment), so repeated search typing avoids redundant recategorization in both containers.
+* ✅ deepened bank-search profiling to include loop sub-steps (`loopRefresh`, `loopInfo`, `loopSearchEval`, `loopCategory`, `loopInsert`, `loopSetMatch`) so remaining stutter can be traced to exact runtime costs.
+* ✅ optimized bank search keystroke path to reuse Blizzard-updated per-button search state (`GetMatchesSearch`) and existing button `itemInfo` cache during search-only refreshes, avoiding repeated `C_Container.GetContainerItemInfo` calls for unchanged slots.
 
 ### TODO
 

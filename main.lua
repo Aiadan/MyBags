@@ -17,10 +17,39 @@ end
 local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
 local triggerContainerUpdateItemLayout
+local bagCategorizationVersion = 0
 local searchQueryState = {
     text = "",
     evaluator = nil,
 }
+
+local function invalidateBagCategorizationCacheVersion()
+    bagCategorizationVersion = bagCategorizationVersion + 1
+end
+
+local function buildBagCategoryCacheKey(itemButton, itemInfo)
+    return table.concat({
+        tostring(itemButton:GetBagID()),
+        tostring(itemButton:GetID()),
+        tostring(itemInfo.itemID),
+        tostring(itemInfo.stackCount),
+        tostring(itemInfo.quality),
+        tostring(itemInfo.hyperlink),
+        "bag",
+        tostring(bagCategorizationVersion),
+    }, ":")
+end
+
+local function resolveCachedOrComputeBagCategory(itemButton, itemInfo)
+    local cacheKey = buildBagCategoryCacheKey(itemButton, itemInfo)
+    if itemButton._myBagsCategoryCacheKey == cacheKey and itemButton._myBagsCategoryCacheValue then
+        return itemButton._myBagsCategoryCacheValue
+    end
+    local category = AddonNS.Categories:Categorize(itemInfo.itemID, itemButton)
+    itemButton._myBagsCategoryCacheKey = cacheKey
+    itemButton._myBagsCategoryCacheValue = category
+    return category
+end
 
 local function triggerContainerOnTokenWatchChanged()
     AddonNS.printDebug("triggerContainerOnTokenWatchChanged fired")
@@ -278,6 +307,7 @@ function AddonNS.Events:BAG_UPDATE(event, bagID)
     if bagID and bagID > Enum.BagIndex.ReagentBag then
         return
     end
+    invalidateBagCategorizationCacheVersion()
 
     if (container.MyBags.updateItemLayoutCalledAtLeastOnce) then -- todo: reading this after a while - what the hell is this :D once i know i have to add here proper comments lol
         local newFreeBagSlots = CalculateTotalNumberOfFreeBagSlots()
@@ -320,6 +350,12 @@ end
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED,
 updateOnTokenWatchChangedOnNextFrame);
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.COLLAPSED_CHANGED, updateOnTokenWatchChangedOnNextFrame);
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, function()
+    invalidateBagCategorizationCacheVersion()
+end)
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, function()
+    invalidateBagCategorizationCacheVersion()
+end)
 
 AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE");
 
@@ -475,7 +511,7 @@ local function newIterator(container, index)
             if includeInSearch then
                 itemButton._myBagsItemId = info.itemID
                 local categorizeStartedAt = refreshProfile and profileNowMs() or nil
-                itemButton.ItemCategory = AddonNS.Categories:Categorize(info.itemID, itemButton);
+                itemButton.ItemCategory = resolveCachedOrComputeBagCategory(itemButton, info)
                 if refreshProfile then
                     refreshProfile.itemsSeen = refreshProfile.itemsSeen + 1
                     refreshProfile.categorizeMs = refreshProfile.categorizeMs + (profileNowMs() - categorizeStartedAt)
