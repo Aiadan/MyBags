@@ -168,8 +168,9 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 ### TODO
 
-  * draggin an item from vendor or inventory or another container should not show category higlight as this will not assign by default this item to a given category based on background afaik
-  
+* when item is matched against a category which is disabled we should look for the next one, not just assign it to unassigned...
+* draggin an item from vendor or inventory or another container should not show category higlight as this will not assign by default this item to a given category based on background afaik
+
 #### Low priority
 
 * creating new category should assign that new category to last column in all contrainers at the same time. currently adding a category in bank results in category added in bank to the last column, but first in the bags
