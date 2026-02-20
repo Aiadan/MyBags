@@ -797,7 +797,7 @@ run("always visible empty category stays empty in arranged output", function()
     assert_equal({}, alwaysEntry.items, "always visible empty category has no placeholder items")
 end)
 
-run("categories config mode makes all custom categories visible without persisting alwaysVisible", function()
+run("categories config mode scope-disabled visibility is gated by runtime checkbox state", function()
     local ctx = harness.new()
     local catA = ctx.AddonNS.CustomCategories:NewCategory("A")
     local catB = ctx.AddonNS.CustomCategories:NewCategory("B")
@@ -808,9 +808,15 @@ run("categories config mode makes all custom categories visible without persisti
     assert_true(not has_category_entry(before, catB), "custom category B hidden by default when empty")
 
     ctx.AddonNS.BagViewState:SetMode("categories_config")
+    assert_true(not ctx.AddonNS.BagViewState:ShouldShowScopeDisabledInConfigMode(), "checkbox runtime flag defaults to off")
     local during = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
     assert_true(has_category_entry(during, catA), "custom category A visible while categories GUI mode enabled")
-    assert_true(has_category_entry(during, catB), "scope-disabled custom category B still visible while categories GUI mode enabled")
+    assert_true(not has_category_entry(during, catB), "scope-disabled custom category B stays hidden while checkbox is off")
+
+    ctx.AddonNS.BagViewState:SetShowScopeDisabledInConfigMode(true)
+    local duringWithScopeDisabled = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
+    assert_true(has_category_entry(duringWithScopeDisabled, catA), "custom category A remains visible while categories GUI mode enabled")
+    assert_true(has_category_entry(duringWithScopeDisabled, catB), "scope-disabled custom category B is visible when checkbox is on")
 
     ctx.AddonNS.BagViewState:SetMode("normal")
     local after = ctx.AddonNS.Categories:ArrangeCategoriesIntoColumns({})
@@ -824,6 +830,9 @@ run("categories config mode makes all custom categories visible without persisti
     local rawB = catB:GetId():match("^[^%-]+%-(.+)$")
     assert_true(custom.categories[rawA].alwaysVisible ~= true, "A alwaysVisible remains not persisted as enabled")
     assert_true(custom.categories[rawB].alwaysVisible ~= true, "B alwaysVisible remains not persisted as enabled")
+
+    local reloaded = harness.new({ saved = snapshot })
+    assert_true(not reloaded.AddonNS.BagViewState:ShouldShowScopeDisabledInConfigMode(), "checkbox runtime flag is not persisted across sessions")
 end)
 
 run("selected custom category prefix clears when selection is cleared", function()

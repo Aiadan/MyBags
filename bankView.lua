@@ -38,6 +38,7 @@ local BANK_SEARCH_BOX_LEFT_X = 78
 local BANK_SEARCH_BOX_TOP_Y = -33
 local QUERY_HELP_SIDE_RIGHT = "right"
 local QUERY_HELP_TOOLTIP_TEXT = "Open query syntax and priority help"
+local SCOPE_DISABLED_CHECKBOX_TOOLTIP_TEXT = "Show scope-disabled categories in edit mode"
 local EDIT_CATEGORY_TOOLTIP = "Edit"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Shift-click to delete without confirmation."
@@ -383,7 +384,7 @@ local function ensureSearchHelpButton(self)
     return button
 end
 
-local function showSearchHelpButton(self)
+local function showSearchHelpButton(self, panel)
     local button = ensureSearchHelpButton(self)
     button:ClearAllPoints()
     button:SetPoint("LEFT", BankItemSearchBox, "RIGHT", 4, 0)
@@ -393,6 +394,47 @@ end
 local function hideSearchHelpButton(self)
     if self.searchHelpButton then
         self.searchHelpButton:Hide()
+    end
+end
+
+local function ensureSearchScopeDisabledCheckbox(self)
+    if self.searchScopeDisabledCheckbox then
+        return self.searchScopeDisabledCheckbox
+    end
+    local checkbox = CreateFrame("CheckButton", nil, BankFrame, "ChatConfigCheckButtonTemplate")
+    checkbox:SetSize(30, 30)
+    checkbox:SetHitRectInsets(7, 7, 7, 7)
+    checkbox.Text:SetText("")
+    checkbox.Text:Hide()
+    checkbox:SetScript("OnClick", function(selfCheckbox)
+        AddonNS.BagViewState:SetShowScopeDisabledInConfigMode(selfCheckbox:GetChecked() == true)
+        selfCheckbox:SetChecked(AddonNS.BagViewState:ShouldShowScopeDisabledInConfigMode())
+    end)
+    checkbox:SetScript("OnEnter", function(selfCheckbox)
+        GameTooltip:SetOwner(selfCheckbox, "ANCHOR_TOP")
+        GameTooltip:SetText(SCOPE_DISABLED_CHECKBOX_TOOLTIP_TEXT)
+        GameTooltip:Show()
+    end)
+    checkbox:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    checkbox:Hide()
+    self.searchScopeDisabledCheckbox = checkbox
+    return checkbox
+end
+
+local function showSearchScopeDisabledCheckbox(self, panel)
+    local editButton = ensureEditModeButton(self, panel)
+    local checkbox = ensureSearchScopeDisabledCheckbox(self)
+    checkbox:ClearAllPoints()
+    checkbox:SetPoint("RIGHT", editButton, "LEFT", -2, 0)
+    checkbox:SetChecked(AddonNS.BagViewState:ShouldShowScopeDisabledInConfigMode())
+    checkbox:SetShown(AddonNS.BagViewState:IsCategoriesConfigMode())
+end
+
+local function hideSearchScopeDisabledCheckbox(self)
+    if self.searchScopeDisabledCheckbox then
+        self.searchScopeDisabledCheckbox:Hide()
     end
 end
 
@@ -1636,6 +1678,7 @@ function BankView:Refresh(scope)
         hideContentArea(self)
         hideEditModeButton(self)
         hideSearchHelpButton(self)
+        hideSearchScopeDisabledCheckbox(self)
         hideBottomBarControls(self)
         if self.resizeController then
             self.resizeController:Refresh()
@@ -1644,7 +1687,8 @@ function BankView:Refresh(scope)
     end
 
     refreshSearchBoxLayout()
-    showSearchHelpButton(self)
+    showSearchHelpButton(self, panel)
+    showSearchScopeDisabledCheckbox(self, panel)
     local activeBankType = BankFrame:GetActiveBankType()
     local activeScope = scope or getScopeForBankType(activeBankType)
     local tabIds = getPurchasedTabIdsForActiveType(panel)
@@ -1893,6 +1937,7 @@ local function tryInstallHooks()
         hideDropAreaOverlays(BankView)
         hideEditModeButton(BankView)
         hideSearchHelpButton(BankView)
+        hideSearchScopeDisabledCheckbox(BankView)
         AddonNS.CategoriesGUI:HideQueryHelpFrame()
         hideBottomBarControls(BankView)
         if BankView.resizeController then
@@ -1974,6 +2019,11 @@ local function tryInstallHooks()
     AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, function()
         if BankFrame:IsShown() then
             BankView:QueueRefresh(BankView.currentScope)
+        end
+    end)
+    AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.SCOPE_DISABLED_CONFIG_VISIBILITY_CHANGED, function()
+        if BankFrame:IsShown() then
+            BankView:RefreshNow(BankView.currentScope)
         end
     end)
 

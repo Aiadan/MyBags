@@ -168,11 +168,11 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ when item is matched against a category which is disabled we now continue to the next eligible match (manual/query within custom categorizer) instead of falling back directly to unassigned.
 * ✅ the bank again is tainting the bags :/// need to see what regression was introduced - fixed by changing ToggleAllBags function override
 * ✅ move search in bank to the left as it is in combined bags
+* ✅ add icon with question mark right to the search box in both banks and bags as it is available next to a query in category configuration which will open the same frame with info about query
 
 ### TODO
 
-* ✅ add icon with question mark right to the search box in both banks and bags as it is available next to a query in category configuration which will open the same frame with info about query
-* in edit mode add next to the question mark which is next to the search bars a checkbox which by default will be disabled. It will steer whether categories disabled to be used in a given scope should be visible or not. By default they should not be visible in config mode. Toggling this checkbox will make them visible.
+* ✅ in edit mode add next to the question mark which is next to the search bars a checkbox which by default will be disabled. It will steer whether categories disabled to be used in a given scope should be visible or not. By default they should not be visible in config mode. Toggling this checkbox will make them visible.
 * draggin an item from vendor or inventory or another container should not show category highlight as this will not assign by default (at least from vendor) this item to a given category based on background afaik. If that is true then in other cases it also should not reassign category when dropping on background
 
 #### Low priority
@@ -248,6 +248,7 @@ Tasks which after implementation user will not see.
 * remove all logs, debug logs, profiling code, triggers etc.
 * refactor the code so that triggers, window etc related to query window was exported to separate file as now this code seem to be mixed inside categoriesGui.
 * remove defensive silent-guard anti-patterns (e.g. `if not x then return end` in internal domain flow) and replace with fail-fast preconditions so bugs are surfaced instead of hidden.
+* addon was changed but in many cases it is no longer event based. We have look for different places, especially around actions, triggers etc. where action causes a reaction in multiple places, requires changes in multiple places at once. We should refactor those places to be event based. Please look for all the places where we could cleanup the code and reduce direct calls and use event based instead for clear separation of responsibilities.
 * normalize naming convention across codebase: standalone/local functions to lower camel case (e.g. `doSomething`), and table methods defined with `:` to UpperCamelCase (e.g. `SomeTable:DoSomething()`).
 * extract bag-search anchor-lock behavior into a dedicated module/file (separate from `ContainerFrameMyBagsMixin.lua`/`main.lua`) with a clear interface for state transitions and anchor reapply hooks.
 * improve categorization performance path (`CustomCategorizer:Categorize`) after sort/layout fixes.

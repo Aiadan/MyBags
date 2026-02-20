@@ -30,6 +30,7 @@ function AddonNS.createGUI()
     local QUERY_HELP_SIDE_RIGHT = "right"
     local QUERY_HELP_OFFSET_X = 8
     local QUERY_HELP_TOOLTIP_TEXT = "Open query syntax and priority help"
+    local SCOPE_DISABLED_CHECKBOX_TOOLTIP_TEXT = "Show scope-disabled categories in edit mode"
 
     local isHelpPlateLoaded = C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("Blizzard_HelpPlate")
     if not isHelpPlateLoaded then
@@ -320,26 +321,24 @@ function AddonNS.createGUI()
         toggleQueryHelpFrame(container, QUERY_HELP_SIDE_LEFT)
     end)
     bagSearchHelpButton:Hide()
-
-    local editModeBadge = CreateFrame("Button", nil, container, "BackdropTemplate")
-    editModeBadge:SetPoint("RIGHT", settingsButton, "LEFT", -4, 0)
-    editModeBadge:SetSize(72, 18)
-    editModeBadge:SetBackdrop({
-        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-        edgeSize = 12,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 },
-    })
-    editModeBadge:SetBackdropColor(1, 0.78, 0.1, 0.85)
-    editModeBadge:SetBackdropBorderColor(1, 0.9, 0.4, 1)
-    editModeBadge:Hide()
-    editModeBadge:SetScript("OnClick", function()
-        settingsButton:Click()
+    local bagSearchScopeDisabledCheckbox = CreateFrame("CheckButton", nil, container, "ChatConfigCheckButtonTemplate")
+    bagSearchScopeDisabledCheckbox:SetSize(30, 30)
+    bagSearchScopeDisabledCheckbox:SetHitRectInsets(7, 7, 7, 7)
+    bagSearchScopeDisabledCheckbox.Text:SetText("")
+    bagSearchScopeDisabledCheckbox.Text:Hide()
+    bagSearchScopeDisabledCheckbox:SetScript("OnClick", function(self)
+        AddonNS.BagViewState:SetShowScopeDisabledInConfigMode(self:GetChecked() == true)
+        self:SetChecked(AddonNS.BagViewState:ShouldShowScopeDisabledInConfigMode())
     end)
-
-    local editModeBadgeText = editModeBadge:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    editModeBadgeText:SetPoint("CENTER", editModeBadge, "CENTER", 0, 0)
-    editModeBadgeText:SetText("Edit mode")
+    bagSearchScopeDisabledCheckbox:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(SCOPE_DISABLED_CHECKBOX_TOOLTIP_TEXT)
+        GameTooltip:Show()
+    end)
+    bagSearchScopeDisabledCheckbox:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    bagSearchScopeDisabledCheckbox:Hide()
 
     local function setCogColor(color)
         settingsButton.Icon:SetVertexColor(color[1], color[2], color[3], color[4])
@@ -347,11 +346,9 @@ function AddonNS.createGUI()
 
     local function refreshEditModeVisuals()
         if AddonNS.BagViewState:IsCategoriesConfigMode() then
-            editModeBadge:Show()
             setCogColor(COLOR_COG_EDIT)
             return
         end
-        editModeBadge:Hide()
         setCogColor(COLOR_COG_NORMAL)
     end
 
@@ -376,9 +373,18 @@ function AddonNS.createGUI()
             bagSearchHelpButton:ClearAllPoints()
             bagSearchHelpButton:SetPoint("LEFT", BagItemSearchBox, "RIGHT", 4, 0)
             bagSearchHelpButton:Show()
+            if AddonNS.BagViewState:IsCategoriesConfigMode() then
+                bagSearchScopeDisabledCheckbox:ClearAllPoints()
+                bagSearchScopeDisabledCheckbox:SetPoint("RIGHT", settingsButton, "LEFT", -2, 0)
+                bagSearchScopeDisabledCheckbox:SetChecked(AddonNS.BagViewState:ShouldShowScopeDisabledInConfigMode())
+                bagSearchScopeDisabledCheckbox:Show()
+            else
+                bagSearchScopeDisabledCheckbox:Hide()
+            end
             return
         end
         bagSearchHelpButton:Hide()
+        bagSearchScopeDisabledCheckbox:Hide()
     end
 
     container:HookScript("OnShow", updateTopRightButtons)
@@ -388,6 +394,7 @@ function AddonNS.createGUI()
         containerFrame:Hide()
         hideQueryHelpFrame()
         bagSearchHelpButton:Hide()
+        bagSearchScopeDisabledCheckbox:Hide()
         if exportFrame then
             exportFrame:Hide()
         end
@@ -402,6 +409,10 @@ function AddonNS.createGUI()
     AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, function()
         refreshEditModeVisuals()
         updateTopRightButtons()
+    end)
+    AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.SCOPE_DISABLED_CONFIG_VISIBILITY_CHANGED, function()
+        updateTopRightButtons()
+        AddonNS.QueueContainerUpdateItemLayout()
     end)
     refreshEditModeVisuals()
 

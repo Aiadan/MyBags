@@ -33,6 +33,16 @@ Moving items between categories easily reassgins to a new category. Please note 
 
 ![Category always visible](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/main/.previews/cat_always_visible.gif)
 
+### Edit mode
+
+Edit mode is available in both bags and bank and includes:
+
+* Category header actions (`Edit` / `Delete`) and in-grid controls (`+ Add Category`, `Export`, `Import`).
+* Per-scope visibility toggles for custom categories (`Bags`, `Bank`, `Warbank`).
+* A query `Help` icon next to the bag and bank search bars that opens the in-game query syntax/priority help.
+* A checkbox next to that help icon that can temporarily show categories disabled in the current scope while editing.
+* The checkbox defaults to off and is shared between bags and bank during the current session (it resets after reload/relog).
+
 Other notable features:
 
 * Keeps item order.
@@ -49,7 +59,6 @@ Other notable features:
 * Invalid query text in search is ignored instead of breaking results.
 * Bank uses the same category-based organization flow as bags.
 * Bank has separate layout scopes for character bank and account/warband bank.
-* Bank view uses the same edit-mode affordances as bags (category header edit/delete and in-grid add/export/import controls).
 * Custom categories support per-scope visibility (`Bags`, `Bank`, `Warbank`) via category config and edit-mode header toggles.
 * Bank purchase-next-tab is exposed through a `+` button in the bottom strip (shown only when a new tab can be purchased).
 * Bag and bank footer capacity now uses `taken / total` formatting with tooltip details.

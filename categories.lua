@@ -87,6 +87,7 @@ end
 function AddonNS.Categories:GetConstantCategories(scope)
     local normalizedScope = normalizeScope(scope)
     local configModeActive = AddonNS.BagViewState and AddonNS.BagViewState:IsCategoriesConfigMode()
+    local showScopeDisabledInConfigMode = AddonNS.BagViewState and AddonNS.BagViewState:ShouldShowScopeDisabledInConfigMode()
     local constant = {}
     local seen = {}
     for _, record in categorizers:iterate() do
@@ -96,7 +97,7 @@ function AddonNS.Categories:GetConstantCategories(scope)
             for index = 1, #rawList do
                 local wrapper = AddonNS.CategoryStore:GetWrapperForRaw(record.id, rawList[index])
                 local includeInScope = wrapper and wrapper:IsVisibleInScope(normalizedScope)
-                if (not includeInScope) and configModeActive and record.id == "cus" then
+                if (not includeInScope) and configModeActive and showScopeDisabledInConfigMode and record.id == "cus" then
                     includeInScope = true
                 end
                 if wrapper and includeInScope and not seen[wrapper:GetId()] then
