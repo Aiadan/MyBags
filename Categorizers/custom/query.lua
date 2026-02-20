@@ -352,6 +352,11 @@ local QueryTooltipDefinitions = {
             [6] = "Itemenhancement", [7] = "Bandage", [8] = "Other", [9] = "VantusRune", [10] = "UtilityCurio",
             [11] = "CombatCurio", [12] = "Relic",
         },
+        [1] = {
+            [0] = "Bag", [1] = "SoulBag", [2] = "HerbBag", [3] = "EnchantingBag", [4] = "EngineeringBag",
+            [5] = "GemBag", [6] = "MiningBag", [7] = "LeatherworkingBag", [8] = "InscriptionBag", [9] = "TackleBox",
+            [10] = "CookingBag",
+        },
         [2] = {
             [0] = "Axe1H", [1] = "Axe2H", [2] = "Bows", [3] = "Guns", [4] = "Mace1H", [5] = "Mace2H",
             [6] = "Polearm", [7] = "Sword1H", [8] = "Sword2H", [9] = "Warglaive", [10] = "Staff", [11] = "Bearclaw",
@@ -369,14 +374,54 @@ local QueryTooltipDefinitions = {
         [5] = {
             [0] = "Reagent", [1] = "Keystone", [2] = "ContextToken",
         },
+        [6] = {
+            [0] = "Wand", [1] = "Bolt", [2] = "Arrow", [3] = "Bullet", [4] = "ThrownObsolete",
+        },
+        [7] = {
+            [0] = "Parts", [1] = "Explosives", [2] = "Devices", [3] = "Jewelcrafting", [4] = "Cloth", [5] = "Leather",
+            [6] = "MetalStone", [7] = "Meat", [8] = "Herb", [9] = "Elemental", [10] = "Other", [11] = "Enchanting",
+            [12] = "Materials", [13] = "ItemEnchantment", [14] = "WeaponEnchantment", [15] = "Inscription",
+            [16] = "ExplosivesDevices", [17] = "OptionalReagents", [18] = "FinishingReagents",
+        },
+        [8] = {
+            [0] = "Head", [1] = "Neck", [2] = "Shoulder", [3] = "Cloak", [4] = "Chest", [5] = "Wrist",
+            [6] = "Hands", [7] = "Waist", [8] = "Legs", [9] = "Feet", [10] = "Finger", [11] = "Weapon",
+            [12] = "TwoHandedWeapon", [13] = "ShieldOffhand", [14] = "Misc", [15] = "Kit", [16] = "ArtifactRelic",
+        },
         [9] = {
             [0] = "Book", [1] = "Leatherworking", [2] = "Tailoring", [3] = "Engineering", [4] = "Blacksmithing",
             [5] = "Cooking", [6] = "Alchemy", [7] = "FirstAid", [8] = "Enchanting", [9] = "Fishing", [10] = "Jewelcrafting",
             [11] = "Inscription",
         },
+        [10] = {
+            [0] = "MoneyObsolete",
+        },
+        [11] = {
+            [0] = "QuiverObsolete", [1] = "AmmoPouchObsolete",
+        },
+        [12] = {
+            [0] = "Quest",
+        },
+        [13] = {
+            [0] = "Key",
+        },
+        [14] = {
+            [0] = "PermanentObsolete",
+        },
         [15] = {
             [0] = "Junk", [1] = "Reagent", [2] = "CompanionPet", [3] = "Holiday", [4] = "Other", [5] = "Mount",
             [6] = "MountEquipment",
+        },
+        [16] = {
+            [1] = "Warrior", [2] = "Paladin", [3] = "Hunter", [4] = "Rogue", [5] = "Priest", [6] = "DeathKnight",
+            [7] = "Shaman", [8] = "Mage", [9] = "Warlock", [10] = "Monk", [11] = "Druid",
+        },
+        [17] = {
+            [0] = "Humanoid", [1] = "Dragonkin", [2] = "Flying", [3] = "Undead", [4] = "Critter", [5] = "Magic",
+            [6] = "Elemental", [7] = "Beast", [8] = "Aquatic", [9] = "Mechanical",
+        },
+        [18] = {
+            [0] = "WoWToken",
         },
         [19] = {
             [0] = "Blacksmithing", [1] = "Leatherworking", [2] = "Alchemy", [3] = "Herbalism", [4] = "Cooking",

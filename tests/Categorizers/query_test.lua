@@ -153,6 +153,20 @@ end
 assert(classicExpansionRow ~= nil, "GetTooltipAttributeRows keeps expansionID when value is 0")
 assert(classicExpansionRow.meaning == "Classic", "expansionID value 0 meaning is resolved")
 
+local tradegoodsRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
+  itemType = 7,
+  itemSubType = 17,
+})
+local tradegoodsSubclassRow = nil
+for _, row in ipairs(tradegoodsRows) do
+  if row.name == "itemSubType" then
+    tradegoodsSubclassRow = row
+    break
+  end
+end
+assert(tradegoodsSubclassRow ~= nil, "GetTooltipAttributeRows keeps itemSubType for tradegoods")
+assert(tradegoodsSubclassRow.meaning == "OptionalReagents", "tradegoods itemSubType meaning is resolved by itemType")
+
 local order = addonEnv.QueryCategories.TooltipAttributeDefinitions.order
 local orderPosByName = {}
 for index, name in ipairs(order) do

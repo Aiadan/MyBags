@@ -169,6 +169,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ the bank again is tainting the bags :/// need to see what regression was introduced - fixed by changing ToggleAllBags function override
 * ✅ move search in bank to the left as it is in combined bags
 * ✅ add icon with question mark right to the search box in both banks and bags as it is available next to a query in category configuration which will open the same frame with info about query
+* ✅ completed `QUERY_ATTRIBUTES.md` item subtype coverage for previously missing `itemType` classes (Container, Projectile, Tradegoods, ItemEnhancement, CurrencyTokenObsolete, Quiver, Questitem, Key, PermanentObsolete, Glyph, Battlepet, WoWToken).
 
 ### TODO
 
@@ -241,6 +242,7 @@ Tasks which after implementation user will not see.
 * ✅ adjusted category-config wording from `Visible in` to `Used in` to better reflect that scope toggles control categorizer usage, not just header visibility.
 * ✅ fixed category editor scope-toggle UI layout: `Used in` controls now share the `Always show` row, priority/query are no longer pushed into save/revert controls, scope checkboxes are aligned, and only checkbox icons (not text labels) are interactive.
 * ✅ fixed bank category in-column row packing parity: in normal mode bank categories can now share a row within a column (matching bag behavior for small categories), while edit mode remains one-category-per-row with full-width headers.
+* ✅ regenerated `generated/queryHelpDocs.lua` from updated `QUERY_ATTRIBUTES.md` and expanded query tooltip `itemSubType` value map coverage in `Categorizers/custom/query.lua` for previously missing `itemType` classes.
 
 ### TODO
 

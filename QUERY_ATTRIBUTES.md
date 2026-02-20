@@ -222,6 +222,22 @@ Notes:
 | CombatCurio | 11 |
 | Relic | 12 |
 
+### `itemType = 1` (Container)
+
+| Name | itemSubType |
+|---|---:|
+| Bag | 0 |
+| SoulBag | 1 |
+| HerbBag | 2 |
+| EnchantingBag | 3 |
+| EngineeringBag | 4 |
+| GemBag | 5 |
+| MiningBag | 6 |
+| LeatherworkingBag | 7 |
+| InscriptionBag | 8 |
+| TackleBox | 9 |
+| CookingBag | 10 |
+
 ### `itemType = 2` (Weapon)
 
 | Name | itemSubType |
@@ -290,6 +306,62 @@ Notes:
 | Keystone | 1 |
 | ContextToken | 2 |
 
+### `itemType = 6` (Projectile)
+
+| Name | itemSubType |
+|---|---:|
+| Wand | 0 |
+| Bolt | 1 |
+| Arrow | 2 |
+| Bullet | 3 |
+| ThrownObsolete | 4 |
+
+### `itemType = 7` (Tradegoods)
+
+| Name | itemSubType |
+|---|---:|
+| Parts | 0 |
+| Explosives | 1 |
+| Devices | 2 |
+| Jewelcrafting | 3 |
+| Cloth | 4 |
+| Leather | 5 |
+| MetalStone | 6 |
+| Meat | 7 |
+| Herb | 8 |
+| Elemental | 9 |
+| Other | 10 |
+| Enchanting | 11 |
+| Materials | 12 |
+| ItemEnchantment | 13 |
+| WeaponEnchantment | 14 |
+| Inscription | 15 |
+| ExplosivesDevices | 16 |
+| OptionalReagents | 17 |
+| FinishingReagents | 18 |
+
+### `itemType = 8` (ItemEnhancement)
+
+| Name | itemSubType |
+|---|---:|
+| Head | 0 |
+| Neck | 1 |
+| Shoulder | 2 |
+| Cloak | 3 |
+| Chest | 4 |
+| Wrist | 5 |
+| Hands | 6 |
+| Waist | 7 |
+| Legs | 8 |
+| Feet | 9 |
+| Finger | 10 |
+| Weapon | 11 |
+| TwoHandedWeapon | 12 |
+| ShieldOffhand | 13 |
+| Misc | 14 |
+| Kit | 15 |
+| ArtifactRelic | 16 |
+
 ### `itemType = 9` (Recipe)
 
 | Name | itemSubType |
@@ -307,6 +379,37 @@ Notes:
 | Jewelcrafting | 10 |
 | Inscription | 11 |
 
+### `itemType = 10` (CurrencyTokenObsolete)
+
+| Name | itemSubType |
+|---|---:|
+| MoneyObsolete | 0 |
+
+### `itemType = 11` (Quiver)
+
+| Name | itemSubType |
+|---|---:|
+| QuiverObsolete | 0 |
+| AmmoPouchObsolete | 1 |
+
+### `itemType = 12` (Questitem)
+
+| Name | itemSubType |
+|---|---:|
+| Quest | 0 |
+
+### `itemType = 13` (Key)
+
+| Name | itemSubType |
+|---|---:|
+| Key | 0 |
+
+### `itemType = 14` (PermanentObsolete)
+
+| Name | itemSubType |
+|---|---:|
+| PermanentObsolete | 0 |
+
 ### `itemType = 15` (Miscellaneous)
 
 | Name | itemSubType |
@@ -318,6 +421,43 @@ Notes:
 | Other | 4 |
 | Mount | 5 |
 | MountEquipment | 6 |
+
+### `itemType = 16` (Glyph)
+
+| Name | itemSubType |
+|---|---:|
+| Warrior | 1 |
+| Paladin | 2 |
+| Hunter | 3 |
+| Rogue | 4 |
+| Priest | 5 |
+| DeathKnight | 6 |
+| Shaman | 7 |
+| Mage | 8 |
+| Warlock | 9 |
+| Monk | 10 |
+| Druid | 11 |
+
+### `itemType = 17` (Battlepet)
+
+| Name | itemSubType |
+|---|---:|
+| Humanoid | 0 |
+| Dragonkin | 1 |
+| Flying | 2 |
+| Undead | 3 |
+| Critter | 4 |
+| Magic | 5 |
+| Elemental | 6 |
+| Beast | 7 |
+| Aquatic | 8 |
+| Mechanical | 9 |
+
+### `itemType = 18` (WoWToken)
+
+| Name | itemSubType |
+|---|---:|
+| WoWToken | 0 |
 
 ### `itemType = 19` (Profession)
 
@@ -348,10 +488,6 @@ Notes:
 | RoomCustomization | 3 |
 | ExteriorCustomization | 4 |
 | ServiceItem | 5 |
-
-### Other `itemType` values
-
-For some classes (for example `Container`, `Tradegoods`, `ItemEnhancement`, `Questitem`, `Glyph`, `Battlepet`, `WoWToken`), subtype values may vary more by game data.
 
 ## Known Limitations
 

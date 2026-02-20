@@ -225,6 +225,22 @@ Notes:
 • Relic: |cff9bb6cf12|r
 
 
+|cffd8d8b0|cff8ebfe9itemType = 1|r (Container)|r
+
+|cffe0d8c4Name / itemSubType|r
+• Bag: |cff9bb6cf0|r
+• SoulBag: |cff9bb6cf1|r
+• HerbBag: |cff9bb6cf2|r
+• EnchantingBag: |cff9bb6cf3|r
+• EngineeringBag: |cff9bb6cf4|r
+• GemBag: |cff9bb6cf5|r
+• MiningBag: |cff9bb6cf6|r
+• LeatherworkingBag: |cff9bb6cf7|r
+• InscriptionBag: |cff9bb6cf8|r
+• TackleBox: |cff9bb6cf9|r
+• CookingBag: |cff9bb6cf10|r
+
+
 |cffd8d8b0|cff8ebfe9itemType = 2|r (Weapon)|r
 
 |cffe0d8c4Name / itemSubType|r
@@ -293,6 +309,62 @@ Notes:
 • ContextToken: |cff9bb6cf2|r
 
 
+|cffd8d8b0|cff8ebfe9itemType = 6|r (Projectile)|r
+
+|cffe0d8c4Name / itemSubType|r
+• Wand: |cff9bb6cf0|r
+• Bolt: |cff9bb6cf1|r
+• Arrow: |cff9bb6cf2|r
+• Bullet: |cff9bb6cf3|r
+• ThrownObsolete: |cff9bb6cf4|r
+
+
+|cffd8d8b0|cff8ebfe9itemType = 7|r (Tradegoods)|r
+
+|cffe0d8c4Name / itemSubType|r
+• Parts: |cff9bb6cf0|r
+• Explosives: |cff9bb6cf1|r
+• Devices: |cff9bb6cf2|r
+• Jewelcrafting: |cff9bb6cf3|r
+• Cloth: |cff9bb6cf4|r
+• Leather: |cff9bb6cf5|r
+• MetalStone: |cff9bb6cf6|r
+• Meat: |cff9bb6cf7|r
+• Herb: |cff9bb6cf8|r
+• Elemental: |cff9bb6cf9|r
+• Other: |cff9bb6cf10|r
+• Enchanting: |cff9bb6cf11|r
+• Materials: |cff9bb6cf12|r
+• ItemEnchantment: |cff9bb6cf13|r
+• WeaponEnchantment: |cff9bb6cf14|r
+• Inscription: |cff9bb6cf15|r
+• ExplosivesDevices: |cff9bb6cf16|r
+• OptionalReagents: |cff9bb6cf17|r
+• FinishingReagents: |cff9bb6cf18|r
+
+
+|cffd8d8b0|cff8ebfe9itemType = 8|r (ItemEnhancement)|r
+
+|cffe0d8c4Name / itemSubType|r
+• Head: |cff9bb6cf0|r
+• Neck: |cff9bb6cf1|r
+• Shoulder: |cff9bb6cf2|r
+• Cloak: |cff9bb6cf3|r
+• Chest: |cff9bb6cf4|r
+• Wrist: |cff9bb6cf5|r
+• Hands: |cff9bb6cf6|r
+• Waist: |cff9bb6cf7|r
+• Legs: |cff9bb6cf8|r
+• Feet: |cff9bb6cf9|r
+• Finger: |cff9bb6cf10|r
+• Weapon: |cff9bb6cf11|r
+• TwoHandedWeapon: |cff9bb6cf12|r
+• ShieldOffhand: |cff9bb6cf13|r
+• Misc: |cff9bb6cf14|r
+• Kit: |cff9bb6cf15|r
+• ArtifactRelic: |cff9bb6cf16|r
+
+
 |cffd8d8b0|cff8ebfe9itemType = 9|r (Recipe)|r
 
 |cffe0d8c4Name / itemSubType|r
@@ -310,6 +382,37 @@ Notes:
 • Inscription: |cff9bb6cf11|r
 
 
+|cffd8d8b0|cff8ebfe9itemType = 10|r (CurrencyTokenObsolete)|r
+
+|cffe0d8c4Name / itemSubType|r
+• MoneyObsolete: |cff9bb6cf0|r
+
+
+|cffd8d8b0|cff8ebfe9itemType = 11|r (Quiver)|r
+
+|cffe0d8c4Name / itemSubType|r
+• QuiverObsolete: |cff9bb6cf0|r
+• AmmoPouchObsolete: |cff9bb6cf1|r
+
+
+|cffd8d8b0|cff8ebfe9itemType = 12|r (Questitem)|r
+
+|cffe0d8c4Name / itemSubType|r
+• Quest: |cff9bb6cf0|r
+
+
+|cffd8d8b0|cff8ebfe9itemType = 13|r (Key)|r
+
+|cffe0d8c4Name / itemSubType|r
+• Key: |cff9bb6cf0|r
+
+
+|cffd8d8b0|cff8ebfe9itemType = 14|r (PermanentObsolete)|r
+
+|cffe0d8c4Name / itemSubType|r
+• PermanentObsolete: |cff9bb6cf0|r
+
+
 |cffd8d8b0|cff8ebfe9itemType = 15|r (Miscellaneous)|r
 
 |cffe0d8c4Name / itemSubType|r
@@ -320,6 +423,43 @@ Notes:
 • Other: |cff9bb6cf4|r
 • Mount: |cff9bb6cf5|r
 • MountEquipment: |cff9bb6cf6|r
+
+
+|cffd8d8b0|cff8ebfe9itemType = 16|r (Glyph)|r
+
+|cffe0d8c4Name / itemSubType|r
+• Warrior: |cff9bb6cf1|r
+• Paladin: |cff9bb6cf2|r
+• Hunter: |cff9bb6cf3|r
+• Rogue: |cff9bb6cf4|r
+• Priest: |cff9bb6cf5|r
+• DeathKnight: |cff9bb6cf6|r
+• Shaman: |cff9bb6cf7|r
+• Mage: |cff9bb6cf8|r
+• Warlock: |cff9bb6cf9|r
+• Monk: |cff9bb6cf10|r
+• Druid: |cff9bb6cf11|r
+
+
+|cffd8d8b0|cff8ebfe9itemType = 17|r (Battlepet)|r
+
+|cffe0d8c4Name / itemSubType|r
+• Humanoid: |cff9bb6cf0|r
+• Dragonkin: |cff9bb6cf1|r
+• Flying: |cff9bb6cf2|r
+• Undead: |cff9bb6cf3|r
+• Critter: |cff9bb6cf4|r
+• Magic: |cff9bb6cf5|r
+• Elemental: |cff9bb6cf6|r
+• Beast: |cff9bb6cf7|r
+• Aquatic: |cff9bb6cf8|r
+• Mechanical: |cff9bb6cf9|r
+
+
+|cffd8d8b0|cff8ebfe9itemType = 18|r (WoWToken)|r
+
+|cffe0d8c4Name / itemSubType|r
+• WoWToken: |cff9bb6cf0|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 19|r (Profession)|r
@@ -351,10 +491,6 @@ Notes:
 • ExteriorCustomization: |cff9bb6cf4|r
 • ServiceItem: |cff9bb6cf5|r
 
-
-|cffd8d8b0Other |cff8ebfe9itemType|r values|r
-
-For some classes (for example |cff8ebfe9Container|r, |cff8ebfe9Tradegoods|r, |cff8ebfe9ItemEnhancement|r, |cff8ebfe9Questitem|r, |cff8ebfe9Glyph|r, |cff8ebfe9Battlepet|r, |cff8ebfe9WoWToken|r), subtype values may vary more by game data.
 
 |cffe6d0a2Known Limitations|r
 
