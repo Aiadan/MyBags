@@ -155,7 +155,7 @@ assert(classicExpansionRow.meaning == "Classic", "expansionID value 0 meaning is
 
 local tradegoodsRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
   itemType = 7,
-  itemSubType = 17,
+  itemSubType = 18,
 })
 local tradegoodsSubclassRow = nil
 for _, row in ipairs(tradegoodsRows) do

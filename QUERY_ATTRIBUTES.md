@@ -320,25 +320,26 @@ Notes:
 
 | Name | itemSubType |
 |---|---:|
-| Parts | 0 |
-| Explosives | 1 |
-| Devices | 2 |
-| Jewelcrafting | 3 |
-| Cloth | 4 |
-| Leather | 5 |
-| MetalStone | 6 |
-| Meat | 7 |
-| Herb | 8 |
-| Elemental | 9 |
-| Other | 10 |
-| Enchanting | 11 |
-| Materials | 12 |
-| ItemEnchantment | 13 |
-| WeaponEnchantment | 14 |
-| Inscription | 15 |
-| ExplosivesDevices | 16 |
-| OptionalReagents | 17 |
-| FinishingReagents | 18 |
+| Trade Goods (Obsolete) | 0 |
+| Parts | 1 |
+| Explosives (Obsolete) | 2 |
+| Devices (Obsolete) | 3 |
+| Jewelcrafting | 4 |
+| Cloth | 5 |
+| Leather | 6 |
+| MetalStone | 7 |
+| Cooking | 8 |
+| Herb | 9 |
+| Elemental | 10 |
+| Other | 11 |
+| Enchanting | 12 |
+| Materials (Obsolete) | 13 |
+| Item Enchantment (Obsolete) | 14 |
+| Weapon Enchantment (Obsolete) | 15 |
+| Inscription | 16 |
+| Explosives & Devices (Obsolete) | 17 |
+| OptionalReagents | 18 |
+| FinishingReagents | 19 |
 
 ### `itemType = 8` (ItemEnhancement)
 

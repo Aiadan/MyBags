@@ -322,25 +322,26 @@ Notes:
 |cffd8d8b0|cff8ebfe9itemType = 7|r (Tradegoods)|r
 
 |cffe0d8c4Name / itemSubType|r
-• Parts: |cff9bb6cf0|r
-• Explosives: |cff9bb6cf1|r
-• Devices: |cff9bb6cf2|r
-• Jewelcrafting: |cff9bb6cf3|r
-• Cloth: |cff9bb6cf4|r
-• Leather: |cff9bb6cf5|r
-• MetalStone: |cff9bb6cf6|r
-• Meat: |cff9bb6cf7|r
-• Herb: |cff9bb6cf8|r
-• Elemental: |cff9bb6cf9|r
-• Other: |cff9bb6cf10|r
-• Enchanting: |cff9bb6cf11|r
-• Materials: |cff9bb6cf12|r
-• ItemEnchantment: |cff9bb6cf13|r
-• WeaponEnchantment: |cff9bb6cf14|r
-• Inscription: |cff9bb6cf15|r
-• ExplosivesDevices: |cff9bb6cf16|r
-• OptionalReagents: |cff9bb6cf17|r
-• FinishingReagents: |cff9bb6cf18|r
+• Trade Goods (Obsolete): |cff9bb6cf0|r
+• Parts: |cff9bb6cf1|r
+• Explosives (Obsolete): |cff9bb6cf2|r
+• Devices (Obsolete): |cff9bb6cf3|r
+• Jewelcrafting: |cff9bb6cf4|r
+• Cloth: |cff9bb6cf5|r
+• Leather: |cff9bb6cf6|r
+• MetalStone: |cff9bb6cf7|r
+• Cooking: |cff9bb6cf8|r
+• Herb: |cff9bb6cf9|r
+• Elemental: |cff9bb6cf10|r
+• Other: |cff9bb6cf11|r
+• Enchanting: |cff9bb6cf12|r
+• Materials (Obsolete): |cff9bb6cf13|r
+• Item Enchantment (Obsolete): |cff9bb6cf14|r
+• Weapon Enchantment (Obsolete): |cff9bb6cf15|r
+• Inscription: |cff9bb6cf16|r
+• Explosives & Devices (Obsolete): |cff9bb6cf17|r
+• OptionalReagents: |cff9bb6cf18|r
+• FinishingReagents: |cff9bb6cf19|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 8|r (ItemEnhancement)|r

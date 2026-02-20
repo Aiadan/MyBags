@@ -327,18 +327,18 @@ local QueryTooltipDefinitions = {
         },
         itemType = {
             [0] = "Consumable", [1] = "Container", [2] = "Weapon", [3] = "Gem", [4] = "Armor", [5] = "Reagent",
-            [6] = "Projectile", [7] = "Tradegoods", [8] = "ItemEnhancement", [9] = "Recipe", [10] = "CurrencyTokenObsolete",
-            [11] = "Quiver", [12] = "Questitem", [13] = "Key", [14] = "PermanentObsolete", [15] = "Miscellaneous",
-            [16] = "Glyph", [17] = "Battlepet", [18] = "WoWToken", [19] = "Profession", [20] = "Housing",
+            [6] = "Projectile", [7] = "Tradegoods", [8] = "Item Enhancement", [9] = "Recipe", [10] = "Currency Token",
+            [11] = "Quiver", [12] = "Quest item", [13] = "Key", [14] = "Permanent", [15] = "Miscellaneous",
+            [16] = "Glyph", [17] = "Battlepet", [18] = "WoW Token", [19] = "Profession", [20] = "Housing",
         },
         inventoryType = {
-            [0] = "NonEquip", [1] = "Head", [2] = "Neck", [3] = "Shoulder", [4] = "Body", [5] = "Chest", [6] = "Waist",
+            [0] = "Non Equip", [1] = "Head", [2] = "Neck", [3] = "Shoulder", [4] = "Body", [5] = "Chest", [6] = "Waist",
             [7] = "Legs", [8] = "Feet", [9] = "Wrist", [10] = "Hand", [11] = "Finger", [12] = "Trinket", [13] = "Weapon",
-            [14] = "Shield", [15] = "Ranged", [16] = "Cloak", [17] = "TwoHandWeapon", [18] = "Bag", [19] = "Tabard",
-            [20] = "Robe", [21] = "MainHandWeapon", [22] = "OffHandWeapon", [23] = "Holdable", [24] = "Ammo",
-            [25] = "Thrown", [26] = "RangedRight", [27] = "Quiver", [28] = "Relic", [29] = "ProfessionTool",
-            [30] = "ProfessionGear", [31] = "EquipableSpellOffensive", [32] = "EquipableSpellUtility",
-            [33] = "EquipableSpellDefensive", [34] = "EquipableSpellWeapon",
+            [14] = "Shield", [15] = "Ranged", [16] = "Cloak", [17] = "Two Hand Weapon", [18] = "Bag", [19] = "Tabard",
+            [20] = "Robe", [21] = "Main Hand Weapon", [22] = "Off Hand Weapon", [23] = "Holdable", [24] = "Ammo",
+            [25] = "Thrown", [26] = "Ranged Right", [27] = "Quiver", [28] = "Relic", [29] = "Profession Tool",
+            [30] = "Profession Gear", [31] = "Equipable Spell Offensive", [32] = "Equipable Spell Utility",
+            [33] = "Equipable Spell Defensive", [34] = "Equipable Spell Weapon",
         },
         bindType = {
             [0] = "None", [1] = "OnAcquire (Bind on Pickup)", [2] = "OnEquip (Bind on Equip)",
@@ -348,45 +348,46 @@ local QueryTooltipDefinitions = {
     },
     itemSubTypeLabelsByItemType = {
         [0] = {
-            [0] = "Generic", [1] = "Potion", [2] = "Elixir", [3] = "Flasksphials", [4] = "Scroll", [5] = "Fooddrink",
-            [6] = "Itemenhancement", [7] = "Bandage", [8] = "Other", [9] = "VantusRune", [10] = "UtilityCurio",
-            [11] = "CombatCurio", [12] = "Relic",
+            [0] = "Generic", [1] = "Potion", [2] = "Elixir", [3] = "Flasks / phials", [4] = "Scroll", [5] = "Food / drink",
+            [6] = "Item enhancement", [7] = "Bandage", [8] = "Other", [9] = "Vantus Rune", [10] = "Utility Curio",
+            [11] = "Combat Curio", [12] = "Relic",
         },
         [1] = {
-            [0] = "Bag", [1] = "SoulBag", [2] = "HerbBag", [3] = "EnchantingBag", [4] = "EngineeringBag",
-            [5] = "GemBag", [6] = "MiningBag", [7] = "LeatherworkingBag", [8] = "InscriptionBag", [9] = "TackleBox",
-            [10] = "CookingBag",
+            [0] = "Bag", [1] = "Soul Bag", [2] = "Herb Bag", [3] = "Enchanting Bag", [4] = "Engineering Bag",
+            [5] = "Gem Bag", [6] = "Mining Bag", [7] = "Leatherworking Bag", [8] = "Inscription Bag", [9] = "Tackle Box",
+            [10] = "Cooking Bag",
         },
         [2] = {
-            [0] = "Axe1H", [1] = "Axe2H", [2] = "Bows", [3] = "Guns", [4] = "Mace1H", [5] = "Mace2H",
-            [6] = "Polearm", [7] = "Sword1H", [8] = "Sword2H", [9] = "Warglaive", [10] = "Staff", [11] = "Bearclaw",
-            [12] = "Catclaw", [13] = "Unarmed", [14] = "Generic", [15] = "Dagger", [16] = "Thrown", [17] = "Obsolete3",
+            [0] = "Axe 1H", [1] = "Axe 2H", [2] = "Bows", [3] = "Guns", [4] = "Mace 1H", [5] = "Mace 2H",
+            [6] = "Polearm", [7] = "Sword 1H", [8] = "Sword 2H", [9] = "Warglaive", [10] = "Staff", [11] = "Bearclaw",
+            [12] = "Catclaw", [13] = "Unarmed", [14] = "Generic", [15] = "Dagger", [16] = "Thrown", [17] = "Obsolete",
             [18] = "Crossbow", [19] = "Wand", [20] = "Fishingpole",
         },
         [3] = {
-            [0] = "Intellect", [1] = "Agility", [2] = "Strength", [3] = "Stamina", [4] = "Spirit", [5] = "Criticalstrike",
-            [6] = "Mastery", [7] = "Haste", [8] = "Versatility", [9] = "Other", [10] = "Multiplestats", [11] = "Artifactrelic",
+            [0] = "Intellect", [1] = "Agility", [2] = "Strength", [3] = "Stamina", [4] = "Spirit", [5] = "Critical Strike",
+            [6] = "Mastery", [7] = "Haste", [8] = "Versatility", [9] = "Other", [10] = "Multiple stats", [11] = "Artifact / relic",
         },
         [4] = {
             [0] = "Generic", [1] = "Cloth", [2] = "Leather", [3] = "Mail", [4] = "Plate", [5] = "Cosmetic",
             [6] = "Shield", [7] = "Libram", [8] = "Idol", [9] = "Totem", [10] = "Sigil", [11] = "Relic",
         },
         [5] = {
-            [0] = "Reagent", [1] = "Keystone", [2] = "ContextToken",
+            [0] = "Reagent", [1] = "Keystone", [2] = "Context Token",
         },
         [6] = {
-            [0] = "Wand", [1] = "Bolt", [2] = "Arrow", [3] = "Bullet", [4] = "ThrownObsolete",
+            [0] = "Wand", [1] = "Bolt", [2] = "Arrow", [3] = "Bullet", [4] = "Thrown",
         },
         [7] = {
-            [0] = "Parts", [1] = "Explosives", [2] = "Devices", [3] = "Jewelcrafting", [4] = "Cloth", [5] = "Leather",
-            [6] = "MetalStone", [7] = "Meat", [8] = "Herb", [9] = "Elemental", [10] = "Other", [11] = "Enchanting",
-            [12] = "Materials", [13] = "ItemEnchantment", [14] = "WeaponEnchantment", [15] = "Inscription",
-            [16] = "ExplosivesDevices", [17] = "OptionalReagents", [18] = "FinishingReagents",
+            [0] = "Trade Goods", [1] = "Parts", [2] = "Explosives", [3] = "Devices",
+            [4] = "Jewelcrafting", [5] = "Cloth", [6] = "Leather", [7] = "Metal Stone", [8] = "Cooking",
+            [9] = "Herb", [10] = "Elemental", [11] = "Other", [12] = "Enchanting", [13] = "Materials",
+            [14] = "Item Enchantment", [15] = "Weapon Enchantment", [16] = "Inscription",
+            [17] = "Explosives & Devices", [18] = "Optional Reagents", [19] = "Finishing Reagents",
         },
         [8] = {
             [0] = "Head", [1] = "Neck", [2] = "Shoulder", [3] = "Cloak", [4] = "Chest", [5] = "Wrist",
             [6] = "Hands", [7] = "Waist", [8] = "Legs", [9] = "Feet", [10] = "Finger", [11] = "Weapon",
-            [12] = "TwoHandedWeapon", [13] = "ShieldOffhand", [14] = "Misc", [15] = "Kit", [16] = "ArtifactRelic",
+            [12] = "Two Handed Weapon", [13] = "Shield Offhand", [14] = "Misc", [15] = "Kit", [16] = "Artifact Relic",
         },
         [9] = {
             [0] = "Book", [1] = "Leatherworking", [2] = "Tailoring", [3] = "Engineering", [4] = "Blacksmithing",
@@ -394,10 +395,10 @@ local QueryTooltipDefinitions = {
             [11] = "Inscription",
         },
         [10] = {
-            [0] = "MoneyObsolete",
+            [0] = "Money",
         },
         [11] = {
-            [0] = "QuiverObsolete", [1] = "AmmoPouchObsolete",
+            [0] = "Quiver", [1] = "Ammo Pouch",
         },
         [12] = {
             [0] = "Quest",
@@ -406,14 +407,14 @@ local QueryTooltipDefinitions = {
             [0] = "Key",
         },
         [14] = {
-            [0] = "PermanentObsolete",
+            [0] = "Permanent",
         },
         [15] = {
-            [0] = "Junk", [1] = "Reagent", [2] = "CompanionPet", [3] = "Holiday", [4] = "Other", [5] = "Mount",
+            [0] = "Junk", [1] = "Reagent", [2] = "Companion Pet", [3] = "Holiday", [4] = "Other", [5] = "Mount",
             [6] = "MountEquipment",
         },
         [16] = {
-            [1] = "Warrior", [2] = "Paladin", [3] = "Hunter", [4] = "Rogue", [5] = "Priest", [6] = "DeathKnight",
+            [1] = "Warrior", [2] = "Paladin", [3] = "Hunter", [4] = "Rogue", [5] = "Priest", [6] = "Death Knight",
             [7] = "Shaman", [8] = "Mage", [9] = "Warlock", [10] = "Monk", [11] = "Druid",
         },
         [17] = {
@@ -429,8 +430,8 @@ local QueryTooltipDefinitions = {
             [11] = "Jewelcrafting", [12] = "Inscription", [13] = "Archaeology",
         },
         [20] = {
-            [0] = "Decor", [1] = "Dye", [2] = "Room", [3] = "RoomCustomization", [4] = "ExteriorCustomization",
-            [5] = "ServiceItem",
+            [0] = "Decor", [1] = "Dye", [2] = "Room", [3] = "Room Customization", [4] = "Exterior Customization",
+            [5] = "Service Item",
         },
     },
 }
