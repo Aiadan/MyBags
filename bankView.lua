@@ -36,6 +36,8 @@ local BANK_CONTENT_LEFT_PADDING = 6
 local BANK_CONTENT_FIRST_ROW_Y = 30
 local BANK_SEARCH_BOX_LEFT_X = 78
 local BANK_SEARCH_BOX_TOP_Y = -33
+local QUERY_HELP_SIDE_RIGHT = "right"
+local QUERY_HELP_TOOLTIP_TEXT = "Open query syntax and priority help"
 local EDIT_CATEGORY_TOOLTIP = "Edit"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Shift-click to delete without confirmation."
@@ -362,6 +364,35 @@ end
 local function hideEditModeButton(self)
     if self.editModeButton then
         self.editModeButton:Hide()
+    end
+end
+
+local function ensureSearchHelpButton(self)
+    if self.searchHelpButton then
+        return self.searchHelpButton
+    end
+    local button = CreateFrame("Button", nil, BankFrame, "MainHelpPlateButton")
+    button:SetSize(64, 64)
+    button:SetScale(0.45)
+    button.mainHelpPlateButtonTooltipText = QUERY_HELP_TOOLTIP_TEXT
+    button:SetScript("OnClick", function()
+        AddonNS.CategoriesGUI:ToggleQueryHelpFrame(BankFrame, QUERY_HELP_SIDE_RIGHT)
+    end)
+    button:Hide()
+    self.searchHelpButton = button
+    return button
+end
+
+local function showSearchHelpButton(self)
+    local button = ensureSearchHelpButton(self)
+    button:ClearAllPoints()
+    button:SetPoint("LEFT", BankItemSearchBox, "RIGHT", 4, 0)
+    button:Show()
+end
+
+local function hideSearchHelpButton(self)
+    if self.searchHelpButton then
+        self.searchHelpButton:Hide()
     end
 end
 
@@ -1604,6 +1635,7 @@ function BankView:Refresh(scope)
         hideHeaders(self)
         hideContentArea(self)
         hideEditModeButton(self)
+        hideSearchHelpButton(self)
         hideBottomBarControls(self)
         if self.resizeController then
             self.resizeController:Refresh()
@@ -1612,6 +1644,7 @@ function BankView:Refresh(scope)
     end
 
     refreshSearchBoxLayout()
+    showSearchHelpButton(self)
     local activeBankType = BankFrame:GetActiveBankType()
     local activeScope = scope or getScopeForBankType(activeBankType)
     local tabIds = getPurchasedTabIdsForActiveType(panel)
@@ -1859,6 +1892,8 @@ local function tryInstallHooks()
         hideContentArea(BankView)
         hideDropAreaOverlays(BankView)
         hideEditModeButton(BankView)
+        hideSearchHelpButton(BankView)
+        AddonNS.CategoriesGUI:HideQueryHelpFrame()
         hideBottomBarControls(BankView)
         if BankView.resizeController then
             BankView.resizeController:Stop()

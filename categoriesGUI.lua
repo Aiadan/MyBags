@@ -9,6 +9,14 @@ function AddonNS.CategoriesGUI:IsQueryEditorFocused()
     return false
 end
 
+function AddonNS.CategoriesGUI:ToggleQueryHelpFrame()
+    error("CategoriesGUI not initialized")
+end
+
+function AddonNS.CategoriesGUI:HideQueryHelpFrame()
+    error("CategoriesGUI not initialized")
+end
+
 function AddonNS.createGUI()
     local container = AddonNS.container;
     local selectedCategoryId = nil
@@ -18,6 +26,10 @@ function AddonNS.createGUI()
     local WARBANK_SCOPE = "bank-account"
     local COLOR_COG_NORMAL = { 0.78, 0.78, 0.78, 1 }
     local COLOR_COG_EDIT = { 1, 0.85, 0.2, 1 }
+    local QUERY_HELP_SIDE_LEFT = "left"
+    local QUERY_HELP_SIDE_RIGHT = "right"
+    local QUERY_HELP_OFFSET_X = 8
+    local QUERY_HELP_TOOLTIP_TEXT = "Open query syntax and priority help"
 
     local isHelpPlateLoaded = C_AddOns and C_AddOns.IsAddOnLoaded and C_AddOns.IsAddOnLoaded("Blizzard_HelpPlate")
     if not isHelpPlateLoaded then
@@ -249,10 +261,65 @@ function AddonNS.createGUI()
     end
 
     local queryHelpFrame = createQueryHelpFrame()
+    local queryHelpAnchorFrame = nil
+    local queryHelpPreferredSide = nil
+
+    local function applyQueryHelpAnchor(anchorFrame, preferredSide)
+        queryHelpFrame:ClearAllPoints()
+        if preferredSide == QUERY_HELP_SIDE_LEFT then
+            queryHelpFrame:SetPoint("TOPRIGHT", anchorFrame, "TOPLEFT", -QUERY_HELP_OFFSET_X, 0)
+            return
+        end
+        queryHelpFrame:SetPoint("TOPLEFT", anchorFrame, "TOPRIGHT", QUERY_HELP_OFFSET_X, 0)
+    end
+
+    local function shouldCenterQueryHelpFrame()
+        local left = queryHelpFrame:GetLeft()
+        local right = queryHelpFrame:GetRight()
+        if not left or not right then
+            return false
+        end
+        local screenLeft = UIParent:GetLeft() or 0
+        local screenRight = UIParent:GetRight() or GetScreenWidth()
+        return left < screenLeft or right > screenRight
+    end
+
+    local function showQueryHelpFrame(anchorFrame, preferredSide)
+        applyQueryHelpAnchor(anchorFrame, preferredSide)
+        queryHelpFrame:Show()
+        if shouldCenterQueryHelpFrame() then
+            queryHelpFrame:ClearAllPoints()
+            queryHelpFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        end
+        queryHelpAnchorFrame = anchorFrame
+        queryHelpPreferredSide = preferredSide
+    end
+
+    local function hideQueryHelpFrame()
+        queryHelpFrame:Hide()
+        queryHelpAnchorFrame = nil
+        queryHelpPreferredSide = nil
+    end
+
+    local function toggleQueryHelpFrame(anchorFrame, preferredSide)
+        if queryHelpFrame:IsShown() and queryHelpAnchorFrame == anchorFrame and queryHelpPreferredSide == preferredSide then
+            hideQueryHelpFrame()
+            return
+        end
+        showQueryHelpFrame(anchorFrame, preferredSide)
+    end
 
     local settingsButton = CreateFrame("Button", nil, container, "UIPanelIconDropdownButtonTemplate")
     settingsButton:SetSize(20, 20)
     settingsButton:SetPoint("TOPRIGHT", container, "TOPRIGHT", -9, -34)
+    local bagSearchHelpButton = CreateFrame("Button", nil, container, "MainHelpPlateButton")
+    bagSearchHelpButton:SetSize(64, 64)
+    bagSearchHelpButton:SetScale(0.45)
+    bagSearchHelpButton.mainHelpPlateButtonTooltipText = QUERY_HELP_TOOLTIP_TEXT
+    bagSearchHelpButton:SetScript("OnClick", function()
+        toggleQueryHelpFrame(container, QUERY_HELP_SIDE_LEFT)
+    end)
+    bagSearchHelpButton:Hide()
 
     local editModeBadge = CreateFrame("Button", nil, container, "BackdropTemplate")
     editModeBadge:SetPoint("RIGHT", settingsButton, "LEFT", -4, 0)
@@ -305,6 +372,13 @@ function AddonNS.createGUI()
             settingsButton:ClearAllPoints()
             settingsButton:SetPoint("TOPRIGHT", container, "TOPRIGHT", -9, -38)
         end
+        if container:IsShown() and BagItemSearchBox:IsShown() and BagItemSearchBox:GetParent() == container then
+            bagSearchHelpButton:ClearAllPoints()
+            bagSearchHelpButton:SetPoint("LEFT", BagItemSearchBox, "RIGHT", 4, 0)
+            bagSearchHelpButton:Show()
+            return
+        end
+        bagSearchHelpButton:Hide()
     end
 
     container:HookScript("OnShow", updateTopRightButtons)
@@ -312,7 +386,8 @@ function AddonNS.createGUI()
     container:HookScript("OnHide", function()
         AddonNS.BagViewState:SetMode("normal")
         containerFrame:Hide()
-        queryHelpFrame:Hide()
+        hideQueryHelpFrame()
+        bagSearchHelpButton:Hide()
         if exportFrame then
             exportFrame:Hide()
         end
@@ -324,7 +399,10 @@ function AddonNS.createGUI()
         StaticPopup_Hide("IMPORT_CATEGORIES_CONFIRM")
         StaticPopup_Hide("CATEGORY_EDITOR_UNSAVED_CHANGES_CONFIRM")
     end)
-    AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, refreshEditModeVisuals)
+    AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, function()
+        refreshEditModeVisuals()
+        updateTopRightButtons()
+    end)
     refreshEditModeVisuals()
 
     local function getSelectedCategory()
@@ -704,13 +782,9 @@ function AddonNS.createGUI()
     helpButton:SetPoint("LEFT", queryEditBox, "RIGHT", 2, 0)
     helpButton:SetSize(64, 64)
     helpButton:SetScale(0.45)
-    helpButton.mainHelpPlateButtonTooltipText = "Open query syntax and priority help"
+    helpButton.mainHelpPlateButtonTooltipText = QUERY_HELP_TOOLTIP_TEXT
     helpButton:SetScript("OnClick", function()
-        if queryHelpFrame:IsShown() then
-            queryHelpFrame:Hide()
-            return
-        end
-        queryHelpFrame:Show()
+        toggleQueryHelpFrame(containerFrame, QUERY_HELP_SIDE_RIGHT)
     end)
 
     local saveButton = CreateFrame("Button", nil, editorContent, "UIPanelButtonTemplate")
@@ -1300,6 +1374,14 @@ function AddonNS.createGUI()
 
     function AddonNS.CategoriesGUI:ToggleImportFrame()
         toggleImportFrame()
+    end
+
+    function AddonNS.CategoriesGUI:ToggleQueryHelpFrame(anchorFrame, preferredSide)
+        toggleQueryHelpFrame(anchorFrame, preferredSide)
+    end
+
+    function AddonNS.CategoriesGUI:HideQueryHelpFrame()
+        hideQueryHelpFrame()
     end
 
     function AddonNS.CategoriesGUI:IsQueryEditorFocused()
