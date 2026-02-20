@@ -34,6 +34,8 @@ local BANK_CONTENT_PADDING_BOTTOM = 8
 local SHOW_COLUMN_DROP_AREAS = false
 local BANK_CONTENT_LEFT_PADDING = 6
 local BANK_CONTENT_FIRST_ROW_Y = 30
+local BANK_SEARCH_BOX_LEFT_X = 78
+local BANK_SEARCH_BOX_TOP_Y = -33
 local EDIT_CATEGORY_TOOLTIP = "Edit"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Shift-click to delete without confirmation."
@@ -307,10 +309,12 @@ local function shouldShowPurchaseTabButton(activeBankType)
     return C_Bank.CanPurchaseBankTab(activeBankType) and not C_Bank.HasMaxBankTabs(activeBankType)
 end
 
-local function refreshSearchBoxWidth()
+local function refreshSearchBoxLayout()
     if not BankItemSearchBox or not BagItemSearchBox then
         return
     end
+    BankItemSearchBox:ClearAllPoints()
+    BankItemSearchBox:SetPoint("TOPLEFT", BankFrame, "TOPLEFT", BANK_SEARCH_BOX_LEFT_X, BANK_SEARCH_BOX_TOP_Y)
     BankItemSearchBox:SetWidth(BagItemSearchBox:GetWidth())
 end
 
@@ -1607,7 +1611,7 @@ function BankView:Refresh(scope)
         return
     end
 
-    refreshSearchBoxWidth()
+    refreshSearchBoxLayout()
     local activeBankType = BankFrame:GetActiveBankType()
     local activeScope = scope or getScopeForBankType(activeBankType)
     local tabIds = getPurchasedTabIdsForActiveType(panel)

@@ -170,6 +170,9 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 
 ### TODO
 
+* ✅ move search in bank to the left as it is in combined bags
+* add icon with question mark right to the search box in both banks and bags as it is available next to a query in category configuration which will open the same frame with info about query
+* in edit mode add next to the question mark which is next to the search bars a checkbox which by default will be disabled. It will steer whether categories disabled to be used in a given scope should be visible or not. By default they should not be visible in config mode. Toggling this checkbox will make them visible.
 * draggin an item from vendor or inventory or another container should not show category highlight as this will not assign by default (at least from vendor) this item to a given category based on background afaik. If that is true then in other cases it also should not reassign category when dropping on background
 
 #### Low priority
