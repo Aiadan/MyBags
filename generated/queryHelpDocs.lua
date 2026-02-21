@@ -133,17 +133,17 @@ Notes:
 • Reagent: |cff9bb6cf5|r
 • Projectile: |cff9bb6cf6|r
 • Tradegoods: |cff9bb6cf7|r
-• ItemEnhancement: |cff9bb6cf8|r
+• Item Enhancement: |cff9bb6cf8|r
 • Recipe: |cff9bb6cf9|r
-• CurrencyTokenObsolete: |cff9bb6cf10|r
+• Currency Token: |cff9bb6cf10|r
 • Quiver: |cff9bb6cf11|r
-• Questitem: |cff9bb6cf12|r
+• Quest item: |cff9bb6cf12|r
 • Key: |cff9bb6cf13|r
-• PermanentObsolete: |cff9bb6cf14|r
+• Permanent: |cff9bb6cf14|r
 • Miscellaneous: |cff9bb6cf15|r
 • Glyph: |cff9bb6cf16|r
 • Battlepet: |cff9bb6cf17|r
-• WoWToken: |cff9bb6cf18|r
+• WoW Token: |cff9bb6cf18|r
 • Profession: |cff9bb6cf19|r
 • Housing: |cff9bb6cf20|r
 
@@ -151,7 +151,7 @@ Notes:
 |cffd8d8b0|cff8ebfe9inventoryType|r|r
 
 |cffe0d8c4Name / Value|r
-• NonEquip: |cff9bb6cf0|r
+• Non Equip: |cff9bb6cf0|r
 • Head: |cff9bb6cf1|r
 • Neck: |cff9bb6cf2|r
 • Shoulder: |cff9bb6cf3|r
@@ -168,24 +168,24 @@ Notes:
 • Shield: |cff9bb6cf14|r
 • Ranged: |cff9bb6cf15|r
 • Cloak: |cff9bb6cf16|r
-• TwoHandWeapon: |cff9bb6cf17|r
+• Two Hand Weapon: |cff9bb6cf17|r
 • Bag: |cff9bb6cf18|r
 • Tabard: |cff9bb6cf19|r
 • Robe: |cff9bb6cf20|r
-• MainHandWeapon: |cff9bb6cf21|r
-• OffHandWeapon: |cff9bb6cf22|r
+• Main Hand Weapon: |cff9bb6cf21|r
+• Off Hand Weapon: |cff9bb6cf22|r
 • Holdable: |cff9bb6cf23|r
 • Ammo: |cff9bb6cf24|r
 • Thrown: |cff9bb6cf25|r
-• RangedRight: |cff9bb6cf26|r
+• Ranged Right: |cff9bb6cf26|r
 • Quiver: |cff9bb6cf27|r
 • Relic: |cff9bb6cf28|r
-• ProfessionTool: |cff9bb6cf29|r
-• ProfessionGear: |cff9bb6cf30|r
-• EquipableSpellOffensive: |cff9bb6cf31|r
-• EquipableSpellUtility: |cff9bb6cf32|r
-• EquipableSpellDefensive: |cff9bb6cf33|r
-• EquipableSpellWeapon: |cff9bb6cf34|r
+• Profession Tool: |cff9bb6cf29|r
+• Profession Gear: |cff9bb6cf30|r
+• Equipable Spell Offensive: |cff9bb6cf31|r
+• Equipable Spell Utility: |cff9bb6cf32|r
+• Equipable Spell Defensive: |cff9bb6cf33|r
+• Equipable Spell Weapon: |cff9bb6cf34|r
 
 
 |cffd8d8b0|cff8ebfe9bindType|r|r
@@ -213,15 +213,15 @@ Notes:
 • Generic: |cff9bb6cf0|r
 • Potion: |cff9bb6cf1|r
 • Elixir: |cff9bb6cf2|r
-• Flasksphials: |cff9bb6cf3|r
+• Flasks / phials: |cff9bb6cf3|r
 • Scroll: |cff9bb6cf4|r
-• Fooddrink: |cff9bb6cf5|r
-• Itemenhancement: |cff9bb6cf6|r
+• Food / drink: |cff9bb6cf5|r
+• Item enhancement: |cff9bb6cf6|r
 • Bandage: |cff9bb6cf7|r
 • Other: |cff9bb6cf8|r
-• VantusRune: |cff9bb6cf9|r
-• UtilityCurio: |cff9bb6cf10|r
-• CombatCurio: |cff9bb6cf11|r
+• Vantus Rune: |cff9bb6cf9|r
+• Utility Curio: |cff9bb6cf10|r
+• Combat Curio: |cff9bb6cf11|r
 • Relic: |cff9bb6cf12|r
 
 
@@ -229,30 +229,30 @@ Notes:
 
 |cffe0d8c4Name / itemSubType|r
 • Bag: |cff9bb6cf0|r
-• SoulBag: |cff9bb6cf1|r
-• HerbBag: |cff9bb6cf2|r
-• EnchantingBag: |cff9bb6cf3|r
-• EngineeringBag: |cff9bb6cf4|r
-• GemBag: |cff9bb6cf5|r
-• MiningBag: |cff9bb6cf6|r
-• LeatherworkingBag: |cff9bb6cf7|r
-• InscriptionBag: |cff9bb6cf8|r
-• TackleBox: |cff9bb6cf9|r
-• CookingBag: |cff9bb6cf10|r
+• Soul Bag: |cff9bb6cf1|r
+• Herb Bag: |cff9bb6cf2|r
+• Enchanting Bag: |cff9bb6cf3|r
+• Engineering Bag: |cff9bb6cf4|r
+• Gem Bag: |cff9bb6cf5|r
+• Mining Bag: |cff9bb6cf6|r
+• Leatherworking Bag: |cff9bb6cf7|r
+• Inscription Bag: |cff9bb6cf8|r
+• Tackle Box: |cff9bb6cf9|r
+• Cooking Bag: |cff9bb6cf10|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 2|r (Weapon)|r
 
 |cffe0d8c4Name / itemSubType|r
-• Axe1H: |cff9bb6cf0|r
-• Axe2H: |cff9bb6cf1|r
+• Axe 1H: |cff9bb6cf0|r
+• Axe 2H: |cff9bb6cf1|r
 • Bows: |cff9bb6cf2|r
 • Guns: |cff9bb6cf3|r
-• Mace1H: |cff9bb6cf4|r
-• Mace2H: |cff9bb6cf5|r
+• Mace 1H: |cff9bb6cf4|r
+• Mace 2H: |cff9bb6cf5|r
 • Polearm: |cff9bb6cf6|r
-• Sword1H: |cff9bb6cf7|r
-• Sword2H: |cff9bb6cf8|r
+• Sword 1H: |cff9bb6cf7|r
+• Sword 2H: |cff9bb6cf8|r
 • Warglaive: |cff9bb6cf9|r
 • Staff: |cff9bb6cf10|r
 • Bearclaw: |cff9bb6cf11|r
@@ -261,7 +261,7 @@ Notes:
 • Generic: |cff9bb6cf14|r
 • Dagger: |cff9bb6cf15|r
 • Thrown: |cff9bb6cf16|r
-• Obsolete3: |cff9bb6cf17|r
+• Obsolete: |cff9bb6cf17|r
 • Crossbow: |cff9bb6cf18|r
 • Wand: |cff9bb6cf19|r
 • Fishingpole: |cff9bb6cf20|r
@@ -275,13 +275,13 @@ Notes:
 • Strength: |cff9bb6cf2|r
 • Stamina: |cff9bb6cf3|r
 • Spirit: |cff9bb6cf4|r
-• Criticalstrike: |cff9bb6cf5|r
+• Critical Strike: |cff9bb6cf5|r
 • Mastery: |cff9bb6cf6|r
 • Haste: |cff9bb6cf7|r
 • Versatility: |cff9bb6cf8|r
 • Other: |cff9bb6cf9|r
-• Multiplestats: |cff9bb6cf10|r
-• Artifactrelic: |cff9bb6cf11|r
+• Multiple stats: |cff9bb6cf10|r
+• Artifact / relic: |cff9bb6cf11|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 4|r (Armor)|r
@@ -306,7 +306,7 @@ Notes:
 |cffe0d8c4Name / itemSubType|r
 • Reagent: |cff9bb6cf0|r
 • Keystone: |cff9bb6cf1|r
-• ContextToken: |cff9bb6cf2|r
+• Context Token: |cff9bb6cf2|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 6|r (Projectile)|r
@@ -316,7 +316,7 @@ Notes:
 • Bolt: |cff9bb6cf1|r
 • Arrow: |cff9bb6cf2|r
 • Bullet: |cff9bb6cf3|r
-• ThrownObsolete: |cff9bb6cf4|r
+• Thrown: |cff9bb6cf4|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 7|r (Tradegoods)|r
@@ -329,7 +329,7 @@ Notes:
 • Jewelcrafting: |cff9bb6cf4|r
 • Cloth: |cff9bb6cf5|r
 • Leather: |cff9bb6cf6|r
-• MetalStone: |cff9bb6cf7|r
+• Metal Stone: |cff9bb6cf7|r
 • Cooking: |cff9bb6cf8|r
 • Herb: |cff9bb6cf9|r
 • Elemental: |cff9bb6cf10|r
@@ -340,8 +340,8 @@ Notes:
 • Weapon Enchantment (Obsolete): |cff9bb6cf15|r
 • Inscription: |cff9bb6cf16|r
 • Explosives & Devices (Obsolete): |cff9bb6cf17|r
-• OptionalReagents: |cff9bb6cf18|r
-• FinishingReagents: |cff9bb6cf19|r
+• Optional Reagents: |cff9bb6cf18|r
+• Finishing Reagents: |cff9bb6cf19|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 8|r (ItemEnhancement)|r
@@ -359,11 +359,11 @@ Notes:
 • Feet: |cff9bb6cf9|r
 • Finger: |cff9bb6cf10|r
 • Weapon: |cff9bb6cf11|r
-• TwoHandedWeapon: |cff9bb6cf12|r
-• ShieldOffhand: |cff9bb6cf13|r
+• Two Handed Weapon: |cff9bb6cf12|r
+• Shield Offhand: |cff9bb6cf13|r
 • Misc: |cff9bb6cf14|r
 • Kit: |cff9bb6cf15|r
-• ArtifactRelic: |cff9bb6cf16|r
+• Artifact Relic: |cff9bb6cf16|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 9|r (Recipe)|r
@@ -386,14 +386,14 @@ Notes:
 |cffd8d8b0|cff8ebfe9itemType = 10|r (CurrencyTokenObsolete)|r
 
 |cffe0d8c4Name / itemSubType|r
-• MoneyObsolete: |cff9bb6cf0|r
+• Money: |cff9bb6cf0|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 11|r (Quiver)|r
 
 |cffe0d8c4Name / itemSubType|r
-• QuiverObsolete: |cff9bb6cf0|r
-• AmmoPouchObsolete: |cff9bb6cf1|r
+• Quiver: |cff9bb6cf0|r
+• Ammo Pouch: |cff9bb6cf1|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 12|r (Questitem)|r
@@ -411,7 +411,7 @@ Notes:
 |cffd8d8b0|cff8ebfe9itemType = 14|r (PermanentObsolete)|r
 
 |cffe0d8c4Name / itemSubType|r
-• PermanentObsolete: |cff9bb6cf0|r
+• Permanent: |cff9bb6cf0|r
 
 
 |cffd8d8b0|cff8ebfe9itemType = 15|r (Miscellaneous)|r
@@ -419,7 +419,7 @@ Notes:
 |cffe0d8c4Name / itemSubType|r
 • Junk: |cff9bb6cf0|r
 • Reagent: |cff9bb6cf1|r
-• CompanionPet: |cff9bb6cf2|r
+• Companion Pet: |cff9bb6cf2|r
 • Holiday: |cff9bb6cf3|r
 • Other: |cff9bb6cf4|r
 • Mount: |cff9bb6cf5|r
@@ -434,7 +434,7 @@ Notes:
 • Hunter: |cff9bb6cf3|r
 • Rogue: |cff9bb6cf4|r
 • Priest: |cff9bb6cf5|r
-• DeathKnight: |cff9bb6cf6|r
+• Death Knight: |cff9bb6cf6|r
 • Shaman: |cff9bb6cf7|r
 • Mage: |cff9bb6cf8|r
 • Warlock: |cff9bb6cf9|r
@@ -488,9 +488,9 @@ Notes:
 • Decor: |cff9bb6cf0|r
 • Dye: |cff9bb6cf1|r
 • Room: |cff9bb6cf2|r
-• RoomCustomization: |cff9bb6cf3|r
-• ExteriorCustomization: |cff9bb6cf4|r
-• ServiceItem: |cff9bb6cf5|r
+• Room Customization: |cff9bb6cf3|r
+• Exterior Customization: |cff9bb6cf4|r
+• Service Item: |cff9bb6cf5|r
 
 
 |cffe6d0a2Known Limitations|r

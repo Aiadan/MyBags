@@ -242,7 +242,7 @@ Tasks which after implementation user will not see.
 * ✅ adjusted category-config wording from `Visible in` to `Used in` to better reflect that scope toggles control categorizer usage, not just header visibility.
 * ✅ fixed category editor scope-toggle UI layout: `Used in` controls now share the `Always show` row, priority/query are no longer pushed into save/revert controls, scope checkboxes are aligned, and only checkbox icons (not text labels) are interactive.
 * ✅ fixed bank category in-column row packing parity: in normal mode bank categories can now share a row within a column (matching bag behavior for small categories), while edit mode remains one-category-per-row with full-width headers.
-* ✅ regenerated `generated/queryHelpDocs.lua` from updated `QUERY_ATTRIBUTES.md`, expanded query tooltip `itemSubType` value map coverage in `Categorizers/custom/query.lua` for previously missing `itemType` classes, corrected Tradegoods subclass ids (`Jewelcrafting=4`, `Cloth=5`, `OptionalReagents=18`), and switched obsolete Tradegoods subtype labels to human-readable text with spaces.
+* ✅ regenerated `generated/queryHelpDocs.lua` from updated `QUERY_ATTRIBUTES.md`, expanded query tooltip `itemSubType` value map coverage in `Categorizers/custom/query.lua` for previously missing `itemType` classes, corrected Tradegoods subclass ids (`Jewelcrafting=4`, `Cloth=5`, `OptionalReagents=18`), switched obsolete Tradegoods subtype labels to human-readable text with spaces, and synchronized readable naming between `QUERY_ATTRIBUTES.md` and tooltip maps (for example `Axe 1H`, `Food / drink`, `Optional Reagents`).
 
 ### TODO
 

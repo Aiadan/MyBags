@@ -165,7 +165,7 @@ for _, row in ipairs(tradegoodsRows) do
   end
 end
 assert(tradegoodsSubclassRow ~= nil, "GetTooltipAttributeRows keeps itemSubType for tradegoods")
-assert(tradegoodsSubclassRow.meaning == "OptionalReagents", "tradegoods itemSubType meaning is resolved by itemType")
+assert(tradegoodsSubclassRow.meaning == "Optional Reagents", "tradegoods itemSubType meaning is resolved by itemType")
 
 local order = addonEnv.QueryCategories.TooltipAttributeDefinitions.order
 local orderPosByName = {}

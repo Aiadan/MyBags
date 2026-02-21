@@ -131,17 +131,17 @@ Notes:
 | Reagent | 5 |
 | Projectile | 6 |
 | Tradegoods | 7 |
-| ItemEnhancement | 8 |
+| Item Enhancement | 8 |
 | Recipe | 9 |
-| CurrencyTokenObsolete | 10 |
+| Currency Token | 10 |
 | Quiver | 11 |
-| Questitem | 12 |
+| Quest item | 12 |
 | Key | 13 |
-| PermanentObsolete | 14 |
+| Permanent | 14 |
 | Miscellaneous | 15 |
 | Glyph | 16 |
 | Battlepet | 17 |
-| WoWToken | 18 |
+| WoW Token | 18 |
 | Profession | 19 |
 | Housing | 20 |
 
@@ -149,7 +149,7 @@ Notes:
 
 | Name | Value |
 |---|---:|
-| NonEquip | 0 |
+| Non Equip | 0 |
 | Head | 1 |
 | Neck | 2 |
 | Shoulder | 3 |
@@ -166,24 +166,24 @@ Notes:
 | Shield | 14 |
 | Ranged | 15 |
 | Cloak | 16 |
-| TwoHandWeapon | 17 |
+| Two Hand Weapon | 17 |
 | Bag | 18 |
 | Tabard | 19 |
 | Robe | 20 |
-| MainHandWeapon | 21 |
-| OffHandWeapon | 22 |
+| Main Hand Weapon | 21 |
+| Off Hand Weapon | 22 |
 | Holdable | 23 |
 | Ammo | 24 |
 | Thrown | 25 |
-| RangedRight | 26 |
+| Ranged Right | 26 |
 | Quiver | 27 |
 | Relic | 28 |
-| ProfessionTool | 29 |
-| ProfessionGear | 30 |
-| EquipableSpellOffensive | 31 |
-| EquipableSpellUtility | 32 |
-| EquipableSpellDefensive | 33 |
-| EquipableSpellWeapon | 34 |
+| Profession Tool | 29 |
+| Profession Gear | 30 |
+| Equipable Spell Offensive | 31 |
+| Equipable Spell Utility | 32 |
+| Equipable Spell Defensive | 33 |
+| Equipable Spell Weapon | 34 |
 
 ### `bindType`
 
@@ -211,15 +211,15 @@ Notes:
 | Generic | 0 |
 | Potion | 1 |
 | Elixir | 2 |
-| Flasksphials | 3 |
+| Flasks / phials | 3 |
 | Scroll | 4 |
-| Fooddrink | 5 |
-| Itemenhancement | 6 |
+| Food / drink | 5 |
+| Item enhancement | 6 |
 | Bandage | 7 |
 | Other | 8 |
-| VantusRune | 9 |
-| UtilityCurio | 10 |
-| CombatCurio | 11 |
+| Vantus Rune | 9 |
+| Utility Curio | 10 |
+| Combat Curio | 11 |
 | Relic | 12 |
 
 ### `itemType = 1` (Container)
@@ -227,30 +227,30 @@ Notes:
 | Name | itemSubType |
 |---|---:|
 | Bag | 0 |
-| SoulBag | 1 |
-| HerbBag | 2 |
-| EnchantingBag | 3 |
-| EngineeringBag | 4 |
-| GemBag | 5 |
-| MiningBag | 6 |
-| LeatherworkingBag | 7 |
-| InscriptionBag | 8 |
-| TackleBox | 9 |
-| CookingBag | 10 |
+| Soul Bag | 1 |
+| Herb Bag | 2 |
+| Enchanting Bag | 3 |
+| Engineering Bag | 4 |
+| Gem Bag | 5 |
+| Mining Bag | 6 |
+| Leatherworking Bag | 7 |
+| Inscription Bag | 8 |
+| Tackle Box | 9 |
+| Cooking Bag | 10 |
 
 ### `itemType = 2` (Weapon)
 
 | Name | itemSubType |
 |---|---:|
-| Axe1H | 0 |
-| Axe2H | 1 |
+| Axe 1H | 0 |
+| Axe 2H | 1 |
 | Bows | 2 |
 | Guns | 3 |
-| Mace1H | 4 |
-| Mace2H | 5 |
+| Mace 1H | 4 |
+| Mace 2H | 5 |
 | Polearm | 6 |
-| Sword1H | 7 |
-| Sword2H | 8 |
+| Sword 1H | 7 |
+| Sword 2H | 8 |
 | Warglaive | 9 |
 | Staff | 10 |
 | Bearclaw | 11 |
@@ -259,7 +259,7 @@ Notes:
 | Generic | 14 |
 | Dagger | 15 |
 | Thrown | 16 |
-| Obsolete3 | 17 |
+| Obsolete | 17 |
 | Crossbow | 18 |
 | Wand | 19 |
 | Fishingpole | 20 |
@@ -273,13 +273,13 @@ Notes:
 | Strength | 2 |
 | Stamina | 3 |
 | Spirit | 4 |
-| Criticalstrike | 5 |
+| Critical Strike | 5 |
 | Mastery | 6 |
 | Haste | 7 |
 | Versatility | 8 |
 | Other | 9 |
-| Multiplestats | 10 |
-| Artifactrelic | 11 |
+| Multiple stats | 10 |
+| Artifact / relic | 11 |
 
 ### `itemType = 4` (Armor)
 
@@ -304,7 +304,7 @@ Notes:
 |---|---:|
 | Reagent | 0 |
 | Keystone | 1 |
-| ContextToken | 2 |
+| Context Token | 2 |
 
 ### `itemType = 6` (Projectile)
 
@@ -314,7 +314,7 @@ Notes:
 | Bolt | 1 |
 | Arrow | 2 |
 | Bullet | 3 |
-| ThrownObsolete | 4 |
+| Thrown | 4 |
 
 ### `itemType = 7` (Tradegoods)
 
@@ -327,7 +327,7 @@ Notes:
 | Jewelcrafting | 4 |
 | Cloth | 5 |
 | Leather | 6 |
-| MetalStone | 7 |
+| Metal Stone | 7 |
 | Cooking | 8 |
 | Herb | 9 |
 | Elemental | 10 |
@@ -338,8 +338,8 @@ Notes:
 | Weapon Enchantment (Obsolete) | 15 |
 | Inscription | 16 |
 | Explosives & Devices (Obsolete) | 17 |
-| OptionalReagents | 18 |
-| FinishingReagents | 19 |
+| Optional Reagents | 18 |
+| Finishing Reagents | 19 |
 
 ### `itemType = 8` (ItemEnhancement)
 
@@ -357,11 +357,11 @@ Notes:
 | Feet | 9 |
 | Finger | 10 |
 | Weapon | 11 |
-| TwoHandedWeapon | 12 |
-| ShieldOffhand | 13 |
+| Two Handed Weapon | 12 |
+| Shield Offhand | 13 |
 | Misc | 14 |
 | Kit | 15 |
-| ArtifactRelic | 16 |
+| Artifact Relic | 16 |
 
 ### `itemType = 9` (Recipe)
 
@@ -384,14 +384,14 @@ Notes:
 
 | Name | itemSubType |
 |---|---:|
-| MoneyObsolete | 0 |
+| Money | 0 |
 
 ### `itemType = 11` (Quiver)
 
 | Name | itemSubType |
 |---|---:|
-| QuiverObsolete | 0 |
-| AmmoPouchObsolete | 1 |
+| Quiver | 0 |
+| Ammo Pouch | 1 |
 
 ### `itemType = 12` (Questitem)
 
@@ -409,7 +409,7 @@ Notes:
 
 | Name | itemSubType |
 |---|---:|
-| PermanentObsolete | 0 |
+| Permanent | 0 |
 
 ### `itemType = 15` (Miscellaneous)
 
@@ -417,7 +417,7 @@ Notes:
 |---|---:|
 | Junk | 0 |
 | Reagent | 1 |
-| CompanionPet | 2 |
+| Companion Pet | 2 |
 | Holiday | 3 |
 | Other | 4 |
 | Mount | 5 |
@@ -432,7 +432,7 @@ Notes:
 | Hunter | 3 |
 | Rogue | 4 |
 | Priest | 5 |
-| DeathKnight | 6 |
+| Death Knight | 6 |
 | Shaman | 7 |
 | Mage | 8 |
 | Warlock | 9 |
@@ -486,9 +486,9 @@ Notes:
 | Decor | 0 |
 | Dye | 1 |
 | Room | 2 |
-| RoomCustomization | 3 |
-| ExteriorCustomization | 4 |
-| ServiceItem | 5 |
+| Room Customization | 3 |
+| Exterior Customization | 4 |
+| Service Item | 5 |
 
 ## Known Limitations
 
