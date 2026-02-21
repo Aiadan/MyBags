@@ -988,7 +988,7 @@ local function getBackgroundColumnFallbackHintFrame(self, frame, scope)
 end
 
 local function refreshBackgroundHoverHint(self, frame)
-    if not AddonNS.DragAndDrop:IsItemDragActive() then
+    if not AddonNS.DragAndDrop:IsItemDragActive() and not AddonNS.DragAndDrop:IsCategoryDragActive() then
         AddonNS.gui:ClearHoveredCategoryFrame(frame)
         return
     end
@@ -1008,7 +1008,7 @@ local function handleBackgroundDrop(self, frame, mouseButtonName)
     if mouseButtonName and mouseButtonName ~= "LeftButton" then
         return
     end
-    if AddonNS.DragAndDrop:IsItemDragActive() then
+    if AddonNS.DragAndDrop:IsItemDragActive() or AddonNS.DragAndDrop:IsCategoryDragActive() then
         local scope = frame.MyBagsScope or self.currentScope
         local hintFrame = getBackgroundHintFrame(self, frame, scope)
         if hintFrame and hintFrame:IsShown() then
@@ -1286,6 +1286,7 @@ local function ensureHeaderFrame(self, index)
     end
 
     headerFrame.label = label
+    headerFrame.fs = label
     headerFrame.editButton = editButton
     headerFrame.deleteButton = deleteButton
     headerFrame.scopeVisibilityButton = scopeVisibilityButton
@@ -1641,6 +1642,7 @@ local function renderHeaders(self, scope, panel, categoryPositions)
             end
 
             dropFrame.ItemCategory = categoryPosition.category
+            dropFrame.fs = frame.fs
             dropFrame.MyBagsScope = scope
             dropFrame.MyBagsContainerRef = panel
             dropFrame.MyBagsHintAnchorFrame = self.backgroundFrame

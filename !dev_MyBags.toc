@@ -1,7 +1,6 @@
 ## Interface: 110205, 120000, 120100
 ## Version: @project-version@
 ## DefaultState: Enabled
-### AddonCompartmentFunc: MyTestsAddon_MinimapOnClick
 
 #@non-debug@
 # ## Title: |cffff2459My|r|cffffffffBags|r

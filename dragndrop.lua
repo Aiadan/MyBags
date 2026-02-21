@@ -100,6 +100,10 @@ function AddonNS.DragAndDrop:IsItemDragActive()
     return hasActiveItemDrag()
 end
 
+function AddonNS.DragAndDrop:IsCategoryDragActive()
+    return isCategoryDragActive
+end
+
 function AddonNS.DragAndDrop:GetCategoryDropHint(category, isHovered)
     if not hasActiveItemDrag() then
         return nil

@@ -245,6 +245,10 @@ local function getCategoryHoverText(frame)
     return title
 end
 
+local function isHoveringCategoryTitle(frame)
+    return MouseIsOver(frame.fs)
+end
+
 local function findFocusedCategoryFrame(frame)
     local current = frame
     while current do
@@ -317,7 +321,7 @@ function AddonNS.gui:RefreshCategoryDragHints()
                     shownTextFrame = frame
                     if hint and hint.text then
                         shownText = hint.text
-                    else
+                    elseif isHoveringCategoryTitle(frame) then
                         shownText = getCategoryHoverText(frame)
                     end
                 end

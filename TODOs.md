@@ -170,6 +170,8 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ move search in bank to the left as it is in combined bags
 * ✅ add icon with question mark right to the search box in both banks and bags as it is available next to a query in category configuration which will open the same frame with info about query
 * ✅ completed `QUERY_ATTRIBUTES.md` item subtype coverage for previously missing `itemType` classes (Container, Projectile, Tradegoods, ItemEnhancement, CurrencyTokenObsolete, Quiver, Questitem, Key, PermanentObsolete, Glyph, Battlepet, WoWToken).
+* ✅ category header hover tooltip that only shows category name/description now appears only when hovering the category title text (not the whole category row) in both bags and bank; drag/drop hint tooltips are unchanged.
+* ✅ fixed bank category-background drag retargeting for category drags: background now resolves hovered bank category body and forwards to category drop handler for both item-drag and category-drag flows (instead of only item-drag), so category body drops no longer fall back to column background.
 
 ### TODO
 
