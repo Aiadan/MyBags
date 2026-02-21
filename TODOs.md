@@ -246,6 +246,7 @@ Tasks which after implementation user will not see.
 * ✅ fixed category editor scope-toggle UI layout: `Used in` controls now share the `Always show` row, priority/query are no longer pushed into save/revert controls, scope checkboxes are aligned, and only checkbox icons (not text labels) are interactive.
 * ✅ fixed bank category in-column row packing parity: in normal mode bank categories can now share a row within a column (matching bag behavior for small categories), while edit mode remains one-category-per-row with full-width headers.
 * ✅ regenerated `generated/queryHelpDocs.lua` from updated `QUERY_ATTRIBUTES.md`, expanded query tooltip `itemSubType` value map coverage in `Categorizers/custom/query.lua` for previously missing `itemType` classes, corrected Tradegoods subclass ids (`Jewelcrafting=4`, `Cloth=5`, `OptionalReagents=18`), switched obsolete Tradegoods subtype labels to human-readable text with spaces, and synchronized readable naming between `QUERY_ATTRIBUTES.md` and tooltip maps (for example `Axe 1H`, `Food / drink`, `Optional Reagents`).
+* ✅ restored query item-data async refresh in `Categorizers/custom.lua`: when `C_Item.GetItemInfo` is not ready, custom categorizer now schedules a throttled (`~1s` per item id) `Item:ContinueOnItemLoad` callback that triggers `CATEGORIZER_CATEGORIES_UPDATED`, recovering first-open miscategorization cases (including mythic keystone-style delayed item data).
 
 ### TODO
 

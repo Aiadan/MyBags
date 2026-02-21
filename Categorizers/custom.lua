@@ -20,6 +20,7 @@ local RUNTIME_EMPTY_CUSTOM_HEADER_COLOR_PREFIX = "|CFFbbbbbb"
 local SELECTED_CUSTOM_CATEGORY_PREFIX = "|cffff2020>>|r "
 
 local assignments = {}
+local seenItemInfoRefreshByItemId = {}
 local sortedQueryRawIds = nil
 local invalidate_sorted_query_raw_ids
 local categorizeProfile = {
@@ -36,6 +37,16 @@ end
 
 local function profileNowMs()
     return debugprofilestop()
+end
+
+local function shouldProcessItemInfoRefresh(itemId)
+    local now = debugprofilestop()
+    local last = seenItemInfoRefreshByItemId[itemId]
+    if last and (now - last) < 1000 then
+        return false
+    end
+    seenItemInfoRefreshByItemId[itemId] = now
+    return true
 end
 
 local function normalize_array(source)
@@ -704,6 +715,15 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
     local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent =
         C_Item.GetItemInfo(containerInfo.hyperlink)
     if not itemName then
+        local resolvedItemId = itemID or containerInfo.itemID
+        if resolvedItemId and shouldProcessItemInfoRefresh(resolvedItemId) then
+            local item = Item:CreateFromItemID(resolvedItemId)
+            AddonNS.printDebug("SCHEDULING refresh when item loads", containerInfo.itemName)
+            item:ContinueOnItemLoad(function()
+                AddonNS.printDebug("Item loaded")
+                AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, CustomCategorizer)
+            end)
+        end
         return nil, containerInfo
     end
     local inventoryType = C_Item.GetItemInventoryTypeByID(itemID)
