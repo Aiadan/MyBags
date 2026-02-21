@@ -1,7 +1,5 @@
 name: Package and release
 
-# we need to let GitHub know _when_ we want to release, typically only when we create a new tag.
-# this will target only tags
 on:
   push:
     tags:
@@ -11,15 +9,12 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
-    # specify the environment variables used by the packager, matching the secrets from the project on GitHub
     env:
-      GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}  # "GITHUB_TOKEN" is a secret always provided to the workflow
+      GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
 
-
-    # "steps" holds a list of all the steps needed to package and release our AddOn
     steps:
 
-      # we first have to clone the AddOn project, this is a required step
       - name: Clone project
         uses: actions/checkout@v3
 
@@ -29,7 +24,7 @@ jobs:
       - name: Rename .toc file
         run: mv '!dev_MyBags.toc' MyBags.toc
 
-      - name: Add .toc file to Git #workaround for the package to accept this file and not ignore it
+      - name: Add .toc file to Git
         run: git add MyBags.toc
 
       - name: Generate query help lua
@@ -64,6 +59,7 @@ jobs:
             exit 1
           fi
 
-      # once cloned, we just run the GitHub Action for the packager project
       - name: Package and release
         uses: BigWigsMods/packager@v2
+        with:
+          args: -p 1467794
