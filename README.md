@@ -1,8 +1,8 @@
 # MyBags
 
-*Disclaimer: I do this for fun. I do this mainly for myself :). There are other bag addons with great support, but just lacked the flexibility in the setup of the bags that I wanted. To be on a safe side you might consider using those as I cannot guarantee keeping this up to date. I am exposing it though so it was easier for my friends who wanted to use it to download it :)*
-
 This is yet another bag addon whose main goal is **making manual category creation, cross-bag category layout, and item reassignment as simple as possible**.
+
+*Disclaimer: I do this for fun. I do this mainly for myself :). There are other bag addons with great support, but just lacked the flexibility in the setup of the bags that I wanted. To be on a safe side you might consider using those as I cannot guarantee keeping this up to date. I am exposing it though so it was easier for my friends who wanted to use it to download it :)*
 
 ## Easy layout adjustments
 
