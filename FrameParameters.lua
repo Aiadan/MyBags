@@ -161,6 +161,13 @@ function AddonNS.ApplyBankFrameScale()
     end
     BankFrame:SetScale(BankFrame:GetScale())
 end
+
+function AddonNS.ApplyContainerFrameScale()
+    if not ContainerFrameCombinedBags then
+        return
+    end
+    ContainerFrameCombinedBags:SetScale(ContainerFrameCombinedBags:GetScale())
+end
 -- -- Example of applying the overrides
 -- FrameParametersOverride:OverrideHeight(ContainerFrameCombinedBags, "ContainerFrame.lua")
 -- FrameParametersOverride:OverrideWidth(ContainerFrameCombinedBags, "ContainerFrame.lua")

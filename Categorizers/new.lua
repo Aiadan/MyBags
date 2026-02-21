@@ -58,6 +58,7 @@ function NewItemCategorizer:OnRightClick()
     AddonNS.printDebug("Clearing NEW")
     C_NewItems.ClearAll()
     newItems = {}
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, NewItemCategorizer)
     return true
 end
 

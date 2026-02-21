@@ -1,5 +1,7 @@
 local removedBag = nil
 local removedSlot = nil
+local triggeredEventName = nil
+local triggeredEventCategorizer = nil
 
 C_NewItems = {
   RemoveNewItem = function(bagID, slotIndex)
@@ -14,6 +16,11 @@ C_NewItems = {
 
 local registeredCategorizer = nil
 local addonEnv = {
+  Const = {
+    Events = {
+      CATEGORIZER_CATEGORIES_UPDATED = "CATEGORIZER_CATEGORIES_UPDATED",
+    },
+  },
   Categories = {
     RegisterCategorizer = function(_, _, categorizer)
       registeredCategorizer = categorizer
@@ -21,6 +28,10 @@ local addonEnv = {
   },
   Events = {
     RegisterEvent = function() end,
+    TriggerCustomEvent = function(_, eventName, categorizer)
+      triggeredEventName = eventName
+      triggeredEventCategorizer = categorizer
+    end,
   },
   printDebug = function() end,
 }
@@ -44,3 +55,8 @@ newCategory:OnItemUnassigned(19019, {
 
 assert(removedBag == 2, "OnItemUnassigned uses context button bag id")
 assert(removedSlot == 11, "OnItemUnassigned uses context button slot index")
+
+local refreshed = registeredCategorizer:OnRightClick()
+assert(refreshed == true, "OnRightClick reports refresh required")
+assert(triggeredEventName == addonEnv.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, "OnRightClick triggers categorizer updated event")
+assert(triggeredEventCategorizer == registeredCategorizer, "OnRightClick passes New categorizer as event payload")

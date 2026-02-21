@@ -59,9 +59,15 @@ local function triggerContainerOnTokenWatchChanged()
     if container:IsSearchAnchorLockActive() then
         securecallfunction(container.UpdateTokenTracker, container)
         triggerContainerUpdateItemLayout()
+        if AddonNS.ApplyContainerFrameScale then
+            AddonNS.ApplyContainerFrameScale()
+        end
         return
     end
     securecallfunction(container.OnTokenWatchChanged, container);
+    if AddonNS.ApplyContainerFrameScale then
+        AddonNS.ApplyContainerFrameScale()
+    end
 end
 
 AddonNS.TriggerContainerOnTokenWatchChanged = triggerContainerOnTokenWatchChanged;
@@ -76,6 +82,9 @@ local function queueContainerUpdateItemLayout()
     RunNextFrame(function()
         AddonNS.printDebug("QueueContainerUpdateItemLayout fired");
         triggerContainerUpdateItemLayout();
+        if AddonNS.ApplyContainerFrameScale then
+            AddonNS.ApplyContainerFrameScale()
+        end
     end);
 end
 
