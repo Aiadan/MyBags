@@ -249,6 +249,7 @@ Tasks which after implementation user will not see.
 * ✅ restored query item-data async refresh in `Categorizers/custom.lua`: when `C_Item.GetItemInfo` is not ready, custom categorizer now schedules a throttled (`~1s` per item id) `Item:ContinueOnItemLoad` callback that triggers `CATEGORIZER_CATEGORIES_UPDATED`, recovering first-open miscategorization cases (including mythic keystone-style delayed item data).
 * ✅ fixed stale refresh after clearing `New`: `Categorizers/new.lua` now emits `CATEGORIZER_CATEGORIES_UPDATED` after `ClearAll` so bag/bank categorization caches invalidate and refresh correctly; regression coverage added in `tests/Categorizers/new_test.lua`.
 * ✅ fixed combined-bags oversize edge case during dynamic growth (for example `New` category expansion on incoming items): bag refresh/token-watch paths now explicitly reapply combined-bags scale after layout updates (`AddonNS.ApplyContainerFrameScale`), so frame scale clamps to screen bounds as content height changes.
+* ✅ enforced global per-scope layout uniqueness for category ids in `CategoryStore` (dedupe across all columns during layout normalization), with integration coverage for both load-time cleanup of already-duplicated SavedVariables and runtime `SetLayoutColumns` persistence normalization.
 
 ### TODO
 

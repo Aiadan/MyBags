@@ -564,6 +564,67 @@ run("new custom category appends to last column when layout already seeded", fun
     assert_true(count_layout_id(columns, catC:GetId()) == 1, "new category appears only once in layout")
 end)
 
+run("layout load normalizes duplicate category ids across columns", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+            layout = {
+                columnCount = 3,
+                columns = {
+                    { "eq-1", "cus-1" },
+                    { "cus-1", "eq-1" },
+                    { "unassigned" },
+                },
+                collapsed = {},
+            },
+        },
+    })
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local columns = layout_columns(ctx:snapshot())
+    assert_equal({ "eq-1", "cus-1" }, columns[1] or {}, "first occurrences are preserved in first column")
+    assert_equal({}, columns[2] or {}, "duplicate ids are removed from later columns")
+    assert_equal({ "unassigned" }, columns[3] or {}, "unrelated ids are preserved")
+end)
+
+run("set layout columns normalizes globally deduplicated ids", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+            layout = {
+                columnCount = 3,
+                columns = { {}, {}, {} },
+                collapsed = {},
+            },
+        },
+    })
+    ctx.AddonNS.CategoryStore:SetLayoutColumns({
+        { "eq-7", "cus-2" },
+        { "cus-2", "eq-7", "new-singleton" },
+        {},
+    }, "bag")
+
+    local columns = layout_columns(ctx:snapshot())
+    assert_equal({ "eq-7", "cus-2" }, columns[1] or {}, "first column keeps initial ordering")
+    assert_equal({ "new-singleton" }, columns[2] or {}, "later duplicates are removed while unique ids remain")
+end)
+
 run("empty layout bootstrap keeps round-robin placement for new categories", function()
     local ctx = harness.new({
         saved = {

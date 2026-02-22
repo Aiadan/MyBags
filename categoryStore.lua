@@ -218,6 +218,7 @@ local function sync_legacy_layout_root(layoutRoot)
 end
 
 local normalize_columns_to_count
+local dedupe_columns_globally
 
 local function get_scope_layout(layoutRoot, scope)
     local normalizedScope = normalize_layout_scope(scope)
@@ -243,7 +244,28 @@ normalize_columns_to_count = function(columns, targetCount)
             columns[columnIndex] = nil
         end
     end
+    dedupe_columns_globally(columns, targetCount)
     return columns
+end
+
+dedupe_columns_globally = function(columns, targetCount)
+    local seen = {}
+    for columnIndex = 1, targetCount do
+        local column = columns[columnIndex] or {}
+        local writeIndex = 1
+        for readIndex = 1, #column do
+            local id = column[readIndex]
+            if not seen[id] then
+                seen[id] = true
+                column[writeIndex] = id
+                writeIndex = writeIndex + 1
+            end
+        end
+        for idx = #column, writeIndex, -1 do
+            column[idx] = nil
+        end
+        columns[columnIndex] = column
+    end
 end
 
 function CategoryStore:LoadOrBootstrap(db, legacyDb)
