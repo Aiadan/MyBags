@@ -31,6 +31,49 @@ This is yet another bag addon whose main goal is **making manual category creati
    * edit query and priority rules for custom categories
 5. Search filters visible items and combines Blizzard text matching with valid MyBags [query matching](https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md). Query Help is available in-game next to bag/bank search bars.
 
+## Import and export categories
+
+MyBags supports category import/export using a plain Lua table payload.
+
+- Export writes selected custom categories into an import-ready payload.
+- Import creates custom categories from the payload entries (you can import multiple categories at once).
+- Category data includes `name`, `query`, `priority`, `alwaysVisible`, and `items`.
+- Use this flow to move/share category setups with others!
+
+### AI prompt workflow
+
+You can also ask AI to help you generate categories based on queries by utilizing the import feature.
+
+- Paste the template prompt below into your AI tool.
+- Keep the structure unchanged.
+- Modify only the category request list at the end.
+
+Template prompt:
+
+```lua
+Here is a sample exported category (one from the list, though multiple categories can be included at once) that I can import into the MyBags addon:
+
+{
+  version = 1,
+  categories = {
+    {
+      name = "shirts",
+      query = "itemtype=4 and itemsubtype =0 and inventorytype =4",
+      priority = 73,
+      alwaysVisible = false,
+      items = {  },
+    },
+  },
+}
+
+I would like to create additional categories that I can import. Please refer to the following documentation for the correct query format: https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/refs/heads/main/QUERY_ATTRIBUTES.md
+
+Please create a list of categories to import:
+
+* Reagents, with a separate category for each expansion
+* Armor and weapons (combined), with a separate category for each expansion
+```
+
 ### Other features
 
 * Always-available built-in categories: `Equipment Sets`, `New Items`, and `Unassigned`.

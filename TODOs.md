@@ -174,6 +174,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ fixed bank category-background drag retargeting for category drags: background now resolves hovered bank category body and forwards to category drop handler for both item-drag and category-drag flows (instead of only item-drag), so category body drops no longer fall back to column background.
 * ✅ simplified `README.md` structure and wording, including a shorter and clearer `How it works` flow and a compact but more complete `Other features` section.
 * ✅ in edit mode add next to the question mark which is next to the search bars a checkbox which by default will be disabled. It will steer whether categories disabled to be used in a given scope should be visible or not. By default they should not be visible in config mode. Toggling this checkbox will make them visible.
+* ✅ expanded README import/export docs to explain normal payload-based import/export behavior, plus a small AI prompt workflow subsection with a reusable template and the 3-step instruction list.
 
 ### TODO
 
