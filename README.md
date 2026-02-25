@@ -2,7 +2,9 @@
 
 This is yet another bag addon whose main goal is **making manual category creation, cross-bag category layout, and item reassignment as simple as possible**.
 
-*Disclaimer: I do this for fun. I do this mainly for myself :). There are other bag addons with great support, but just lacked the flexibility in the setup of the bags that I wanted. To be on a safe side you might consider using those as I cannot guarantee keeping this up to date. I am exposing it though so it was easier for my friends who wanted to use it to download it :)*
+![Main](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/main/.previews/main.png)
+
+*Disclaimer: I do this for fun. I do this mainly for myself :). There are other bag addons with great support, but just lacked the flexibility in the setup of the bags that I wanted. I am exposing it though so it was easier for my friends who wanted to use it to download it :)*
 
 ## Easy layout adjustments
 
@@ -107,7 +109,3 @@ The addon is designed to enhance the functionality of the default game bags rath
 **Preserves Default Bag Item Slot Layout**
 
 The addon will display items exactly as they appear in the default bag slots. This approach ensures that any new features supported by the default game bags will be available without any additional work.
-
-## TODOs, Ideas and other things considering for this addon
-
-See "[TODOs, Ideas and other things considering for this addon](https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/TODOs.md)" to learn more.
