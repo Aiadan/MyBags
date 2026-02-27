@@ -299,33 +299,38 @@ local QueryTooltipDefinitions = {
     },
     descriptions = {
         -- stackCount = "Item stack size",
-        expansionID = "Item expansion id",
-        quality = "Item quality",
-        isReadable = "Item can be read",
-        hasLoot = "Item contains loot",
-        hasNoValue = "Item has no vendor value",
-        itemID = "Item id",
+        -- expansionID = "Item expansion id",
+        -- quality = "Item quality",
+        -- isReadable = "Item can be read",
+        -- hasLoot = "Item contains loot",
+        -- hasNoValue = "True if item cannot be sold",
+        -- itemID = "Item id",
         -- isBound = "Item is bound",
         -- itemName = "Item name",
         -- ilvl = "Item level",
-        itemMinLevel = "Character required level",
-        itemType = "Item class",
-        itemSubType = "Item subclass",
-        inventoryType = "Equip slot type",
-        sellPrice = "Vendor sell price",
-        isCraftingReagent = "Crafting reagent flag",
-        isQuestItem = "Quest item flag",
-        questID = "Quest id",
-        isQuestItemActive = "Quest active flag",
-        isAnimaItem = "True when the item is an anima item",
-        isArtifactPowerItem = "True when the item is an artifact power item",
-        isCorruptedItem = "True when the item is a corrupted item",
-        isWarbound = "True when the item is warbound (bound to account until equipped)",
-        isTransmogCollected = "True when the item's transmog source is collected",
-        bindType = "Bind type",
-        description = "Item description text",
+        -- itemMinLevel = "Character required level",
+        -- itemType = "Item class",
+        -- itemSubType = "Item subclass",
+        -- inventoryType = "Equip slot type",
+        -- sellPrice = "Vendor sell price",
+        -- isCraftingReagent = "Crafting reagent flag",
+        -- isQuestItem = "Quest item flag",
+        -- questID = "Quest id",
+        -- isQuestItemActive = "Quest active flag",
+        -- isAnimaItem = "True when the item is an anima item",
+        -- isArtifactPowerItem = "True when the item is an artifact power item",
+        -- isCorruptedItem = "True when the item is a corrupted item",
+        -- isWarbound = "True when the item is warbound (bound to account until equipped)",
+        -- isTransmogCollected = "True when the item's transmog source is collected",
+        -- bindType = "Bind type",
+        -- description = "Item description text",
     },
     valueLabels = {
+
+        hasNoValue = {
+            [true] ="Item cannot be sold",
+            [false] = "Item can be sold"
+        },
         expansionID = {
             [0] = "Classic",
             [1] = "The Burning Crusade",
@@ -361,8 +366,8 @@ local QueryTooltipDefinitions = {
             [33] = "Equipable Spell Defensive", [34] = "Equipable Spell Weapon",
         },
         bindType = {
-            [0] = "None", [1] = "OnAcquire (Bind on Pickup)", [2] = "OnEquip (Bind on Equip)",
-            [3] = "OnUse (Bind on Use)", [4] = "Quest", [5] = "Unused1", [6] = "Unused2",
+            [0] = "None", [1] = "Bind on Pickup", [2] = "Bind on Equip",
+            [3] = "Bind on Use", [4] = "Quest", [5] = "Unused1", [6] = "Unused2",
             [7] = "ToWoWAccount", [8] = "ToBnetAccount", [9] = "ToBnetAccountUntilEquipped",
         },
     },
@@ -465,7 +470,7 @@ local function getTooltipValueMeaning(attributeName, value, payload)
         end
     end
     local labels = QueryTooltipDefinitions.valueLabels[attributeName]
-    if labels and type(value) == "number" then
+    if labels and labels[value] then
         return labels[value]
     end
     return QueryTooltipDefinitions.descriptions[attributeName]

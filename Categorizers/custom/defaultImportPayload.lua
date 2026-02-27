@@ -28,7 +28,7 @@ AddonNS.CustomDefaultImportPayload = {
         -- Manual teleport/hearthstone utility item IDs copied from user profile.
         { name = "Teleport", priority = 712, items = { 147869, 37863, 63207, 63353, 208066, 217956, 18149, 217930, 41255, 44655, 200613, 110560, 6948, 140192, 173373, 65274, 46874, 21711, 180817, 234389, 116413, 249699, 250411, 238727 } },
         -- itemType = 15 is Miscellaneous; subtype 2=CompanionPet and 5=Mount.
-        { name = "Mounts & Pets", query = "itemType = 15 AND (itemSubType = 2 OR itemSubType = 5)", priority = 720, items = {} },
+        { name = "Mounts & Pets", query = "itemType = 15 AND (itemSubType = 2 OR itemSubType > 4)", priority = 720, items = {} },
         -- itemType = 0 is Consumable; subtype 10=UtilityCurio and 11=CombatCurio.
         { name = "Curios", query = "itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)", priority = 710, items = {} },
         -- itemType = 20 is Housing class.

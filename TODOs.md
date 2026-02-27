@@ -175,12 +175,15 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ simplified `README.md` structure and wording, including a shorter and clearer `How it works` flow and a compact but more complete `Other features` section.
 * ✅ in edit mode add next to the question mark which is next to the search bars a checkbox which by default will be disabled. It will steer whether categories disabled to be used in a given scope should be visible or not. By default they should not be visible in config mode. Toggling this checkbox will make them visible.
 * ✅ expanded README import/export docs to explain normal payload-based import/export behavior, plus a small AI prompt workflow subsection with a reusable template and the 3-step instruction list.
-* ✅ added a new default starter custom category `Uncollected Transmog` (query-based) and placed it in seeded default layout.
+* ✅ added a new default starter custom category `Uncollected Transmog` (query-based) and placed it in seeded default layout.* ✅ added five non-derivable query attributes (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `description`, `isTransmogCollected`) with docs/tests updates, and added temporary combined profiling for new-attribute extraction cost in `CustomCategorizer:Categorize` profiling output (`newAttrsAvg`).
+* ✅ changed `isTransmogCollected` payload semantics so missing transmog source info now yields `nil` (not `false`), with query docs/help and unit/integration tests updated.
+* ✅ query string matching is now case-insensitive (`itemName` and `description`) by lowercasing both candidate and pattern in the string comparator, with docs/help and query unit tests updated.
 
 ### TODO
 
 * draggin an item from vendor or inventory or another container should not show category highlight as this will not assign by default (at least from vendor) this item to a given category based on background afaik. If that is true then in other cases it also should not reassign category when dropping on background
 * changing tab between warband bank and bank while having search selected freezes the resize. We should either clear the search before switchng and leave it empty, or clean it, switch, paste it.
+* draggin item from bags to bank to a different category firstly causes the item to change category in the bag, and only next drag causes the item to be moved to a bag. It should do both at the same time.
 
 #### Low priority
 
@@ -256,13 +259,11 @@ Tasks which after implementation user will not see.
 * ✅ fixed bag/bank overlap on simultaneous open by reapplying combined-bags scale immediately after bank frame size/scale refresh and once more after first-frame bank position settle in `bankView.lua` sizing flow.
 * ✅ tightened bag-vs-bank separation in container scale math by enforcing a positive post-bank gap (`BankFrame:GetRight() + gap`) instead of the previous negative offset allowance, reducing residual overlap after simultaneous open/resize flows.
 * ✅ simplified `FrameParameters.lua` scaling model to shared width fit + per-frame height fit, then upgraded it with a second-pass effective-width reclaim: after initial `widthScale`/height comparison, each frame recomputes its width limit using remaining width after the other frame’s effective occupied width (`otherWidth * otherScale`), so a height-limited bank can free width for bags (and vice versa); final per-frame scales are clamped to `[0.05, 1]`; bag-refresh paths in `main.lua` now reapply both container and bank scales (when bank is shown) so bank scale tracks bag-size changes under the shared-width model; `bankView.lua` now also re-runs `UpdateUIPanelPositions(BankFrame)` when bank panel height grows (not only on first show) to keep vertical placement aligned as size increases; dedicated pure-math coverage lives in `tests/frame_parameters_scale_test.lua`.
-* ✅ added five non-derivable query attributes (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `description`, `isTransmogCollected`) with docs/tests updates, and added temporary combined profiling for new-attribute extraction cost in `CustomCategorizer:Categorize` profiling output (`newAttrsAvg`).
-* ✅ changed `isTransmogCollected` payload semantics so missing transmog source info now yields `nil` (not `false`), with query docs/help and unit/integration tests updated.
-* ✅ query string matching is now case-insensitive (`itemName` and `description`) by lowercasing both candidate and pattern in the string comparator, with docs/help and query unit tests updated.
 * ✅ added `isWarbound` query attribute via `C_Item.IsBoundToAccountUntilEquip(ItemLocation:CreateFromBagAndSlot(...))`, and updated docs/help plus unit/integration test coverage.
 * ✅ expanded query documentation notes/examples for recently added attributes (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `isWarbound`, `description`, `isTransmogCollected`) and regenerated in-game query help docs.
 * ✅ restructured recent-attribute documentation to user-facing dedicated headers under `Core Value Tables` (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `isWarbound`, `description`, `isTransmogCollected`) and removed mixed technical note block.
 * ✅ switched default seeded `Warbound` category query from `bindType = 9` to `isWarbound = true` (still gated by `isBound = false`) and synced integration default-query expectations.
+  * ✅ completed: custom category GUI drag/drop no longer uses `GetCategoryByName` fallback lookup.
 
 ### TODO
 
@@ -280,7 +281,6 @@ Tasks which after implementation user will not see.
   * `/run GLOBAL_MyBagsDisableProfiling()`
   * target next split: manual-assignment checks vs query evaluation vs category-iteration overhead.
 * [PARTIAL] Code overall should try to as much as possible stop using ids or names to retrieve information about a category and try to as much as possible use references to categories.
-  * ✅ completed: custom category GUI drag/drop no longer uses `GetCategoryByName` fallback lookup.
   * ✅ completed: category column assignment now hydrates runtime layout state on load and serializes back on logout.
   * ✅ decision update: category move/layout event flow uses category ids in `categoriesColumnAssignment.lua` by design (stable persisted shape and lower load-order/wrapper coupling).
   * ⏳ remaining: continue reducing id-based handling where persistence/UI boundary still legitimately uses ids.
