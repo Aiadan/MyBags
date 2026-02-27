@@ -25,6 +25,20 @@ local function computeWidthScale(screenWidth, containerFrameOffsetX, bagVisible,
     return availableWidth / totalVisibleWidth
 end
 
+local function computeWidthScaleFromRemaining(availableWidth, frameVisible, frameWidth, otherVisible, otherWidth, otherScale)
+    if not frameVisible then
+        return 1
+    end
+    if not frameWidth or frameWidth <= 0 then
+        return 1
+    end
+    local remainingWidth = availableWidth
+    if otherVisible then
+        remainingWidth = remainingWidth - otherWidth * otherScale
+    end
+    return remainingWidth / frameWidth
+end
+
 local function computeHeightScale(visible, availableHeight, frameHeight)
     if not visible then
         return 1
@@ -36,11 +50,30 @@ local function computeHeightScale(visible, availableHeight, frameHeight)
 end
 
 local function computeFrameScales(screenWidth, screenHeight, containerFrameOffsetX, bagVisible, bagWidth, bagHeight, bankVisible, bankWidth, bankHeight)
+    local availableWidth = screenWidth - containerFrameOffsetX - BANK_FRAME_SCREEN_PADDING * 2
     local widthScale = computeWidthScale(screenWidth, containerFrameOffsetX, bagVisible, bagWidth, bankVisible, bankWidth)
     local bagHeightScale = computeHeightScale(bagVisible, screenHeight - CONTAINER_OFFSET_Y, bagHeight)
     local bankHeightScale = computeHeightScale(bankVisible, screenHeight - BANK_FRAME_SCREEN_PADDING * 2, bankHeight)
-    local bagScale = clampScale(math.min(widthScale, bagHeightScale))
-    local bankScale = clampScale(math.min(widthScale, bankHeightScale))
+    local bagInitialScale = math.min(widthScale, bagHeightScale)
+    local bankInitialScale = math.min(widthScale, bankHeightScale)
+    local bagWidthScale = computeWidthScaleFromRemaining(
+        availableWidth,
+        bagVisible,
+        bagWidth,
+        bankVisible,
+        bankWidth,
+        bankInitialScale
+    )
+    local bankWidthScale = computeWidthScaleFromRemaining(
+        availableWidth,
+        bankVisible,
+        bankWidth,
+        bagVisible,
+        bagWidth,
+        bagInitialScale
+    )
+    local bagScale = clampScale(math.min(bagWidthScale, bagHeightScale))
+    local bankScale = clampScale(math.min(bankWidthScale, bankHeightScale))
     return bagScale, bankScale
 end
 
@@ -98,6 +131,7 @@ AddonNS._Test = AddonNS._Test or {}
 AddonNS._Test.FrameParameters = {
     ComputeFrameScales = computeFrameScales,
     ComputeWidthScale = computeWidthScale,
+    ComputeWidthScaleFromRemaining = computeWidthScaleFromRemaining,
     ComputeHeightScale = computeHeightScale,
     ClampScale = clampScale,
 }

@@ -59,6 +59,7 @@ chunk("MyBags", addonEnv)
 local hooks = assert(addonEnv._Test.FrameParameters, "FrameParameters test hooks should be exposed")
 local computeFrameScales = hooks.ComputeFrameScales
 local computeWidthScale = hooks.ComputeWidthScale
+local computeWidthScaleFromRemaining = hooks.ComputeWidthScaleFromRemaining
 local computeHeightScale = hooks.ComputeHeightScale
 local clampScale = hooks.ClampScale
 
@@ -145,7 +146,29 @@ run("ComputeWidthScale uses combined visible widths only", function()
     assertEqual(0.89, math.floor(scale * 100 + 0.5) / 100, "width scale should use combined visible width budget")
 end)
 
+run("ComputeWidthScaleFromRemaining reclaims width from height-limited other frame", function()
+    local scale = computeWidthScaleFromRemaining(
+        1772,
+        true,
+        1000,
+        true,
+        1000,
+        0.34
+    )
+    assertEqual(1.43, math.floor(scale * 100 + 0.5) / 100, "remaining-width scale should increase when other frame occupies less width")
+end)
+
 run("ComputeHeightScale returns neutral 1 for hidden and ratio for visible", function()
     assertEqual(1, computeHeightScale(false, 100, 1000), "hidden frame should be neutral")
     assertEqual(0.5, computeHeightScale(true, 500, 1000), "visible frame should use ratio")
+end)
+
+run("height-limited bank allows bags to reclaim width in second pass", function()
+    local bagScale, bankScale = computeFrameScales(
+        1920, 1080, 100,
+        true, 1000, 900,
+        true, 1000, 3000
+    )
+    assertEqual(1, bagScale, "bag should reclaim width to full scale")
+    assertEqual(0.34, math.floor(bankScale * 100 + 0.5) / 100, "bank remains height-limited")
 end)
