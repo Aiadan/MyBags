@@ -78,7 +78,9 @@ local bankSearchProfile = {
     maxMs = 0,
 }
 
-local function recordBankSearchProfile(totalMs, setupMs, loopMs, loopRefreshMs, loopInfoFetchMs, loopSearchEvalMs, loopCategoryMs, loopInsertMs, loopSetMatchMs, arrangeMs, renderMs, buttonCount, matchedCount)
+local function recordBankSearchProfile(totalMs, setupMs, loopMs, loopRefreshMs, loopInfoFetchMs, loopSearchEvalMs,
+                                       loopCategoryMs, loopInsertMs, loopSetMatchMs, arrangeMs, renderMs, buttonCount,
+                                       matchedCount)
     bankSearchProfile.calls = bankSearchProfile.calls + 1
     bankSearchProfile.totalMs = bankSearchProfile.totalMs + totalMs
     bankSearchProfile.setupMs = bankSearchProfile.setupMs + setupMs
@@ -169,9 +171,11 @@ local function ensureItemButtonBagMethods(itemButton)
         function itemButton:GetBagID()
             return self:GetBankTabID()
         end
+
         function itemButton:GetID()
             return self:GetContainerSlotID()
         end
+
         return
     end
     if not itemButton.GetBagID and itemButton.GetBankTabID then
@@ -700,8 +704,18 @@ local function updateSearchSizeLock(self, panel, searchText)
     self.searchUnlockPending = false
 end
 
+local function refreshPositionsAndScale()
+    refreshBankFrameScale()
+    if UpdateUIPanelPositions then
+        UpdateUIPanelPositions(BankFrame)
+    end
+    if ContainerFrameCombinedBags:IsShown() then
+        AddonNS.ApplyContainerFrameScale()
+    end
+end
+
 local function updateFrameSizeForContent(self, panel, contentBottom)
-    local previousPanelHeight = panel:GetHeight()
+    -- local previousPanelHeight = panel:GetHeight()
     local columnCount = AddonNS.CategoryStore:GetColumnCount(self.currentScope)
     local columnPixelWidth = self.columnPixelWidth
     local panelWidth = getPanelWidthForColumns(columnCount, columnPixelWidth)
@@ -716,26 +730,19 @@ local function updateFrameSizeForContent(self, panel, contentBottom)
 
     panel:SetSize(panelWidth, panelHeight)
     BankFrame:SetSize(panelWidth, panelHeight)
-    refreshBankFrameScale()
-    if ContainerFrameCombinedBags:IsShown() then
-        AddonNS.ApplyContainerFrameScale()
-    end
-    local heightGrew = previousPanelHeight and panelHeight > (previousPanelHeight + POSITION_UPDATE_HEIGHT_GROWTH_THRESHOLD)
-    local shouldUpdatePosition = self.needsInitialPositionUpdate or heightGrew
-    if shouldUpdatePosition and not self.initialPositionUpdateQueued then
+
+    refreshPositionsAndScale()
+    -- local heightGrew = previousPanelHeight and panelHeight > (previousPanelHeight + POSITION_UPDATE_HEIGHT_GROWTH_THRESHOLD)
+
+
+    if self.needsInitialPositionUpdate and not self.initialPositionUpdateQueued then
         self.initialPositionUpdateQueued = true
         RunNextFrame(function()
             self.initialPositionUpdateQueued = false
             if not BankFrame:IsShown() then
                 return
             end
-            if UpdateUIPanelPositions then
-                UpdateUIPanelPositions(BankFrame)
-            end
-            refreshBankFrameScale()
-            if ContainerFrameCombinedBags:IsShown() then
-                AddonNS.ApplyContainerFrameScale()
-            end
+            refreshPositionsAndScale()
             self.needsInitialPositionUpdate = false
         end)
     end
@@ -881,7 +888,8 @@ local function ensureDropAreaOverlay(self, index)
     end
 
     local overlay = CreateFrame("Frame", nil, self.contentFrame, "BackdropTemplate")
-    overlay:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background", edgeFile = "Interface/Tooltips/UI-Tooltip-Border", edgeSize = 10 })
+    overlay:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background", edgeFile =
+    "Interface/Tooltips/UI-Tooltip-Border", edgeSize = 10 })
     overlay:SetBackdropColor(0.22, 0.45, 0.95, 0.08)
     overlay:SetBackdropBorderColor(0.38, 0.62, 1, 0.28)
     overlay:EnableMouse(false)
@@ -1431,7 +1439,8 @@ local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, item
                 y = currentRowY - CATEGORY_HEIGHT,
                 width = itemSize * categoryWidthSlots,
                 height = CATEGORY_HEIGHT,
-                blockHeight = CATEGORY_HEIGHT + ((not isHeaderOnly and math.ceil(itemsCount / ITEMS_PER_ROW) * itemSize) or 0),
+                blockHeight = CATEGORY_HEIGHT +
+                ((not isHeaderOnly and math.ceil(itemsCount / ITEMS_PER_ROW) * itemSize) or 0),
                 scope = scope,
             })
 
@@ -1663,9 +1672,11 @@ local function renderHeaders(self, scope, panel, categoryPositions)
             dropFrame:Show()
             dropFrameByCategoryId[categoryId] = dropFrame
 
-            local label = categoryPosition.category:GetDisplayName(categoryPosition.itemsCount) or categoryPosition.category:GetName()
+            local label = categoryPosition.category:GetDisplayName(categoryPosition.itemsCount) or
+            categoryPosition.category:GetName()
             if AddonNS.Collapsed.isCollapsed(categoryPosition.category, scope) then
-                label = label .. " (" .. categoryPosition.itemsCount .. ") |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a"
+                label = label ..
+                " (" .. categoryPosition.itemsCount .. ") |A:glues-characterSelect-icon-arrowDown:19:19:0:4|a"
             end
             frame:SetText(label)
             frame:Show()
@@ -1877,7 +1888,8 @@ function BankView:Refresh(scope)
     self.columnPixelWidth = itemSize * ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
     self.firstColumnStartX = BANK_CONTENT_LEFT_PADDING - ITEM_SPACING / 2
     local categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, activeScope)
-    local positions, categoryPositions, contentBottom = placeItemsAndBuildHeaders(activeScope, panel, categoryAssignments, itemSize)
+    local positions, categoryPositions, contentBottom = placeItemsAndBuildHeaders(activeScope, panel, categoryAssignments,
+        itemSize)
     if profileSearchRefresh then
         profileArrangeMs = profileNowMs() - arrangeStartedAt
     end
