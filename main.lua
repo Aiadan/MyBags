@@ -54,20 +54,25 @@ local function resolveCachedOrComputeBagCategory(itemButton, itemInfo)
     return category
 end
 
+local function applySharedFrameScales()
+    if AddonNS.ApplyContainerFrameScale then
+        AddonNS.ApplyContainerFrameScale()
+    end
+    if BankFrame and BankFrame:IsShown() and AddonNS.ApplyBankFrameScale then
+        AddonNS.ApplyBankFrameScale()
+    end
+end
+
 local function triggerContainerOnTokenWatchChanged()
     AddonNS.printDebug("triggerContainerOnTokenWatchChanged fired")
     if container:IsSearchAnchorLockActive() then
         securecallfunction(container.UpdateTokenTracker, container)
         triggerContainerUpdateItemLayout()
-        if AddonNS.ApplyContainerFrameScale then
-            AddonNS.ApplyContainerFrameScale()
-        end
+        applySharedFrameScales()
         return
     end
     securecallfunction(container.OnTokenWatchChanged, container);
-    if AddonNS.ApplyContainerFrameScale then
-        AddonNS.ApplyContainerFrameScale()
-    end
+    applySharedFrameScales()
 end
 
 AddonNS.TriggerContainerOnTokenWatchChanged = triggerContainerOnTokenWatchChanged;
@@ -82,9 +87,7 @@ local function queueContainerUpdateItemLayout()
     RunNextFrame(function()
         AddonNS.printDebug("QueueContainerUpdateItemLayout fired");
         triggerContainerUpdateItemLayout();
-        if AddonNS.ApplyContainerFrameScale then
-            AddonNS.ApplyContainerFrameScale()
-        end
+        applySharedFrameScales()
     end);
 end
 

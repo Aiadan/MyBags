@@ -1,64 +1,76 @@
 local addonName, AddonNS = ...
 
 FrameParametersOverride = {};
-local DEFAULT_CONTAINER_SCALE = 0.3;
+local DEFAULT_CONTAINER_SCALE = 0.05;
 local BANK_FRAME_SCREEN_PADDING = 24
-local function GetContainerScaleSingleBag(bag)
+
+local function clampScale(scale)
+    if scale < DEFAULT_CONTAINER_SCALE then
+        return DEFAULT_CONTAINER_SCALE
+    end
+    if scale > 1 then
+        return 1
+    end
+    return scale
+end
+
+local function computeWidthScale(screenWidth, containerFrameOffsetX, bagVisible, bagWidth, bankVisible, bankWidth)
+    local visibleBagWidth = bagVisible and bagWidth or 0
+    local visibleBankWidth = bankVisible and bankWidth or 0
+    local totalVisibleWidth = visibleBagWidth + visibleBankWidth
+    if totalVisibleWidth <= 0 then
+        return 1
+    end
+    local availableWidth = screenWidth - containerFrameOffsetX - BANK_FRAME_SCREEN_PADDING * 2
+    return availableWidth / totalVisibleWidth
+end
+
+local function computeHeightScale(visible, availableHeight, frameHeight)
+    if not visible then
+        return 1
+    end
+    if not frameHeight or frameHeight <= 0 then
+        return 1
+    end
+    return availableHeight / frameHeight
+end
+
+local function computeFrameScales(screenWidth, screenHeight, containerFrameOffsetX, bagVisible, bagWidth, bagHeight, bankVisible, bankWidth, bankHeight)
+    local widthScale = computeWidthScale(screenWidth, containerFrameOffsetX, bagVisible, bagWidth, bankVisible, bankWidth)
+    local bagHeightScale = computeHeightScale(bagVisible, screenHeight - CONTAINER_OFFSET_Y, bagHeight)
+    local bankHeightScale = computeHeightScale(bankVisible, screenHeight - BANK_FRAME_SCREEN_PADDING * 2, bankHeight)
+    local bagScale = clampScale(math.min(widthScale, bagHeightScale))
+    local bankScale = clampScale(math.min(widthScale, bankHeightScale))
+    return bagScale, bankScale
+end
+
+local function getFrameScale(frame)
     local containerFrameOffsetX = EditModeUtil:GetRightActionBarWidth() + 10
     local screenWidth = GetScreenWidth()
     local screenHeight = GetScreenHeight()
-    local containerScale = 1
-    local leftLimit = 0
 
-    if BankFrame:IsShown() then
-        leftLimit = BankFrame:GetRight()
+    local bagVisible = ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsShown() or false
+    local bagWidth = ContainerFrameCombinedBags and ContainerFrameCombinedBags:GetWidth(true) or 0
+    local bagHeight = ContainerFrameCombinedBags and ContainerFrameCombinedBags:GetHeight(true) or 0
+    local bankVisible = BankFrame and BankFrame:IsShown() or false
+    local bankWidth = BankFrame and BankFrame:GetWidth(true) or 0
+    local bankHeight = BankFrame and BankFrame:GetHeight(true) or 0
+    local bagScale, bankScale = computeFrameScales(
+        screenWidth,
+        screenHeight,
+        containerFrameOffsetX,
+        bagVisible,
+        bagWidth,
+        bagHeight,
+        bankVisible,
+        bankWidth,
+        bankHeight
+    )
+
+    if frame == BankFrame then
+        return bankScale
     end
-
-    -- Get the first (only) bag from the settings manager
-    -- local bag = ContainerFrameSettingsManager:GetBagsShown()[1]
-    if not bag then
-        return DEFAULT_CONTAINER_SCALE -- Default scale if no bag is found
-    end
-
-    local bagWidth = bag:GetWidth(true)
-    local bagHeight = bag:GetHeight(true)
-    local xOffset = containerFrameOffsetX
-    local yOffset = CONTAINER_OFFSET_Y
-
-    -- Calculate potential scales based on width & height constraints
-    local scaleByHeight = (screenHeight - yOffset) / bagHeight
-    local scaleByWidth = (screenWidth - xOffset) / bagWidth
-
-    -- Apply bank frame restriction
-    local leftMostPoint = screenWidth - (bagWidth * scaleByWidth) - xOffset
-    if leftMostPoint < leftLimit then
-        scaleByWidth = (screenWidth - leftLimit - xOffset) / bagWidth
-    end
-
-    -- Choose the most restrictive scaling factor
-    containerScale = math.min(scaleByHeight, scaleByWidth, 1)
-
-    return containerScale;
-end
-
-local function getBankFrameScale(frame)
-    local frameWidth = frame:GetWidth(true)
-    local frameHeight = frame:GetHeight(true)
-    if not frameWidth or not frameHeight or frameWidth <= 0 or frameHeight <= 0 then
-        return 1
-    end
-
-    local screenWidth = GetScreenWidth()
-    local screenHeight = GetScreenHeight()
-    local availableWidth = screenWidth - BANK_FRAME_SCREEN_PADDING * 2
-    local availableHeight = screenHeight - BANK_FRAME_SCREEN_PADDING * 2
-    local scaleByWidth = availableWidth / frameWidth
-    local scaleByHeight = availableHeight / frameHeight
-    local scale = math.min(scaleByWidth, scaleByHeight, 1)
-    if scale < 0 then
-        scale = 0
-    end
-    return scale
+    return bagScale
 end
 
 function FrameParametersOverride:OverrideScale(frame, ignoreFile)
@@ -76,14 +88,19 @@ function FrameParametersOverride:OverrideScale(frame, ignoreFile)
         -- if string.find(stack, ignoreFile) then
         --     scale = frame:GetScale();     -- ignore the change
         -- end
-        scale = GetContainerScaleSingleBag(self)
-        if self == BankFrame then
-            scale = getBankFrameScale(self)
-        end
+        scale = getFrameScale(self)
         AddonNS.printDebug("SetScale", scale);
         return oldSetScale(self, scale);
     end
 end
+
+AddonNS._Test = AddonNS._Test or {}
+AddonNS._Test.FrameParameters = {
+    ComputeFrameScales = computeFrameScales,
+    ComputeWidthScale = computeWidthScale,
+    ComputeHeightScale = computeHeightScale,
+    ClampScale = clampScale,
+}
 
 
 
