@@ -180,6 +180,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 ### TODO
 
 * draggin an item from vendor or inventory or another container should not show category highlight as this will not assign by default (at least from vendor) this item to a given category based on background afaik. If that is true then in other cases it also should not reassign category when dropping on background
+* changing tab between warband bank and bank while having search selected freezes the resize. We should either clear the search before switchng and leave it empty, or clean it, switch, paste it.
 
 #### Low priority
 
@@ -261,6 +262,7 @@ Tasks which after implementation user will not see.
 * ✅ added `isWarbound` query attribute via `C_Item.IsBoundToAccountUntilEquip(ItemLocation:CreateFromBagAndSlot(...))`, and updated docs/help plus unit/integration test coverage.
 * ✅ expanded query documentation notes/examples for recently added attributes (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `isWarbound`, `description`, `isTransmogCollected`) and regenerated in-game query help docs.
 * ✅ restructured recent-attribute documentation to user-facing dedicated headers under `Core Value Tables` (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `isWarbound`, `description`, `isTransmogCollected`) and removed mixed technical note block.
+* ✅ switched default seeded `Warbound` category query from `bindType = 9` to `isWarbound = true` (still gated by `isBound = false`) and synced integration default-query expectations.
 
 ### TODO
 

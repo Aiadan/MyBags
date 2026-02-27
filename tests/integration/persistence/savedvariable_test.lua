@@ -164,7 +164,7 @@ end
 local EXPECTED_DEFAULT_QUERIES = {
     ["Junk"] = { query = "quality = 0", alwaysVisible = true },
     ["Quest"] = { query = "isQuestItem = true OR itemType = 12" },
-    ["Warbound"] = { query = "bindType = 9 AND isBound = false" },
+    ["Warbound"] = { query = "isWarbound = true AND isBound = false" },
     ["BoE"] = { query = "bindType = 2 AND isBound = false" },
     ["Reagents - Soulbound"] = { query = "isCraftingReagent = true AND isBound = true" },
     ["Reagents"] = { query = "isCraftingReagent = true AND isBound = false" },

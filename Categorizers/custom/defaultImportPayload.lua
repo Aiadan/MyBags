@@ -7,8 +7,8 @@ AddonNS.CustomDefaultImportPayload = {
         { name = "Junk", query = "quality = 0", priority = 900, alwaysVisible = true, items = {} },
         -- isQuestItem marks quest-linked items; itemType = 12 is Questitem class.
         { name = "Quest", query = "isQuestItem = true OR itemType = 12", priority = 850, items = {} },
-        -- bindType = 9 is ToBnetAccountUntilEquipped (Warbound-style), limited to not yet bound.
-        { name = "Warbound", query = "bindType = 9 AND isBound = false", priority = 820, items = {} },
+        -- isWarbound marks account-bound-until-equipped items, limited to not yet bound.
+        { name = "Warbound", query = "isWarbound = true AND isBound = false", priority = 820, items = {} },
         -- bindType = 2 is Bind on Equip, limited to not yet bound/tradable.
         { name = "BoE", query = "bindType = 2 AND isBound = false", priority = 810, items = {} },
         -- isCraftingReagent marks reagent items; isBound=true keeps only already-bound ones.
@@ -40,6 +40,6 @@ AddonNS.CustomDefaultImportPayload = {
 
 AddonNS.CustomDefaultLayoutColumns = {
     { "new-singleton", "Caches / One-time Use","Decor", "Mounts & Pets", "Quest", "Gems", "Recipes" },
-    { "Potions/Flasks/Food", "Teleport", "Curios", "BoE", "Warbound", "Uncollected Transmog", "Armor & Weapons" },
+    { "Potions/Flasks/Food", "Teleport", "Curios", "BoE", "Uncollected Transmog", "Armor & Weapons", "Warbound" },
     { "Reagents", "Reagents - Soulbound", "unassigned", "Junk" },
 }
