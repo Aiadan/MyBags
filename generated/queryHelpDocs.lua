@@ -86,7 +86,18 @@ Notes:
 • |cff8ebfe9questID|r: |cff9bb6cfnumber|r
 • |cff8ebfe9isQuestItemActive|r: |cff9bb6cfboolean|r
 • |cff8ebfe9bindType|r: |cff9bb6cfnumber|r
+• |cff8ebfe9isAnimaItem|r: |cff9bb6cfboolean|r
+• |cff8ebfe9isArtifactPowerItem|r: |cff9bb6cfboolean|r
+• |cff8ebfe9isCorruptedItem|r: |cff9bb6cfboolean|r
+• |cff8ebfe9description|r: |cff9bb6cfstring|r
+• |cff8ebfe9isTransmogCollected|r: |cff9bb6cfboolean|r
 
+
+Notes:
+• |cff8ebfe9description|r uses the same string pattern matching behavior as |cff8ebfe9itemName|r.
+• |cff8ebfe9isTransmogCollected|r is |cff8ebfe9nil|r for items without transmog source info.
+• |cff8ebfe9isCurioItem|r is intentionally not a separate field; use |cff8ebfe9itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)|r.
+• |cff8ebfe9isHeirloomItem|r is intentionally not a separate field; use |cff8ebfe9quality = 7|r.
 
 |cffe6d0a2Core Value Tables|r
 

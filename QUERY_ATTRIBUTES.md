@@ -84,6 +84,17 @@ Notes:
 | `questID` | number |
 | `isQuestItemActive` | boolean |
 | `bindType` | number |
+| `isAnimaItem` | boolean |
+| `isArtifactPowerItem` | boolean |
+| `isCorruptedItem` | boolean |
+| `description` | string |
+| `isTransmogCollected` | boolean |
+
+Notes:
+- `description` uses the same string pattern matching behavior as `itemName`.
+- `isTransmogCollected` is `nil` for items without transmog source info.
+- `isCurioItem` is intentionally not a separate field; use `itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)`.
+- `isHeirloomItem` is intentionally not a separate field; use `quality = 7`.
 
 ## Core Value Tables
 

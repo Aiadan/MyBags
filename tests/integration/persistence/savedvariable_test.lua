@@ -65,6 +65,45 @@ local function item_button(bag, slot)
     }
 end
 
+local function install_item_query_stubs(itemID, options)
+    options = options or {}
+    _G.C_Item = {
+        GetItemInfo = function()
+            return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, options.classID or 3, options.subclassID or 0,
+                0, 0, 0, false, options.description or "Test description"
+        end,
+        GetItemInventoryTypeByID = function()
+            return options.inventoryType or 0
+        end,
+        IsAnimaItemByID = function()
+            return options.isAnimaItem == true
+        end,
+        IsArtifactPowerItem = function()
+            return options.isArtifactPowerItem == true
+        end,
+        IsCorruptedItem = function()
+            return options.isCorruptedItem == true
+        end,
+    }
+    _G.C_TransmogCollection = {
+        GetItemInfo = function()
+            if options.noTransmogSource == true then
+                return 0, nil
+            end
+            return 0, options.transmogSourceID or 1234
+        end,
+        GetSourceInfo = function()
+            return { isCollected = options.isTransmogCollected == true }
+        end,
+    }
+    rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
+        return {}
+    end)
+    rawset(_G.C_Container, "GetContainerItemInfo", function()
+        return { itemID = itemID, hyperlink = "item:" .. tostring(itemID) }
+    end)
+end
+
 local function custom_snapshot(snapshot)
     return snapshot.userCategories or {}
 end
@@ -125,6 +164,7 @@ local EXPECTED_DEFAULT_QUERIES = {
     ["Gems"] = { query = "itemType = 3" },
     ["Potions/Flasks/Food"] = { query = "itemType = 0 AND (itemSubType = 1 OR itemSubType = 3 OR itemSubType = 5)" },
     ["Armor & Weapons"] = { query = "itemType = 2 OR itemType = 4" },
+    ["Uncollected Transmog"] = { query = " isTransmogCollected = false" },
     ["Teleport"] = { query = nil },
     ["Mounts & Pets"] = { query = "itemType = 15 AND (itemSubType = 2 OR itemSubType = 5)" },
     ["Curios"] = { query = "itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)" },
@@ -704,20 +744,7 @@ run("custom query matching uses priority order and manual assignment precedence"
     ctx.AddonNS.CustomCategories:SetPriority(catA, 100)
     ctx.AddonNS.CustomCategories:SetPriority(catB, 10)
 
-    _G.C_Item = {
-        GetItemInfo = function()
-            return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, 3, 0, 0, 0, 0, false
-        end,
-        GetItemInventoryTypeByID = function()
-            return 0
-        end,
-    }
-    rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
-        return {}
-    end)
-    rawset(_G.C_Container, "GetContainerItemInfo", function()
-        return { itemID = 2001, hyperlink = "item:2001" }
-    end)
+    install_item_query_stubs(2001)
 
     local button = item_button(0, 1)
     local matches = ctx.AddonNS.Categories:GetMatches(2001, button)
@@ -742,6 +769,69 @@ run("custom query matching uses priority order and manual assignment precedence"
         "diagnostic list includes same category twice when manual and query both match")
 end)
 
+run("custom query matching supports new payload attributes", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
+
+    local animaCategory = ctx.AddonNS.CustomCategories:NewCategory("Anima")
+    local descriptionCategory = ctx.AddonNS.CustomCategories:NewCategory("Description")
+    local transmogCategory = ctx.AddonNS.CustomCategories:NewCategory("Transmog")
+    ctx.AddonNS.QueryCategories:SetQuery(animaCategory, "isAnimaItem = true")
+    ctx.AddonNS.QueryCategories:SetQuery(descriptionCategory, "description = \"special relic\"")
+    ctx.AddonNS.QueryCategories:SetQuery(transmogCategory, "isTransmogCollected = true")
+    ctx.AddonNS.CustomCategories:SetPriority(animaCategory, 300)
+    ctx.AddonNS.CustomCategories:SetPriority(descriptionCategory, 200)
+    ctx.AddonNS.CustomCategories:SetPriority(transmogCategory, 100)
+
+    install_item_query_stubs(2201, {
+        isAnimaItem = true,
+        isArtifactPowerItem = false,
+        isCorruptedItem = false,
+        isTransmogCollected = true,
+        description = "special relic from an old vault",
+    })
+    local button = item_button(0, 1)
+    local category = ctx.AddonNS.Categories:Categorize(2201, button)
+    assert_true(category:GetId() == animaCategory:GetId(), "anima boolean query field is evaluated from payload")
+
+    local matches = ctx.AddonNS.Categories:GetMatches(2201, button)
+    assert_true(matches[1]:GetId() == animaCategory:GetId(), "priority keeps anima match first")
+    assert_true(matches[2]:GetId() == descriptionCategory:GetId(), "description string query field matches payload")
+    assert_true(matches[3]:GetId() == transmogCategory:GetId(), "transmog boolean query field matches payload")
+
+    ctx.AddonNS.QueryCategories:SetQuery(animaCategory, "isCorruptedItem = true")
+    local noCorruptCategory = ctx.AddonNS.Categories:Categorize(2201, button)
+    assert_true(noCorruptCategory:GetId() == descriptionCategory:GetId(),
+        "isCorruptedItem false value prevents corrupted-only category match")
+
+    ctx.AddonNS.QueryCategories:SetQuery(animaCategory, "isArtifactPowerItem = true")
+    local noArtifactCategory = ctx.AddonNS.Categories:Categorize(2201, button)
+    assert_true(noArtifactCategory:GetId() == descriptionCategory:GetId(),
+        "isArtifactPowerItem false value prevents artifact-only category match")
+
+    install_item_query_stubs(2202, {
+        isAnimaItem = false,
+        isArtifactPowerItem = false,
+        isCorruptedItem = false,
+        noTransmogSource = true,
+        description = "special relic from an old vault",
+    })
+    local nilTransmogCategory = ctx.AddonNS.Categories:Categorize(2202, item_button(0, 1))
+    assert_true(nilTransmogCategory:GetId() == descriptionCategory:GetId(),
+        "isTransmogCollected is nil when source info is missing so true/false transmog queries do not match")
+end)
+
 run("manual assign to first query-match category via item-move is ignored", function()
     local ctx = harness.new({
         saved = {
@@ -763,20 +853,7 @@ run("manual assign to first query-match category via item-move is ignored", func
     ctx.AddonNS.CustomCategories:SetPriority(catA, 100)
     ctx.AddonNS.CustomCategories:AssignToCategory(catB, 2001)
 
-    _G.C_Item = {
-        GetItemInfo = function()
-            return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, 3, 0, 0, 0, 0, false
-        end,
-        GetItemInventoryTypeByID = function()
-            return 0
-        end,
-    }
-    rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
-        return {}
-    end)
-    rawset(_G.C_Container, "GetContainerItemInfo", function()
-        return { itemID = 2001, hyperlink = "item:2001" }
-    end)
+    install_item_query_stubs(2001)
 
     ctx:events():fire_custom(ctx.AddonNS.Const.Events.ITEM_MOVED, 2001, nil, catB, catA, item_button(0, 1), nil)
 
@@ -808,20 +885,7 @@ run("manual assign is not ignored when global winner is not target category", fu
     ctx.AddonNS.CustomCategories:SetPriority(catA, 100)
     ctx.AddonNS.CustomCategories:AssignToCategory(catB, 2001)
 
-    _G.C_Item = {
-        GetItemInfo = function()
-            return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, 3, 0, 0, 0, 0, false
-        end,
-        GetItemInventoryTypeByID = function()
-            return 0
-        end,
-    }
-    rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
-        return {}
-    end)
-    rawset(_G.C_Container, "GetContainerItemInfo", function()
-        return { itemID = 2001, hyperlink = "item:2001" }
-    end)
+    install_item_query_stubs(2001)
 
     local originalCategorize = ctx.AddonNS.Categories.Categorize
     ctx.AddonNS.Categories.Categorize = function()
@@ -1333,20 +1397,7 @@ run("scope-disabled custom query winner falls through to next visible query matc
     ctx.AddonNS.CustomCategories:SetPriority(catB, 10)
     ctx.AddonNS.CustomCategories:SetVisibleInScope(catA, "bag", false)
 
-    _G.C_Item = {
-        GetItemInfo = function()
-            return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, 3, 0, 0, 0, 0, false
-        end,
-        GetItemInventoryTypeByID = function()
-            return 0
-        end,
-    }
-    rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
-        return {}
-    end)
-    rawset(_G.C_Container, "GetContainerItemInfo", function()
-        return { itemID = 1991, hyperlink = "item:1991" }
-    end)
+    install_item_query_stubs(1991)
 
     local button = item_button(0, 1)
     button.MyBagsScope = "bag"

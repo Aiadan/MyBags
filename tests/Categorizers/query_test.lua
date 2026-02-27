@@ -26,9 +26,14 @@ queryChunk("MyBags", addonEnv)
 local Query = addonEnv._Test.Query
 local testItem1 = {
   itemName = "Epic",
+  description = "Recovered from a mysterious vault",
   isCraftingReagent = true,
   itemType = 3,
   ilvl = 120,
+  isAnimaItem = true,
+  isArtifactPowerItem = false,
+  isCorruptedItem = false,
+  isTransmogCollected = true,
 }
 
 local testItem2 = { itemType = 4 }
@@ -96,6 +101,36 @@ local testCases = {
     item = testItem2,
     expected = false,
   },
+  {
+    name = "supports isAnimaItem boolean field",
+    query = "isAnimaItem = true",
+    item = testItem1,
+    expected = true,
+  },
+  {
+    name = "supports isArtifactPowerItem boolean field",
+    query = "isArtifactPowerItem = true",
+    item = testItem1,
+    expected = false,
+  },
+  {
+    name = "supports isCorruptedItem boolean field",
+    query = "isCorruptedItem != true",
+    item = testItem1,
+    expected = true,
+  },
+  {
+    name = "supports isTransmogCollected boolean field",
+    query = "isTransmogCollected = true",
+    item = testItem1,
+    expected = true,
+  },
+  {
+    name = "supports description string field with quoted pattern",
+    query = "description = \"mysterious vault\"",
+    item = testItem1,
+    expected = true,
+  },
 }
 
 for _, case in ipairs(testCases) do
@@ -127,6 +162,11 @@ local tooltipRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
   isQuestItem = true,
   hasLoot = false,
   itemName = "",
+  description = "Recovered from a mysterious vault",
+  isAnimaItem = true,
+  isArtifactPowerItem = false,
+  isCorruptedItem = false,
+  isTransmogCollected = true,
 })
 assert(#tooltipRows >= 6, "GetTooltipAttributeRows returns all non-nil attributes")
 local rowByName = {}
@@ -139,6 +179,14 @@ assert(rowByName.itemSubType and rowByName.itemSubType.meaning == "Dagger", "ite
 assert(rowByName.stackCount and rowByName.stackCount.value == 0, "numeric zero values are included")
 assert(rowByName.hasLoot and rowByName.hasLoot.value == false, "boolean false values are included")
 assert(rowByName.itemName and rowByName.itemName.value == "", "empty string values are included")
+assert(rowByName.description and rowByName.description.value == "Recovered from a mysterious vault",
+  "description string values are included")
+assert(rowByName.isAnimaItem and rowByName.isAnimaItem.value == true, "isAnimaItem boolean values are included")
+assert(rowByName.isArtifactPowerItem and rowByName.isArtifactPowerItem.value == false,
+  "isArtifactPowerItem false values are included")
+assert(rowByName.isCorruptedItem and rowByName.isCorruptedItem.value == false, "isCorruptedItem false values are included")
+assert(rowByName.isTransmogCollected and rowByName.isTransmogCollected.value == true,
+  "isTransmogCollected boolean values are included")
 
 local classicRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
   expansionID = 0,
@@ -166,6 +214,19 @@ for _, row in ipairs(tradegoodsRows) do
 end
 assert(tradegoodsSubclassRow ~= nil, "GetTooltipAttributeRows keeps itemSubType for tradegoods")
 assert(tradegoodsSubclassRow.meaning == "Optional Reagents", "tradegoods itemSubType meaning is resolved by itemType")
+
+local noTransmogRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
+  itemType = 4,
+  isTransmogCollected = nil,
+})
+local hasTransmogRow = false
+for _, row in ipairs(noTransmogRows) do
+  if row.name == "isTransmogCollected" then
+    hasTransmogRow = true
+    break
+  end
+end
+assert(hasTransmogRow == false, "GetTooltipAttributeRows hides isTransmogCollected when payload value is nil")
 
 local order = addonEnv.QueryCategories.TooltipAttributeDefinitions.order
 local orderPosByName = {}

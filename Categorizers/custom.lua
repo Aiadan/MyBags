@@ -551,9 +551,11 @@ local function new_raw(id, data)
     function raw:GetId()
         return id
     end
+
     function raw:GetName()
         return data.name or ""
     end
+
     function raw:GetDisplayName(itemsCount)
         local name = data.name or ""
         if itemsCount == 0 and not data.alwaysVisible then
@@ -564,12 +566,15 @@ local function new_raw(id, data)
         end
         return name
     end
+
     function raw:IsProtected()
         return data.protected == true
     end
+
     function raw:OnLeftClickConfigMode()
         AddonNS.CategoriesGUI:SelectCategoryById(CATEGORIZER_ID .. "-" .. id)
     end
+
     function raw:IsVisibleInScope(scope)
         local normalizedScope = normalize_scope(scope)
         if not scope_is_supported(normalizedScope) then
@@ -577,6 +582,7 @@ local function new_raw(id, data)
         end
         return not (data.scopes and data.scopes[normalizedScope] == false)
     end
+
     function raw:OnItemAssigned(itemId, context)
         if not itemId then
             return
@@ -610,6 +616,7 @@ local function new_raw(id, data)
         end
         table.insert(db.categories[id].items, itemId)
     end
+
     function raw:OnItemUnassigned(itemId, context)
         if not itemId then
             return
@@ -631,6 +638,7 @@ local function new_raw(id, data)
             assignments[itemId] = nil
         end
     end
+
     return raw
 end
 
@@ -712,7 +720,7 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
         return itemButton._myBagsQueryPayloadCacheValue, containerInfo
     end
 
-    local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent =
+    local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent, itemDescription =
         C_Item.GetItemInfo(containerInfo.hyperlink)
     if not itemName then
         local resolvedItemId = itemID or containerInfo.itemID
@@ -727,6 +735,16 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
         return nil, containerInfo
     end
     local inventoryType = C_Item.GetItemInventoryTypeByID(itemID)
+    local resolvedItemID = containerInfo.itemID
+    local isAnimaItem = C_Item.IsAnimaItemByID(resolvedItemID) == true
+    local isArtifactPowerItem = C_Item.IsArtifactPowerItem(resolvedItemID) == true
+    local isCorruptedItem = C_Item.IsCorruptedItem(resolvedItemID) == true
+    local _, transmogSourceID = C_TransmogCollection.GetItemInfo(resolvedItemID)
+    local transmogSourceInfo = transmogSourceID and C_TransmogCollection.GetSourceInfo(transmogSourceID) or nil
+    local isTransmogCollected = nil
+    if (transmogSourceInfo) then
+        isTransmogCollected = transmogSourceInfo.isCollected
+    end
     local payload = {
         stackCount = containerInfo.stackCount,
         quality = containerInfo.quality,
@@ -748,6 +766,11 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
         isQuestItemActive = questInfo.isActive,
         bindType = bindType,
         expansionID = expansionID,
+        isAnimaItem = isAnimaItem,
+        isArtifactPowerItem = isArtifactPowerItem,
+        isCorruptedItem = isCorruptedItem,
+        description = itemDescription,
+        isTransmogCollected = isTransmogCollected,
     }
     itemButton._myBagsQueryPayloadCacheKey = cacheKey
     itemButton._myBagsQueryPayloadCacheValue = payload

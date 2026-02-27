@@ -175,6 +175,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ simplified `README.md` structure and wording, including a shorter and clearer `How it works` flow and a compact but more complete `Other features` section.
 * ✅ in edit mode add next to the question mark which is next to the search bars a checkbox which by default will be disabled. It will steer whether categories disabled to be used in a given scope should be visible or not. By default they should not be visible in config mode. Toggling this checkbox will make them visible.
 * ✅ expanded README import/export docs to explain normal payload-based import/export behavior, plus a small AI prompt workflow subsection with a reusable template and the 3-step instruction list.
+* ✅ added a new default starter custom category `Uncollected Transmog` (query-based) and placed it in seeded default layout.
 
 ### TODO
 
@@ -254,6 +255,8 @@ Tasks which after implementation user will not see.
 * ✅ fixed bag/bank overlap on simultaneous open by reapplying combined-bags scale immediately after bank frame size/scale refresh and once more after first-frame bank position settle in `bankView.lua` sizing flow.
 * ✅ tightened bag-vs-bank separation in container scale math by enforcing a positive post-bank gap (`BankFrame:GetRight() + gap`) instead of the previous negative offset allowance, reducing residual overlap after simultaneous open/resize flows.
 * ✅ simplified `FrameParameters.lua` scaling model to shared width fit + per-frame height fit, then upgraded it with a second-pass effective-width reclaim: after initial `widthScale`/height comparison, each frame recomputes its width limit using remaining width after the other frame’s effective occupied width (`otherWidth * otherScale`), so a height-limited bank can free width for bags (and vice versa); final per-frame scales are clamped to `[0.05, 1]`; bag-refresh paths in `main.lua` now reapply both container and bank scales (when bank is shown) so bank scale tracks bag-size changes under the shared-width model; `bankView.lua` now also re-runs `UpdateUIPanelPositions(BankFrame)` when bank panel height grows (not only on first show) to keep vertical placement aligned as size increases; dedicated pure-math coverage lives in `tests/frame_parameters_scale_test.lua`.
+* ✅ added five non-derivable query attributes (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `description`, `isTransmogCollected`) with docs/tests updates, and added temporary combined profiling for new-attribute extraction cost in `CustomCategorizer:Categorize` profiling output (`newAttrsAvg`).
+* ✅ changed `isTransmogCollected` payload semantics so missing transmog source info now yields `nil` (not `false`), with query docs/help and unit/integration tests updated.
 
 ### TODO
 

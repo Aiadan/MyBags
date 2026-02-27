@@ -23,6 +23,8 @@ AddonNS.CustomDefaultImportPayload = {
         { name = "Potions/Flasks/Food", query = "itemType = 0 AND (itemSubType = 1 OR itemSubType = 3 OR itemSubType = 5)", priority = 725, items = {} },
         -- itemType 2 is Weapon, itemType 4 is Armor.
         { name = "Armor & Weapons", query = "itemType = 2 OR itemType = 4", priority = 715, items = {} },
+        -- Weapon/Armor that can be transmogged and are not yet collected; excludes neck/ring/trinket slots.
+        { name = "Uncollected Transmog", query = " isTransmogCollected = false", priority = 1716, items = {} },
         -- Manual teleport/hearthstone utility item IDs copied from user profile.
         { name = "Teleport", priority = 712, items = { 147869, 37863, 63207, 63353, 208066, 217956, 18149, 217930, 41255, 44655, 200613, 110560, 6948, 140192, 173373, 65274, 46874, 21711, 180817, 234389, 116413, 249699, 250411, 238727 } },
         -- itemType = 15 is Miscellaneous; subtype 2=CompanionPet and 5=Mount.
@@ -38,6 +40,6 @@ AddonNS.CustomDefaultImportPayload = {
 
 AddonNS.CustomDefaultLayoutColumns = {
     { "new-singleton", "Caches / One-time Use","Decor", "Mounts & Pets", "Quest", "Gems", "Recipes" },
-    { "Potions/Flasks/Food", "Teleport", "Curios",  "BoE", "Warbound", "Armor & Weapons" },
+    { "Potions/Flasks/Food", "Teleport", "Curios", "BoE", "Warbound", "Uncollected Transmog", "Armor & Weapons" },
     { "Reagents", "Reagents - Soulbound", "unassigned", "Junk" },
 }
