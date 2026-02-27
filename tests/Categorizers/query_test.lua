@@ -84,6 +84,12 @@ local testCases = {
     expected = true,
   },
   {
+    name = "supports case-insensitive string matching",
+    query = "itemName = \"epic sword\"",
+    item = testItem3,
+    expected = true,
+  },
+  {
     name = "treats quoted value as pattern",
     query = "itemName = \"Epic.*\"",
     item = testItem3,
@@ -128,6 +134,12 @@ local testCases = {
   {
     name = "supports description string field with quoted pattern",
     query = "description = \"mysterious vault\"",
+    item = testItem1,
+    expected = true,
+  },
+  {
+    name = "supports case-insensitive description matching",
+    query = "description = \"MYSTERIOUS VAULT\"",
     item = testItem1,
     expected = true,
   },

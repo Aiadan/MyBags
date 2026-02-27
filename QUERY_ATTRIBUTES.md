@@ -38,7 +38,7 @@ NOT isQuestItem = true
 Query field names are not case-sensitive:
 - Field names are case-insensitive: `itemType`, `ItemType`, and `ITEMTYPE` are equivalent.
 - Boolean values should be lowercase: `true` / `false`.
-- `itemName` matching is case-sensitive by default.
+- String matching is case-insensitive (`itemName` and `description`).
 - Use uppercase logical operators (`AND`, `OR`, `NOT`) for predictable results.
 
 ## String Matching
@@ -57,6 +57,7 @@ itemName != .*Potion.*
 Notes:
 - `itemName = Epic` matches names containing `Epic`.
 - `itemName = "Epic Sword"` matches names containing `Epic Sword`.
+- String matching is case-insensitive (for example, `itemName = "epic sword"` matches `Epic Sword`).
 - Both unquoted and quoted values can use Lua patterns like `.*`, character classes, and anchors.
 - Use quotes when the pattern includes spaces or query operators as plain text.
 

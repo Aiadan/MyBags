@@ -41,7 +41,7 @@ Examples:
 Query field names are not case-sensitive:
 • Field names are case-insensitive: |cff8ebfe9itemType|r, |cff8ebfe9ItemType|r, and |cff8ebfe9ITEMTYPE|r are equivalent.
 • Boolean values should be lowercase: |cff8ebfe9true|r / |cff8ebfe9false|r.
-• |cff8ebfe9itemName|r matching is case-sensitive by default.
+• String matching is case-insensitive (|cff8ebfe9itemName|r and |cff8ebfe9description|r).
 • Use uppercase logical operators (|cff8ebfe9AND|r, |cff8ebfe9OR|r, |cff8ebfe9NOT|r) for predictable results.
 
 |cffe6d0a2String Matching|r
@@ -60,6 +60,7 @@ Examples:
 Notes:
 • |cff8ebfe9itemName = Epic|r matches names containing |cff8ebfe9Epic|r.
 • |cff8ebfe9itemName = "Epic Sword"|r matches names containing |cff8ebfe9Epic Sword|r.
+• String matching is case-insensitive (for example, |cff8ebfe9itemName = "epic sword"|r matches |cff8ebfe9Epic Sword|r).
 • Both unquoted and quoted values can use Lua patterns like |cff8ebfe9.*|r, character classes, and anchors.
 • Use quotes when the pattern includes spaces or query operators as plain text.
 

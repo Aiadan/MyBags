@@ -98,7 +98,8 @@ local Comparators = {
     [ValueType.STRING] = {
         ["="] = {
             createNew = function(retriver, value)
-                if not isValidLuaPattern(value) then
+                local loweredValue = string.lower(value)
+                if not isValidLuaPattern(loweredValue) then
                     return nil
                 end
                 return function(itemInfo)
@@ -106,13 +107,14 @@ local Comparators = {
                     if type(candidate) ~= "string" then
                         return false
                     end
-                    return candidate:match(value) ~= nil
+                    return string.lower(candidate):match(loweredValue) ~= nil
                 end
             end,
         },
         ["!="] = {
             createNew = function(retriver, value)
-                if not isValidLuaPattern(value) then
+                local loweredValue = string.lower(value)
+                if not isValidLuaPattern(loweredValue) then
                     return nil
                 end
                 return function(itemInfo)
@@ -120,7 +122,7 @@ local Comparators = {
                     if type(candidate) ~= "string" then
                         return true
                     end
-                    return candidate:match(value) == nil
+                    return string.lower(candidate):match(loweredValue) == nil
                 end
             end,
         },
