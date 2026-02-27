@@ -11,7 +11,7 @@ local function GetContainerScaleSingleBag(bag)
     local leftLimit = 0
 
     if BankFrame:IsShown() then
-        leftLimit = BankFrame:GetRight() - 25
+        leftLimit = BankFrame:GetRight()
     end
 
     -- Get the first (only) bag from the settings manager

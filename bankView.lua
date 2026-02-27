@@ -715,6 +715,9 @@ local function updateFrameSizeForContent(self, panel, contentBottom)
     panel:SetSize(panelWidth, panelHeight)
     BankFrame:SetSize(panelWidth, panelHeight)
     refreshBankFrameScale()
+    if ContainerFrameCombinedBags:IsShown() then
+        AddonNS.ApplyContainerFrameScale()
+    end
     if self.needsInitialPositionUpdate and not self.initialPositionUpdateQueued then
         self.initialPositionUpdateQueued = true
         RunNextFrame(function()
@@ -726,6 +729,9 @@ local function updateFrameSizeForContent(self, panel, contentBottom)
                 UpdateUIPanelPositions(BankFrame)
             end
             refreshBankFrameScale()
+            if ContainerFrameCombinedBags:IsShown() then
+                AddonNS.ApplyContainerFrameScale()
+            end
             self.needsInitialPositionUpdate = false
         end)
     end

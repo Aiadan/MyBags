@@ -251,6 +251,8 @@ Tasks which after implementation user will not see.
 * ✅ fixed stale refresh after clearing `New`: `Categorizers/new.lua` now emits `CATEGORIZER_CATEGORIES_UPDATED` after `ClearAll` so bag/bank categorization caches invalidate and refresh correctly; regression coverage added in `tests/Categorizers/new_test.lua`.
 * ✅ fixed combined-bags oversize edge case during dynamic growth (for example `New` category expansion on incoming items): bag refresh/token-watch paths now explicitly reapply combined-bags scale after layout updates (`AddonNS.ApplyContainerFrameScale`), so frame scale clamps to screen bounds as content height changes.
 * ✅ enforced global per-scope layout uniqueness for category ids in `CategoryStore` (dedupe across all columns during layout normalization), with integration coverage for both load-time cleanup of already-duplicated SavedVariables and runtime `SetLayoutColumns` persistence normalization.
+* ✅ fixed bag/bank overlap on simultaneous open by reapplying combined-bags scale immediately after bank frame size/scale refresh and once more after first-frame bank position settle in `bankView.lua` sizing flow.
+* ✅ tightened bag-vs-bank separation in container scale math by enforcing a positive post-bank gap (`BankFrame:GetRight() + gap`) instead of the previous negative offset allowance, reducing residual overlap after simultaneous open/resize flows.
 
 ### TODO
 
