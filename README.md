@@ -1,10 +1,10 @@
 # MyBags
 
-This is yet another bag / backpack / bank / warbank addon whose main goal is **making manual category creation, cross-bag category layout, and item reassignment as simple as possible**.
+An **easy-to-use** inventory addon for bags, bank, and warband with manual and automatic categorization and simple layout control.
 
-![Main](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/main/.previews/main.png)
+![Main](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/main.png)
 
-*Disclaimer: I do this for fun. I do this mainly for myself :). There are other bag addons with great support, but just lacked the flexibility in the setup of the bags that I wanted. I am exposing it though so it was easier for my friends who wanted to use it to download it :)*
+*Disclaimer: I do this for fun. I do this mainly for myself :). There are other great bag addons like Baganator, BetterBags or Bagnon with great support, but just lacked the flexibility in the setup of the bags that I wanted. I am exposing it though so it was easier for my friends who wanted to use it to download it :)*
 
 ## Easy layout adjustments
 
@@ -21,6 +21,38 @@ This is yet another bag / backpack / bank / warbank addon whose main goal is **m
 
 ![Equipment categorizer](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/main/.previews/protected_category.png)
 
+## Demo
+
+Here are few animations showcasing how easily you can do certain things. You can download entire demo video [here](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/demo.mp4)
+
+### Move categories around
+
+![](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/1cat_setup_small.gif)
+
+### Collapse those with items you do not need to look at too often
+
+![](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/2cat_collapse.gif)
+
+### Reorder items inside categories to your liking
+
+![](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/3item_ordering.gif)
+
+### Create new category and manually assign items to it
+
+![](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/4cat_creation_manual_item_assignment.gif)
+
+### Create or modify queries for automatic categorization and use searchable query help if needed
+
+![](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/5cat_query_priority_helper.gif)
+
+### Check tooltips with shift for details of given item categorization priority or query parameters details to create a proper query
+
+![](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/6cat_query_tooltip.gif)
+
+### Easily delete a category (you can hold shift to skip confirmation)
+
+![](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/7cat_deletion.gif)
+
 ## How it works
 
 1. Start with built-in categories, then drag categories/items to shape your layout.
@@ -35,7 +67,7 @@ This is yet another bag / backpack / bank / warbank addon whose main goal is **m
 
 ## Import and export categories
 
-MyBags supports category import/export using a plain Lua table payload.
+MyBags supports category import/export using a plain Lua table payload. It is available when entering edit mode using cog on the top right of the addon.
 
 - Export writes selected custom categories into an import-ready payload.
 - Import creates custom categories from the payload entries (you can import multiple categories at once).
@@ -49,6 +81,7 @@ You can also ask AI to help you generate categories based on queries by utilizin
 - Paste the template prompt below into your AI tool.
 - Keep the structure unchanged.
 - Modify only the category request list at the end.
+- You can review and `import` output prepared by your AI into the addon ;) !
 
 Template prompt:
 
