@@ -739,6 +739,8 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
     local isAnimaItem = C_Item.IsAnimaItemByID(resolvedItemID) == true
     local isArtifactPowerItem = C_Item.IsArtifactPowerItem(resolvedItemID) == true
     local isCorruptedItem = C_Item.IsCorruptedItem(resolvedItemID) == true
+    local itemLocation = ItemLocation:CreateFromBagAndSlot(bagID, slotID)
+    local isWarbound = C_Item.IsBoundToAccountUntilEquip(itemLocation) == true
     local _, transmogSourceID = C_TransmogCollection.GetItemInfo(resolvedItemID)
     local transmogSourceInfo = transmogSourceID and C_TransmogCollection.GetSourceInfo(transmogSourceID) or nil
     local isTransmogCollected = nil
@@ -769,6 +771,7 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
         isAnimaItem = isAnimaItem,
         isArtifactPowerItem = isArtifactPowerItem,
         isCorruptedItem = isCorruptedItem,
+        isWarbound = isWarbound,
         description = itemDescription,
         isTransmogCollected = isTransmogCollected,
     }

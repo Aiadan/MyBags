@@ -258,6 +258,9 @@ Tasks which after implementation user will not see.
 * ✅ added five non-derivable query attributes (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `description`, `isTransmogCollected`) with docs/tests updates, and added temporary combined profiling for new-attribute extraction cost in `CustomCategorizer:Categorize` profiling output (`newAttrsAvg`).
 * ✅ changed `isTransmogCollected` payload semantics so missing transmog source info now yields `nil` (not `false`), with query docs/help and unit/integration tests updated.
 * ✅ query string matching is now case-insensitive (`itemName` and `description`) by lowercasing both candidate and pattern in the string comparator, with docs/help and query unit tests updated.
+* ✅ added `isWarbound` query attribute via `C_Item.IsBoundToAccountUntilEquip(ItemLocation:CreateFromBagAndSlot(...))`, and updated docs/help plus unit/integration test coverage.
+* ✅ expanded query documentation notes/examples for recently added attributes (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `isWarbound`, `description`, `isTransmogCollected`) and regenerated in-game query help docs.
+* ✅ restructured recent-attribute documentation to user-facing dedicated headers under `Core Value Tables` (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `isWarbound`, `description`, `isTransmogCollected`) and removed mixed technical note block.
 
 ### TODO
 

@@ -67,6 +67,11 @@ end
 
 local function install_item_query_stubs(itemID, options)
     options = options or {}
+    _G.ItemLocation = {
+        CreateFromBagAndSlot = function(bagID, slotID)
+            return { bagID = bagID, slotID = slotID }
+        end,
+    }
     _G.C_Item = {
         GetItemInfo = function()
             return "TestItem", nil, nil, 450, 1, nil, nil, nil, nil, nil, 99, options.classID or 3, options.subclassID or 0,
@@ -83,6 +88,9 @@ local function install_item_query_stubs(itemID, options)
         end,
         IsCorruptedItem = function()
             return options.isCorruptedItem == true
+        end,
+        IsBoundToAccountUntilEquip = function()
+            return options.isWarbound == true
         end,
     }
     _G.C_TransmogCollection = {
@@ -787,18 +795,22 @@ run("custom query matching supports new payload attributes", function()
     local animaCategory = ctx.AddonNS.CustomCategories:NewCategory("Anima")
     local descriptionCategory = ctx.AddonNS.CustomCategories:NewCategory("Description")
     local transmogCategory = ctx.AddonNS.CustomCategories:NewCategory("Transmog")
+    local warboundCategory = ctx.AddonNS.CustomCategories:NewCategory("WarboundFlag")
     ctx.AddonNS.QueryCategories:SetQuery(animaCategory, "isAnimaItem = true")
     ctx.AddonNS.QueryCategories:SetQuery(descriptionCategory, "description = \"special relic\"")
     ctx.AddonNS.QueryCategories:SetQuery(transmogCategory, "isTransmogCollected = true")
+    ctx.AddonNS.QueryCategories:SetQuery(warboundCategory, "isWarbound = true")
     ctx.AddonNS.CustomCategories:SetPriority(animaCategory, 300)
     ctx.AddonNS.CustomCategories:SetPriority(descriptionCategory, 200)
     ctx.AddonNS.CustomCategories:SetPriority(transmogCategory, 100)
+    ctx.AddonNS.CustomCategories:SetPriority(warboundCategory, 50)
 
     install_item_query_stubs(2201, {
         isAnimaItem = true,
         isArtifactPowerItem = false,
         isCorruptedItem = false,
         isTransmogCollected = true,
+        isWarbound = true,
         description = "special relic from an old vault",
     })
     local button = item_button(0, 1)
@@ -809,6 +821,7 @@ run("custom query matching supports new payload attributes", function()
     assert_true(matches[1]:GetId() == animaCategory:GetId(), "priority keeps anima match first")
     assert_true(matches[2]:GetId() == descriptionCategory:GetId(), "description string query field matches payload")
     assert_true(matches[3]:GetId() == transmogCategory:GetId(), "transmog boolean query field matches payload")
+    assert_true(matches[4]:GetId() == warboundCategory:GetId(), "warbound boolean query field matches payload")
 
     ctx.AddonNS.QueryCategories:SetQuery(animaCategory, "isCorruptedItem = true")
     local noCorruptCategory = ctx.AddonNS.Categories:Categorize(2201, button)
@@ -825,6 +838,7 @@ run("custom query matching supports new payload attributes", function()
         isArtifactPowerItem = false,
         isCorruptedItem = false,
         noTransmogSource = true,
+        isWarbound = false,
         description = "special relic from an old vault",
     })
     local nilTransmogCategory = ctx.AddonNS.Categories:Categorize(2202, item_button(0, 1))

@@ -33,6 +33,7 @@ local testItem1 = {
   isAnimaItem = true,
   isArtifactPowerItem = false,
   isCorruptedItem = false,
+  isWarbound = true,
   isTransmogCollected = true,
 }
 
@@ -132,6 +133,12 @@ local testCases = {
     expected = true,
   },
   {
+    name = "supports isWarbound boolean field",
+    query = "isWarbound = true",
+    item = testItem1,
+    expected = true,
+  },
+  {
     name = "supports description string field with quoted pattern",
     query = "description = \"mysterious vault\"",
     item = testItem1,
@@ -178,6 +185,7 @@ local tooltipRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
   isAnimaItem = true,
   isArtifactPowerItem = false,
   isCorruptedItem = false,
+  isWarbound = true,
   isTransmogCollected = true,
 })
 assert(#tooltipRows >= 6, "GetTooltipAttributeRows returns all non-nil attributes")
@@ -197,6 +205,7 @@ assert(rowByName.isAnimaItem and rowByName.isAnimaItem.value == true, "isAnimaIt
 assert(rowByName.isArtifactPowerItem and rowByName.isArtifactPowerItem.value == false,
   "isArtifactPowerItem false values are included")
 assert(rowByName.isCorruptedItem and rowByName.isCorruptedItem.value == false, "isCorruptedItem false values are included")
+assert(rowByName.isWarbound and rowByName.isWarbound.value == true, "isWarbound boolean values are included")
 assert(rowByName.isTransmogCollected and rowByName.isTransmogCollected.value == true,
   "isTransmogCollected boolean values are included")
 

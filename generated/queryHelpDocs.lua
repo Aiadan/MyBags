@@ -90,13 +90,12 @@ Notes:
 • |cff8ebfe9isAnimaItem|r: |cff9bb6cfboolean|r
 • |cff8ebfe9isArtifactPowerItem|r: |cff9bb6cfboolean|r
 • |cff8ebfe9isCorruptedItem|r: |cff9bb6cfboolean|r
+• |cff8ebfe9isWarbound|r: |cff9bb6cfboolean|r
 • |cff8ebfe9description|r: |cff9bb6cfstring|r
 • |cff8ebfe9isTransmogCollected|r: |cff9bb6cfboolean|r
 
 
 Notes:
-• |cff8ebfe9description|r uses the same string pattern matching behavior as |cff8ebfe9itemName|r.
-• |cff8ebfe9isTransmogCollected|r is |cff8ebfe9nil|r for items without transmog source info.
 • |cff8ebfe9isCurioItem|r is intentionally not a separate field; use |cff8ebfe9itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)|r.
 • |cff8ebfe9isHeirloomItem|r is intentionally not a separate field; use |cff8ebfe9quality = 7|r.
 
@@ -213,6 +212,59 @@ Notes:
 • ToWoWAccount: |cff9bb6cf7|r
 • ToBnetAccount: |cff9bb6cf8|r
 • ToBnetAccountUntilEquipped: |cff9bb6cf9|r
+
+
+|cffd8d8b0|cff8ebfe9isAnimaItem|r|r
+
+Returns whether an item is recognized as an anima item.
+
+|cffe0d8c4Value / Meaning|r
+• |cff8ebfe9true|r: |cff9bb6cfItem is anima|r
+• |cff8ebfe9false|r: |cff9bb6cfItem is not anima|r
+
+
+|cffd8d8b0|cff8ebfe9isArtifactPowerItem|r|r
+
+Returns whether an item is recognized as an artifact power item.
+
+|cffe0d8c4Value / Meaning|r
+• |cff8ebfe9true|r: |cff9bb6cfItem is artifact power|r
+• |cff8ebfe9false|r: |cff9bb6cfItem is not artifact power|r
+
+
+|cffd8d8b0|cff8ebfe9isCorruptedItem|r|r
+
+Returns whether an item is recognized as a corrupted item.
+
+|cffe0d8c4Value / Meaning|r
+• |cff8ebfe9true|r: |cff9bb6cfItem is corrupted|r
+• |cff8ebfe9false|r: |cff9bb6cfItem is not corrupted|r
+
+
+|cffd8d8b0|cff8ebfe9isWarbound|r|r
+
+Returns whether an item is warbound (bound to account until equipped).
+
+|cffe0d8c4Value / Meaning|r
+• |cff8ebfe9true|r: |cff9bb6cfItem is warbound|r
+• |cff8ebfe9false|r: |cff9bb6cfItem is not warbound|r
+
+
+|cffd8d8b0|cff8ebfe9description|r|r
+
+Item description text.
+
+Notes:
+• Uses the same string matching behavior as |cff8ebfe9itemName|r (Lua pattern matching, case-insensitive).
+
+|cffd8d8b0|cff8ebfe9isTransmogCollected|r|r
+
+Whether the item's transmog source is collected.
+
+|cffe0d8c4Value / Meaning|r
+• |cff8ebfe9true|r: |cff9bb6cfTransmog source is collected|r
+• |cff8ebfe9false|r: |cff9bb6cfTransmog source is not collected|r
+• |cff8ebfe9nil|r: |cff9bb6cfItem has no transmog source info|r
 
 
 |cffe6d0a2Detailed |cff8ebfe9itemSubType|r Tables (by |cff8ebfe9itemType|r)|r

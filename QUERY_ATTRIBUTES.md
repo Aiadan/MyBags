@@ -88,12 +88,11 @@ Notes:
 | `isAnimaItem` | boolean |
 | `isArtifactPowerItem` | boolean |
 | `isCorruptedItem` | boolean |
+| `isWarbound` | boolean |
 | `description` | string |
 | `isTransmogCollected` | boolean |
 
 Notes:
-- `description` uses the same string pattern matching behavior as `itemName`.
-- `isTransmogCollected` is `nil` for items without transmog source info.
 - `isCurioItem` is intentionally not a separate field; use `itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)`.
 - `isHeirloomItem` is intentionally not a separate field; use `quality = 7`.
 
@@ -211,6 +210,59 @@ Notes:
 | ToWoWAccount | 7 |
 | ToBnetAccount | 8 |
 | ToBnetAccountUntilEquipped | 9 |
+
+### `isAnimaItem`
+
+Returns whether an item is recognized as an anima item.
+
+| Value | Meaning |
+|---|---|
+| `true` | Item is anima |
+| `false` | Item is not anima |
+
+### `isArtifactPowerItem`
+
+Returns whether an item is recognized as an artifact power item.
+
+| Value | Meaning |
+|---|---|
+| `true` | Item is artifact power |
+| `false` | Item is not artifact power |
+
+### `isCorruptedItem`
+
+Returns whether an item is recognized as a corrupted item.
+
+| Value | Meaning |
+|---|---|
+| `true` | Item is corrupted |
+| `false` | Item is not corrupted |
+
+### `isWarbound`
+
+Returns whether an item is warbound (bound to account until equipped).
+
+| Value | Meaning |
+|---|---|
+| `true` | Item is warbound |
+| `false` | Item is not warbound |
+
+### `description`
+
+Item description text.
+
+Notes:
+- Uses the same string matching behavior as `itemName` (Lua pattern matching, case-insensitive).
+
+### `isTransmogCollected`
+
+Whether the item's transmog source is collected.
+
+| Value | Meaning |
+|---|---|
+| `true` | Transmog source is collected |
+| `false` | Transmog source is not collected |
+| `nil` | Item has no transmog source info |
 
 ## Detailed `itemSubType` Tables (by `itemType`)
 
