@@ -50,6 +50,7 @@ local BANK_RESIZE_HANDLE_SIZE = 16
 local BANK_MIN_NUM_COLUMNS = 5
 local BANK_MAX_NUM_COLUMNS = 10
 local AUTO_DEPOSIT_BUTTON_WIDTH_SCALE = 0.7
+local POSITION_UPDATE_HEIGHT_GROWTH_THRESHOLD = 0.5
 local calculateScaledDepositButtonWidth
 local applyScaledDepositButtonWidth
 
@@ -700,6 +701,7 @@ local function updateSearchSizeLock(self, panel, searchText)
 end
 
 local function updateFrameSizeForContent(self, panel, contentBottom)
+    local previousPanelHeight = panel:GetHeight()
     local columnCount = AddonNS.CategoryStore:GetColumnCount(self.currentScope)
     local columnPixelWidth = self.columnPixelWidth
     local panelWidth = getPanelWidthForColumns(columnCount, columnPixelWidth)
@@ -718,7 +720,9 @@ local function updateFrameSizeForContent(self, panel, contentBottom)
     if ContainerFrameCombinedBags:IsShown() then
         AddonNS.ApplyContainerFrameScale()
     end
-    if self.needsInitialPositionUpdate and not self.initialPositionUpdateQueued then
+    local heightGrew = previousPanelHeight and panelHeight > (previousPanelHeight + POSITION_UPDATE_HEIGHT_GROWTH_THRESHOLD)
+    local shouldUpdatePosition = self.needsInitialPositionUpdate or heightGrew
+    if shouldUpdatePosition and not self.initialPositionUpdateQueued then
         self.initialPositionUpdateQueued = true
         RunNextFrame(function()
             self.initialPositionUpdateQueued = false
