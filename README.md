@@ -1,6 +1,6 @@
 # MyBags
 
-This is yet another bag / backpack / bank / warbank addon whose main goal is **making manual category creation, cross-bag category layout, and item reassignment as simple as possible**.
+An **easy-to-use** inventory addon for bags, bank, and warband with manual and automatic categorization and simple layout control.
 
 ![Main](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/main/.previews/main.png)
 
