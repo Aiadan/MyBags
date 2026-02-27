@@ -4,7 +4,7 @@ This is yet another bag / backpack / bank / warbank addon whose main goal is **m
 
 ![Main](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/main/.previews/main.png)
 
-*Disclaimer: I do this for fun. I do this mainly for myself :). There are other bag addons with great support, but just lacked the flexibility in the setup of the bags that I wanted. I am exposing it though so it was easier for my friends who wanted to use it to download it :)*
+*Disclaimer: I do this for fun. I do this mainly for myself :). There are other great bag addons like Baganator, BetterBags or Bagnon with great support, but just lacked the flexibility in the setup of the bags that I wanted. I am exposing it though so it was easier for my friends who wanted to use it to download it :)*
 
 ## Easy layout adjustments
 
