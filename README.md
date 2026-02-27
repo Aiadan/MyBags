@@ -2,7 +2,7 @@
 
 An **easy-to-use** inventory addon for bags, bank, and warband with manual and automatic categorization and simple layout control.
 
-![Main](https://raw.githubusercontent.com/MyGamesDevelopmentAcc/MyBags/main/.previews/main.png)
+![Main](https://github.com/MyGamesDevelopmentAcc/MyBags/releases/download/none-video-only/main.png)
 
 *Disclaimer: I do this for fun. I do this mainly for myself :). There are other great bag addons like Baganator, BetterBags or Bagnon with great support, but just lacked the flexibility in the setup of the bags that I wanted. I am exposing it though so it was easier for my friends who wanted to use it to download it :)*
 
