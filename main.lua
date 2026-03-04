@@ -178,6 +178,9 @@ local function addQueryAttributesToTooltip(tooltip, itemID, owner)
 end
 
 local function addCategoriesToTooltip(tooltip)
+    if AddonNS.TooltipSettings:IsTooltipDisabled() then
+        return
+    end
     local owner = resolveTooltipItemFrame(tooltip:GetOwner())
     if not owner then
         return
@@ -189,9 +192,11 @@ local function addCategoriesToTooltip(tooltip)
     local scope = getScopeFromTooltipOwner(owner)
     GameTooltip_AddBlankLineToTooltip(tooltip)
     if not IsShiftKeyDown() then
-        GameTooltip_AddNormalLine(tooltip,  MYBAGS_TOOLTIP_TITLE .. MYBAGS_TOOLTIP_HINT_COLOR_PREFIX ..
-            " - Hold Shift to show matched categories|r")
-        GameTooltip_AddBlankLineToTooltip(tooltip)
+        if AddonNS.TooltipSettings:ShouldShowShiftHintWhenNotHeld() then
+            GameTooltip_AddNormalLine(tooltip,  MYBAGS_TOOLTIP_TITLE .. MYBAGS_TOOLTIP_HINT_COLOR_PREFIX ..
+                " - Hold Shift to show matched categories|r")
+            GameTooltip_AddBlankLineToTooltip(tooltip)
+        end
         return
     end
 
@@ -236,6 +241,9 @@ end
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, addCategoriesToTooltip)
 
 local function refreshTooltipOnShiftStateChange()
+    if AddonNS.TooltipSettings:IsTooltipDisabled() then
+        return
+    end
     if not GameTooltip:IsShown() then
         return
     end

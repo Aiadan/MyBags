@@ -178,6 +178,7 @@ Some of the things are marked with [!] indicating their cruciallity before expos
 * ✅ added a new default starter custom category `Uncollected Transmog` (query-based) and placed it in seeded default layout.* ✅ added five non-derivable query attributes (`isAnimaItem`, `isArtifactPowerItem`, `isCorruptedItem`, `description`, `isTransmogCollected`) with docs/tests updates, and added temporary combined profiling for new-attribute extraction cost in `CustomCategorizer:Categorize` profiling output (`newAttrsAvg`).
 * ✅ changed `isTransmogCollected` payload semantics so missing transmog source info now yields `nil` (not `false`), with query docs/help and unit/integration tests updated.
 * ✅ query string matching is now case-insensitive (`itemName` and `description`) by lowercasing both candidate and pattern in the string comparator, with docs/help and query unit tests updated.
+* ✅ added persistent tooltip display mode in `Settings -> AddOns -> MyBags` with 3 options (`Default`, `Shift only`, `Disabled`), backed by `db.settings.tooltipMode`; default mode keeps existing Shift hint behavior, `Shift only` hides the non-Shift hint while preserving Shift diagnostics, and `Disabled` suppresses all MyBags item-tooltip additions.
 
 ### TODO
 

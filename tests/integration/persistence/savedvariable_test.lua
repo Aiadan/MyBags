@@ -974,6 +974,43 @@ run("categories config mode scope-disabled visibility is gated by runtime checkb
     assert_true(not reloaded.AddonNS.BagViewState:ShouldShowScopeDisabledInConfigMode(), "checkbox runtime flag is not persisted across sessions")
 end)
 
+run("tooltip mode defaults to default when missing or invalid", function()
+    local ctx = harness.new()
+    assert_true(ctx.AddonNS.TooltipSettings:GetMode() == ctx.AddonNS.TooltipSettings.MODE_DEFAULT, "missing mode defaults to default")
+
+    local invalid = harness.new({
+        saved = {
+            settings = {
+                tooltipMode = "invalid_mode",
+            },
+        },
+    })
+    assert_true(invalid.AddonNS.TooltipSettings:GetMode() == invalid.AddonNS.TooltipSettings.MODE_DEFAULT,
+        "invalid persisted mode normalizes to default")
+end)
+
+run("tooltip mode persists across reload and prunes default value", function()
+    local ctx = harness.new()
+    ctx.AddonNS.TooltipSettings:SetMode(ctx.AddonNS.TooltipSettings.MODE_SHIFT_ONLY)
+    assert_true(ctx.AddonNS.TooltipSettings:GetMode() == ctx.AddonNS.TooltipSettings.MODE_SHIFT_ONLY, "mode set to shift_only")
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local snapshot = ctx:snapshot()
+    assert_true(snapshot.settings ~= nil, "settings table persisted")
+    assert_true(snapshot.settings.tooltipMode == "shift_only", "shift_only mode persisted")
+
+    local reloaded = harness.new({ saved = snapshot })
+    assert_true(reloaded.AddonNS.TooltipSettings:GetMode() == reloaded.AddonNS.TooltipSettings.MODE_SHIFT_ONLY,
+        "shift_only mode survives reload")
+
+    reloaded.AddonNS.TooltipSettings:SetMode(reloaded.AddonNS.TooltipSettings.MODE_DEFAULT)
+    reloaded:events():fire_game("PLAYER_LOGOUT")
+    local defaultSnapshot = reloaded:snapshot()
+    if defaultSnapshot.settings ~= nil then
+        assert_true(defaultSnapshot.settings.tooltipMode == nil, "default mode prunes persisted key")
+    end
+end)
+
 run("selected custom category prefix clears when selection is cleared", function()
     local ctx = harness.new()
     local category = ctx.AddonNS.CustomCategories:NewCategory("Selected")

@@ -30,6 +30,8 @@ utils/containerItemInfoCache.lua
 utils/searchCategoryBaseline.lua
 categoryStore.lua
 init.lua
+tooltipSettings.lua
+addonSettings.lua
 bagViewState.lua
 collapsed.lua
 main.lua

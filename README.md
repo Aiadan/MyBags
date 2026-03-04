@@ -117,6 +117,7 @@ Please create a list of categories to import:
 * `Unassigned` is the default fallback and is always visible.
 * Category headers can be collapsed/expanded.
 * Hold `Shift` on an item tooltip to inspect matched categories and query attributes.
+* Tooltip behavior can be changed in `Settings -> AddOns -> MyBags` (`Default`, `Shift only`, `Disabled`).
 * Item order stays as you define it inside categories.
 * Container free space is shown in the footer.
 * You can still switch between combined bags and separate bags.
