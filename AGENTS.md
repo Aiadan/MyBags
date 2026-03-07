@@ -113,14 +113,17 @@ This policy also applies to generic or reusable components such as utility funct
 ## Planning and documentation
 
 - Store plans/decisions you create under `.agent/` as Markdown files.
-- Update `TODOs.md` for every completed code change.
-- Before closing any task, check whether the change maps to an existing `TODOs.md` item:
-  - if it does, update that item's status/details and prefix completed entries with a checkmark icon as appropriate.
-  - if it does not, add a short new entry describing the completed change in the appropriate section.
-  - when adding a new completed entry to a `DONE` list, append it at the end of that list (do not insert it by topic in the middle).
-  - if unrelated `TODOs.md` entries were added/edited concurrently for other tasks, leave them as-is and update only the entry for the task you are closing.
-- For iterative work on the same feature/thread, prefer updating one existing `TODOs.md` entry (expand/refine its text) instead of appending multiple near-duplicate entries for each intermediate step.
-- If multiple temporary entries were created for the same feature, consolidate them into one final entry before closing the task.
+- `TODOs.md` is a concise backlog, not a changelog.
+- Update `TODOs.md` only when:
+  - the work completes or materially changes an existing tracked item;
+  - the work is a user-visible or backlog-worthy improvement;
+  - the work is a substantial maintenance/refactor effort worth tracking; or
+  - the user explicitly asks to track it there.
+- Do not add `TODOs.md` entries for small technical fixes, narrow refactors, tests-only changes, naming cleanups, or implementation details unless they resolve an existing tracked item.
+- Keep `TODOs.md` entries brief and outcome-focused. Describe what changed for the project, not how the code was written.
+- `Done` entries in `TODOs.md` must include the completion date in `YYYY-MM-DD` format.
+- For iterative work on the same feature/thread, keep one consolidated `TODOs.md` item instead of appending near-duplicate follow-ups.
+- Put technical/implementation details in ExecPlans, tests, commits, code comments, or other appropriate documentation, not in `TODOs.md`.
 - Modify `README.md` only when explicitly asked, or when resolving a `TODOs.md` item that requires it.
 - `README.md` is user-facing documentation. Keep language user-oriented and avoid internal implementation details there.
 - If a task introduces a user-facing feature, update `README.md` with a short description of that feature.
