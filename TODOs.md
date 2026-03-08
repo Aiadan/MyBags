@@ -3,7 +3,12 @@
 This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 
 ## Planned
+### Improtant
+- There is some kind of tainting during bank usage. It is quite hard to grasp it currently.
+- Sometimes the scale / frame position still does not work as expected. Maybe we could hook to it and if we noticed pos has changed, regardless of the locks, just fix it/readjust it before it is even visible to the user.
 
+### Normal
+- Add toy category. Maybe C_ToyBox.IsToyUsable(itemID) ?
 - Observation: dragging an item from vendor, inventory, or another container shows category highlight even when background drop does not actually assign the item; the highlight/assignment expectation should match the real behavior.
 - Observation: changing tabs between bank and warband bank while search is active freezes resize behavior.
 - Observation: dragging an item from bags to bank into a different category first changes the bag category, and only the next drag moves it to the bank; this should happen in one action.
@@ -30,6 +35,7 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 ## In Progress
 
 - Simplify TODO tracking: keep this file as a curated backlog, archive the historical diary, and require dated concise entries for tracked completions.
+- 🛠️ Add a curated user-facing changelog workflow with one `RELEASE_NOTES.md` draft per stable cycle and `CHANGELOG.md` as the stable archive.
 
 ## Done
 

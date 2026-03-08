@@ -1,4 +1,8 @@
 package-as: MyBags
+manual-changelog: RELEASE_NOTES.md
+
+ignore:
+  - RELEASE_NOTES.md
 
 externals:
   Libs/MyLibrary_GUI:
