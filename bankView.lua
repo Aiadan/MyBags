@@ -1737,7 +1737,7 @@ function BankView:Refresh(scope)
         or not hasAnyActiveItemButtons(panel)
         or countActiveItemButtons(panel) ~= expectedButtons
     if shouldRegenerateButtons then
-        generateAllTabItemButtons(panel, activeBankType, tabIds)
+        generateAllTabItemButtons(panel, activeBankType, tabIds) --TODO: BANK_TAINT
         self.itemButtonsSignature = itemButtonsSignature
     end
     local searchText = BankItemSearchBox:GetText() or ""
@@ -1780,7 +1780,7 @@ function BankView:Refresh(scope)
         ensureItemButtonHooks(itemButton)
         if shouldRefreshItemButtonVisuals then
             local refreshStartedAt = profileSearchRefresh and profileNowMs() or nil
-            itemButton:Refresh()
+            itemButton:Refresh() --TODO: BANK_TAINT
             if refreshStartedAt then
                 profileLoopRefreshMs = profileLoopRefreshMs + (profileNowMs() - refreshStartedAt)
             end
@@ -1823,7 +1823,7 @@ function BankView:Refresh(scope)
                 end
                 if includeInSearch then
                     local setMatchStartedAt = profileSearchRefresh and profileNowMs() or nil
-                    itemButton:SetMatchesSearch(true)
+                    itemButton:SetMatchesSearch(true) --TODO: BANK_TAINT
                     if setMatchStartedAt then
                         profileLoopSetMatchMs = profileLoopSetMatchMs + (profileNowMs() - setMatchStartedAt)
                     end

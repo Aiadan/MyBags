@@ -3,9 +3,10 @@
 This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 
 ## Planned
+
 ### Improtant
-- There is some kind of tainting during bank usage. It is quite hard to grasp it currently.
 - Sometimes the scale / frame position still does not work as expected. Maybe we could hook to it and if we noticed pos has changed, regardless of the locks, just fix it/readjust it before it is even visible to the user.
+- 🐞 There is some kind of tainting during bank usage. It is quite hard to grasp it currently. I have marked the places which cause it with "--TODO: BANK_TAINT"
 
 ### Normal
 - Add toy category. Maybe C_ToyBox.IsToyUsable(itemID) ?

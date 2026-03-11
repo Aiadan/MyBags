@@ -124,7 +124,9 @@ local function updateItemSlots(self, ...)
 end;
 hooksecurefunc(ContainerFrameCombinedBags, "UpdateItemSlots", updateItemSlots)
 
--- Workaround: forcing OpenAllBags before the default bank open flow avoids the observed bank taint path.
+-- Workaround: Blizzard normally opens bags from BankFrame:OnShow after ShowUIPanel(BankFrame).
+-- Forcing OpenAllBags before BankFrame_Open changes that order so bag frames are already open
+-- before the bank frame runs its normal show flow, which avoids the observed taint path.
 local oldBankFrame_Open = BankFrame_Open
 function BankFrame_Open()
     OpenAllBags(BankFrame)
