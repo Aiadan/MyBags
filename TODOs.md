@@ -5,8 +5,10 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 ## Planned
 
 ### Improtant
-- Sometimes the scale / frame position still does not work as expected. Maybe we could hook to it and if we noticed pos has changed, regardless of the locks, just fix it/readjust it before it is even visible to the user.
 - 🐞 There is some kind of tainting during bank usage. It is quite hard to grasp it currently. I have marked the places which cause it with "--TODO: BANK_TAINT"
+- 🐞 when filter is active and we right click an item to wear it, bag goes off the screen :(
+- 🐞 Equipment categories under some conditions seem to have positions reset in layout :(
+- 🐞 Sometimes the scale / frame position still does not work as expected. Maybe we could hook to it and if we noticed pos has changed, regardless of the locks, just fix it/readjust it before it is even visible to the user.
 
 ### Normal
 - Add toy category. Maybe C_ToyBox.IsToyUsable(itemID) ?
