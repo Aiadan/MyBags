@@ -11,7 +11,8 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 - 🐞 Sometimes the scale / frame position still does not work as expected. Maybe we could hook to it and if we noticed pos has changed, regardless of the locks, just fix it/readjust it before it is even visible to the user.
 
 ### Normal
-- Add toy category. Maybe C_ToyBox.IsToyUsable(itemID) ?
+- Add toy category. Prefer `C_ToyBox.GetToyInfo(itemID) ~= nil` or `TooltipInfo.GetToyByItemID(itemID) ~= nil` to detect toys.
+- Add `onUseDescription` helper/filter support. Keep it tooltip-driven but cheap: first gate with `C_Item.GetItemSpell(itemID)` so we only inspect candidate on-use items, then read `TooltipInfo.GetItemByID(itemID)` and scan tooltip lines for the localized `ITEM_SPELL_TRIGGER_ONUSE` text. There does not appear to be a dedicated tooltip line type for generic `Use:` lines, so this likely needs text matching against the relevant line text instead of a stronger structured enum. Keep in mind `ItemSpellTriggerLearn` is for `Learn:`-style lines, not generic `Use:` effects.
 - Observation: dragging an item from vendor, inventory, or another container shows category highlight even when background drop does not actually assign the item; the highlight/assignment expectation should match the real behavior.
 - Observation: changing tabs between bank and warband bank while search is active freezes resize behavior.
 - Observation: dragging an item from bags to bank into a different category first changes the bag category, and only the next drag moves it to the bank; this should happen in one action.
