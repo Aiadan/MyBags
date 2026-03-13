@@ -5,15 +5,19 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 ## Planned
 
 ### Improtant
+
 - 🐞 There is some kind of tainting during bank usage. It is quite hard to grasp it currently. I have marked the places which cause it with "--TODO: BANK_TAINT"
+
    ```lua
    -- in bankView.lua  --TODO: BANK_TAINT marks lines which when commented out remove the taint that is currently caused by them, when in bank switiching between warband bank and normal bank ui. This leads to inability to use items in bags which have "Use:" in their tooltip. Weirdly opening the bank, without switching tabs, removes the taint and reenables the ability to easily use those items. Secondly the taint happens only after 2nd tab switch. Regardless if we have or have not closed the bank in the meantime. Why is it so?
    ```
+
 - 🐞 when filter is active and we right click an item to wear it, bag goes off the screen :(
 - 🐞 Equipment categories under some conditions seem to have positions reset in layout :(
 - 🐞 Sometimes the scale / frame position still does not work as expected. Maybe we could hook to it and if we noticed pos has changed, regardless of the locks, just fix it/readjust it before it is even visible to the user.
 
 ### Normal
+
 - Add toy category. Prefer `C_ToyBox.GetToyInfo(itemID) ~= nil` or `TooltipInfo.GetToyByItemID(itemID) ~= nil` to detect toys.
 - Add `onUseDescription` helper/filter support. Keep it tooltip-driven but cheap: first gate with `C_Item.GetItemSpell(itemID)` so we only inspect candidate on-use items, then read `TooltipInfo.GetItemByID(itemID)` and scan tooltip lines for the localized `ITEM_SPELL_TRIGGER_ONUSE` text. There does not appear to be a dedicated tooltip line type for generic `Use:` lines, so this likely needs text matching against the relevant line text instead of a stronger structured enum. Keep in mind `ItemSpellTriggerLearn` is for `Learn:`-style lines, not generic `Use:` effects.
 - Observation: dragging an item from vendor, inventory, or another container shows category highlight even when background drop does not actually assign the item; the highlight/assignment expectation should match the real behavior.
@@ -25,7 +29,7 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 - 🛠️ Observation: some flows rely on direct cross-module reactions where clearer event-driven boundaries would better separate responsibilities.
 - 🛠️ Expectation: naming conventions across the codebase should be normalized to match repository rules.
 - 🛠️ Observation: bag-search anchor-lock behavior is still spread across existing files and should live behind a dedicated module interface.
-- 🛠️ Observation: `CustomCategorizer:Categorize` still looks like the next profiling/performance hotspot.
+- 🛠️ Observation: `CustomCategorizer:Categorize` still looks like the next profiling/performance hotspot.66666
 - 🛠️ Observation: internal runtime still has places where category ids/names are used instead of passing category objects directly.
 
 ### Low priority

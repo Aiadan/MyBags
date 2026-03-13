@@ -421,9 +421,9 @@ local function refreshSearchAnchorLockState(searchBox)
             searchUnlockReanchorQueued = true
             RunNextFrame(function()
                 searchUnlockReanchorQueued = false
-                local queryEditorLockRequested = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
+                local queryEditorStillLockRequested = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
                 local stillUnlocked = not container:IsSearchAnchorLockActive()
-                local stableUnlockState = (BagItemSearchBox:GetText() == "") and (not BagItemSearchBox:HasFocus()) and (not queryEditorLockRequested)
+                local stableUnlockState = (BagItemSearchBox:GetText() == "") and (not BagItemSearchBox:HasFocus()) and (not queryEditorStillLockRequested)
                 if stillUnlocked and stableUnlockState then
                     UpdateContainerFrameAnchors()
                 end
@@ -530,10 +530,11 @@ end
 local it = container:EnumerateValidItems()
 
 AddonNS.emptyItemButton = nil
-local function newIterator(container, index)
-    local arrangedItems = container.MyBags.arrangedItems;
-    local positionsInBags = container.MyBags.positionsInBags;
-    local index, itemButton = it(container, index);
+local function newIterator(iteratorContainer, index)
+    local arrangedItems = iteratorContainer.MyBags.arrangedItems;
+    local positionsInBags = iteratorContainer.MyBags.positionsInBags;
+    local itemButton
+    index, itemButton = it(iteratorContainer, index);
     if (index == 1) then
         AddonNS.emptyItemButton = nil -- reset itemButom
         bagSearchText = BagItemSearchBox:GetText() or ""
@@ -694,8 +695,7 @@ local function newIterator(container, index)
         end
 
         -- Calculate positions for each column
-        local categoryAssignments = {}
-        categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, "bag") -- todo: this object is quite weird. Why is it a local global used among two functions :/
+        local categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, "bag") -- todo: this object is quite weird. Why is it a local global used among two functions :/
 
 
         local columnSize = itemSize * AddonNS.Const.ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING;
@@ -744,6 +744,6 @@ local function newIterator(container, index)
     return index, itemButton;
 end
 
-function AddonNS.newEnumerateValidItems(container)
-    return newIterator, container, 0;
+function AddonNS.newEnumerateValidItems(iteratorContainer)
+    return newIterator, iteratorContainer, 0;
 end

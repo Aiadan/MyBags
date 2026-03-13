@@ -208,7 +208,7 @@ end
 
 function AddonNS.DragAndDrop.itemOnClick(self, button)
     if button == "LeftButton" then
-        local infoType, itemID, itemLink = getCachedCursorInfo()
+        local infoType, itemID = getCachedCursorInfo()
         if (infoType) then
             local targetScope = getScopeFromButton(self)
             normalizeCrossScopeItemDrag(targetScope)
@@ -268,7 +268,7 @@ function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
     local targetScope = getScopeFromButton(self)
     normalizeCrossScopeItemDrag(targetScope)
 
-    local infoType, itemID, itemLink = getCachedCursorInfo()
+    local infoType, itemID = getCachedCursorInfo()
     if (infoType == "merchant") then
         itemID = GetMerchantItemID(itemID)
         infoType = "item";
@@ -410,7 +410,7 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self, mouseButtonName)
     end
     local columnNo = GetMouseSectionRelativeToFrame(self)
     if (columnNo) then
-        local infoType, itemID, itemLink = getCachedCursorInfo()
+        local infoType, itemID = getCachedCursorInfo()
         if (infoType == "merchant") then
             itemID = GetMerchantItemID(itemID)
             infoType = "item";
@@ -453,7 +453,7 @@ end
 
 function AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetCategoryId)
     if (pickedItemButton) then -- button
-        local infoType, itemID, itemLink = getCachedCursorInfo()
+        local infoType, itemID = getCachedCursorInfo()
         if infoType == "item" and itemID == pickedItemID then
             local targetCategory = AddonNS.CategoryStore:Get(targetCategoryId)
             triggerItemMoved(itemID, nil, pickedItemCategory, targetCategory, pickedItemButton, nil);

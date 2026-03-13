@@ -106,7 +106,7 @@ local function getFrameScale(frame)
     return bagScale
 end
 
-function FrameParametersOverride:OverrideScale(frame, ignoreFile)
+function FrameParametersOverride:OverrideScale(frame, _)
     local oldSetScale = frame.SetScale;
     -- function frame:SetScale(scale)
     --     local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
@@ -116,13 +116,13 @@ function FrameParametersOverride:OverrideScale(frame, ignoreFile)
     --     scale = scale > 0.75 and 0.75 or scale;
     --     return oldSetScale(self, scale);
     -- end
-    function frame:SetScale(scale)
+    function frame:SetScale(_)
         -- local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
         -- if string.find(stack, ignoreFile) then
         --     scale = frame:GetScale();     -- ignore the change
         -- end
-        scale = getFrameScale(self)
-        return oldSetScale(self, scale);
+        local scale = getFrameScale(frame)
+        return oldSetScale(frame, scale);
     end
 end
 
@@ -137,43 +137,43 @@ AddonNS._Test.FrameParameters = {
 
 
 
-function FrameParametersOverride:OverrideHeight(frame, ignoreFile)
+function FrameParametersOverride:OverrideHeight(frame, _)
     local oldSetHeight = frame.SetHeight
     function frame:SetHeight(height)
         -- if string.find(stack, ignoreFile) then
         --     height = frame:GetHeight() -- ignore the change
         -- end
         -- height = height < 300 and 300 or height -- Enforce minimum height of 300
-        return oldSetHeight(self, height)
+        return oldSetHeight(frame, height)
     end
 end
 
-function FrameParametersOverride:OverrideWidth(frame, ignoreFile)
+function FrameParametersOverride:OverrideWidth(frame, _)
     local oldSetWidth = frame.SetWidth
     function frame:SetWidth(width)
         -- if string.find(stack, ignoreFile) then
         --     width = frame:GetWidth() -- ignore the change
         -- end
         -- width = width < 400 and 400 or width -- Enforce minimum width of 400
-        return oldSetWidth(self, width)
+        return oldSetWidth(frame, width)
     end
 end
 
-function FrameParametersOverride:OverridePoint(frame, ignoreFile)
+function FrameParametersOverride:OverridePoint(frame, _)
    -- local oldSetPoint = frame.SetPoint
     function frame:SetPoint(...)
         -- if string.find(stack, ignoreFile) then
         --     width = frame:GetWidth() -- ignore the change
         -- end
         -- width = width < 400 and 400 or width -- Enforce minimum width of 400
-       -- return oldSetPoint(self, ...)
+       -- return oldSetPoint(frame, ...)
     end
 end
 
-function FrameParametersOverride:OverrideSize(frame, ignoreFile)
+function FrameParametersOverride:OverrideSize(frame, _)
     function frame:SetSize(width, height)
-        self:SetWidth(width)
-        self:SetHeight(height)
+        frame:SetWidth(width)
+        frame:SetHeight(height)
     end
 end
 

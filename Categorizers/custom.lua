@@ -688,7 +688,7 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
     if not resolvedContainerInfo then
         resolvedContainerInfo = C_Container.GetContainerItemInfo(bagID, slotID)
     end
-    local containerInfo = resolvedContainerInfo
+    containerInfo = resolvedContainerInfo
     if not containerInfo then
         return nil, nil
     end
@@ -709,7 +709,7 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
         return itemButton._myBagsQueryPayloadCacheValue, containerInfo
     end
 
-    local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expansionID, setID, isCraftingReagent, itemDescription =
+    local itemName, _, _, itemLevel, itemMinLevel, _, _, _, _, _, sellPrice, classID, subclassID, bindType, expansionID, _, isCraftingReagent, itemDescription =
         C_Item.GetItemInfo(containerInfo.hyperlink)
     if not itemName then
         local resolvedItemId = itemID or containerInfo.itemID
@@ -1156,14 +1156,14 @@ local function decodeImportPayload(text)
         fail("Import payload must be a Lua table literal (without leading 'return').")
     end
     if loadstring then
-        local chunk, err = loadstring("return " .. trimmed)
+        local chunk = loadstring("return " .. trimmed)
         if not chunk then
             fail("Failed to parse import payload")
         end
         setfenv(chunk, {})
         return chunk()
     end
-    local chunk, err = load("return " .. trimmed, "MyBagsImport", "t", {})
+    local chunk = load("return " .. trimmed, "MyBagsImport", "t", {})
     if not chunk then
         fail("Failed to parse import payload")
     end

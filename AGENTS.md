@@ -126,6 +126,7 @@ This policy also applies to generic or reusable components such as utility funct
 - For iterative work on the same feature/thread, keep one consolidated `TODOs.md` item instead of appending near-duplicate follow-ups.
 - Put technical/implementation details in ExecPlans, tests, commits, code comments, or other appropriate documentation, not in `TODOs.md`.
 - Maintain curated release notes in `RELEASE_NOTES.md` and keep `CHANGELOG.md` as the stable-release archive.
+- Completing a tracked `TODOs.md` item requires an explicit `RELEASE_NOTES.md` review decision: either add a concise release-note bullet or confirm it is intentionally omitted because it is internal-only.
 - When a tracked change is completed and is user-facing or otherwise release-note-worthy, add one concise user-facing bullet to `RELEASE_NOTES.md` in the appropriate section.
 - Do not add changelog entries for internal-only work such as process/documentation changes, test-only changes, refactors with no user-visible effect, or agent-workflow changes.
 - Release note entries must be grouped under the fixed headings `Highlights`, `Improvements`, `Fixes`, and `Smaller improvements`, in that order.

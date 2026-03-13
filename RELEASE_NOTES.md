@@ -15,4 +15,4 @@
 
 ## Smaller improvements
 
-- None yet.
+- Removed leftover runtime debug and profiling helpers from shipped release code paths.
