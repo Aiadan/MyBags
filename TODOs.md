@@ -6,6 +6,9 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 
 ### Improtant
 - 🐞 There is some kind of tainting during bank usage. It is quite hard to grasp it currently. I have marked the places which cause it with "--TODO: BANK_TAINT"
+   ```lua
+   -- in bankView.lua  --TODO: BANK_TAINT marks lines which when commented out remove the taint that is currently caused by them, when in bank switiching between warband bank and normal bank ui. This leads to inability to use items in bags which have "Use:" in their tooltip. Weirdly opening the bank, without switching tabs, removes the taint and reenables the ability to easily use those items. Secondly the taint happens only after 2nd tab switch. Regardless if we have or have not closed the bank in the meantime. Why is it so?
+   ```
 - 🐞 when filter is active and we right click an item to wear it, bag goes off the screen :(
 - 🐞 Equipment categories under some conditions seem to have positions reset in layout :(
 - 🐞 Sometimes the scale / frame position still does not work as expected. Maybe we could hook to it and if we noticed pos has changed, regardless of the locks, just fix it/readjust it before it is even visible to the user.
