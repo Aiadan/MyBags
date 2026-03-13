@@ -7,7 +7,7 @@
 
 ## Improvements
 
-- None yet.
+- Query-based categories now support `onUseDescription`, allowing matches against the localized text from an item's `Use:` tooltip line.
 
 ## Fixes
 

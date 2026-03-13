@@ -50,6 +50,39 @@ local function trim(text)
     return text:match("^%s*(.-)%s*$")
 end
 
+local function escape_lua_pattern(text)
+    return (text:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1"))
+end
+
+local function extractOnUseDescriptionText(itemID)
+    if not C_Item.GetItemSpell(itemID) then
+        return nil
+    end
+    local tooltipData = C_TooltipInfo.GetItemByID(itemID)
+    if not tooltipData or type(tooltipData.lines) ~= "table" then
+        return nil
+    end
+    local localizedPrefix = trim(ITEM_SPELL_TRIGGER_ONUSE or "")
+    if localizedPrefix == "" then
+        return nil
+    end
+    local localizedPrefixPattern = "^" .. escape_lua_pattern(localizedPrefix) .. "%s*(.*)$"
+    for index = 1, #tooltipData.lines do
+        local line = tooltipData.lines[index]
+        local leftText = type(line.leftText) == "string" and trim(line.leftText) or nil
+        local rightText = type(line.rightText) == "string" and trim(line.rightText) or nil
+        local description = leftText and leftText:match(localizedPrefixPattern) or nil
+        if description and description ~= "" then
+            return trim(description)
+        end
+        description = rightText and rightText:match(localizedPrefixPattern) or nil
+        if description and description ~= "" then
+            return trim(description)
+        end
+    end
+    return nil
+end
+
 local function fail(message)
     error(message, 0)
 end
@@ -760,6 +793,7 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
         isCorruptedItem = isCorruptedItem,
         isWarbound = isWarbound,
         description = itemDescription,
+        onUseDescription = extractOnUseDescriptionText(resolvedItemID),
         isTransmogCollected = isTransmogCollected,
     }
     itemButton._myBagsQueryPayloadCacheKey = cacheKey

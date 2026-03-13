@@ -64,7 +64,7 @@ Here are few animations showcasing how easily you can do certain things. You can
    * mark categories as not used in a given container (`Bags`, `Bank`, `Warbank`)
    * edit query and priority rules for custom categories
 5. Search filters visible items and combines Blizzard text matching with valid MyBags [query matching](https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md). Query Help is available in-game next to bag/bank search bars.
-   * query attributes include item metadata such as anima, artifact power, corruption, transmog-collected state, and item description text.
+   * query attributes include item metadata such as anima, artifact power, corruption, transmog-collected state, item description text, and localized `Use:` tooltip text via `onUseDescription`.
 
 ## Import and export categories
 

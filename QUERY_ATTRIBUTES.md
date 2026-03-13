@@ -38,7 +38,7 @@ NOT isQuestItem = true
 Query field names are not case-sensitive:
 - Field names are case-insensitive: `itemType`, `ItemType`, and `ITEMTYPE` are equivalent.
 - Boolean values should be lowercase: `true` / `false`.
-- String matching is case-insensitive (`itemName` and `description`).
+- String matching is case-insensitive (`itemName`, `description`, and `onUseDescription`).
 - Use uppercase logical operators (`AND`, `OR`, `NOT`) for predictable results.
 
 ## String Matching
@@ -90,11 +90,13 @@ Notes:
 | `isCorruptedItem` | boolean |
 | `isWarbound` | boolean |
 | `description` | string |
+| `onUseDescription` | string |
 | `isTransmogCollected` | boolean |
 
 Notes:
 - `isCurioItem` is intentionally not a separate field; use `itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)`.
 - `isHeirloomItem` is intentionally not a separate field; use `quality = 7`.
+- `onUseDescription` is populated from the localized tooltip text after the item's `Use:` prefix, and is only inspected for items where `C_Item.GetItemSpell(itemID)` reports an on-use spell.
 
 ## Core Value Tables
 

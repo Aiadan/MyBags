@@ -263,6 +263,7 @@ local Retrievers = {
     isCorruptedItem = { type = ValueType.BOOL },
     isWarbound = { type = ValueType.BOOL },
     description = { type = ValueType.STRING },
+    onUseDescription = { type = ValueType.STRING },
     isTransmogCollected = { type = ValueType.BOOL },
 }
 
@@ -291,6 +292,7 @@ local QueryTooltipDefinitions = {
         "stackCount",
         "itemName",
         "description",
+        "onUseDescription",
         "ilvl",
         "itemMinLevel",
         "questID",
@@ -324,6 +326,7 @@ local QueryTooltipDefinitions = {
         -- isTransmogCollected = "True when the item's transmog source is collected",
         -- bindType = "Bind type",
         -- description = "Item description text",
+        -- onUseDescription = "Localized tooltip text that follows the item's Use: line",
     },
     valueLabels = {
 

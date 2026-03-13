@@ -19,7 +19,6 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 ### Normal
 
 - Add toy category. Prefer `C_ToyBox.GetToyInfo(itemID) ~= nil` or `TooltipInfo.GetToyByItemID(itemID) ~= nil` to detect toys.
-- Add `onUseDescription` helper/filter support. Keep it tooltip-driven but cheap: first gate with `C_Item.GetItemSpell(itemID)` so we only inspect candidate on-use items, then read `TooltipInfo.GetItemByID(itemID)` and scan tooltip lines for the localized `ITEM_SPELL_TRIGGER_ONUSE` text. There does not appear to be a dedicated tooltip line type for generic `Use:` lines, so this likely needs text matching against the relevant line text instead of a stronger structured enum. Keep in mind `ItemSpellTriggerLearn` is for `Learn:`-style lines, not generic `Use:` effects.
 - Observation: dragging an item from vendor, inventory, or another container shows category highlight even when background drop does not actually assign the item; the highlight/assignment expectation should match the real behavior.
 - Observation: changing tabs between bank and warband bank while search is active freezes resize behavior.
 - Observation: dragging an item from bags to bank into a different category first changes the bag category, and only the next drag moves it to the bank; this should happen in one action.
@@ -29,7 +28,7 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 - 🛠️ Observation: some flows rely on direct cross-module reactions where clearer event-driven boundaries would better separate responsibilities.
 - 🛠️ Expectation: naming conventions across the codebase should be normalized to match repository rules.
 - 🛠️ Observation: bag-search anchor-lock behavior is still spread across existing files and should live behind a dedicated module interface.
-- 🛠️ Observation: `CustomCategorizer:Categorize` still looks like the next profiling/performance hotspot.66666
+- 🛠️ Observation: `CustomCategorizer:Categorize` still looks like the next profiling/performance hotspot.
 - 🛠️ Observation: internal runtime still has places where category ids/names are used instead of passing category objects directly.
 
 ### Low priority
@@ -51,6 +50,7 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 
 - 2026-03-07 - Re-scoped `TODOs.md` to a concise live backlog and moved the historical log to `.agent/todo-history.md`.
 - 2026-03-13 - Removed leftover runtime debug logs and profiling helpers from release code paths.
+- 2026-03-13 - Added `onUseDescription` query support using localized `Use:` tooltip text for custom-category matching.
 
 ## Rejected
 

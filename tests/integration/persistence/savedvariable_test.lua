@@ -67,6 +67,7 @@ end
 
 local function install_item_query_stubs(itemID, options)
     options = options or {}
+    _G.ITEM_SPELL_TRIGGER_ONUSE = options.onUsePrefix or "Use:"
     _G.ItemLocation = {
         CreateFromBagAndSlot = function(bagID, slotID)
             return { bagID = bagID, slotID = slotID }
@@ -79,6 +80,9 @@ local function install_item_query_stubs(itemID, options)
         end,
         GetItemInventoryTypeByID = function()
             return options.inventoryType or 0
+        end,
+        GetItemSpell = function()
+            return options.itemSpellName
         end,
         IsAnimaItemByID = function()
             return options.isAnimaItem == true
@@ -102,6 +106,13 @@ local function install_item_query_stubs(itemID, options)
         end,
         GetSourceInfo = function()
             return { isCollected = options.isTransmogCollected == true }
+        end,
+    }
+    _G.C_TooltipInfo = {
+        GetItemByID = function()
+            return {
+                lines = options.tooltipLines or {},
+            }
         end,
     }
     rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
@@ -811,6 +822,11 @@ run("custom query matching supports new payload attributes", function()
         isCorruptedItem = false,
         isTransmogCollected = true,
         isWarbound = true,
+        itemSpellName = "Vault Recall",
+        tooltipLines = {
+            { leftText = "Flavor line" },
+            { leftText = "Use: Open a special relic from an old vault" },
+        },
         description = "special relic from an old vault",
     })
     local button = item_button(0, 1)
@@ -844,6 +860,46 @@ run("custom query matching supports new payload attributes", function()
     local nilTransmogCategory = ctx.AddonNS.Categories:Categorize(2202, item_button(0, 1))
     assert_true(nilTransmogCategory:GetId() == descriptionCategory:GetId(),
         "isTransmogCollected is nil when source info is missing so true/false transmog queries do not match")
+end)
+
+run("custom query matching supports onUseDescription tooltip attribute", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
+
+    local onUseCategory = ctx.AddonNS.CustomCategories:NewCategory("OnUse")
+    ctx.AddonNS.QueryCategories:SetQuery(onUseCategory, "onUseDescription = \"hidden vault\"")
+    ctx.AddonNS.CustomCategories:SetPriority(onUseCategory, 200)
+
+    install_item_query_stubs(2204, {
+        itemSpellName = "Vault Recall",
+        tooltipLines = {
+            { leftText = "Use: Teleports the caster to a hidden vault" },
+        },
+    })
+    local category = ctx.AddonNS.Categories:Categorize(2204, item_button(0, 1))
+    assert_true(category:GetId() == onUseCategory:GetId(),
+        "onUseDescription query matches localized tooltip text after the Use prefix")
+
+    install_item_query_stubs(2205, {
+        itemSpellName = nil,
+        tooltipLines = {
+            { leftText = "Use: Teleports the caster to a hidden vault" },
+        },
+    })
+    local noSpellPayload = ctx.AddonNS.CustomCategories:GetItemQueryPayload(2205, item_button(0, 1))
+    assert_true(noSpellPayload.onUseDescription == nil,
+        "onUseDescription stays unset when the item has no on-use spell gate")
 end)
 
 run("manual assign to first query-match category via item-move is ignored", function()
