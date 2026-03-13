@@ -293,7 +293,7 @@ local function ensureSearchHelpButton(self)
     return button
 end
 
-local function showSearchHelpButton(self, panel)
+local function showSearchHelpButton(self)
     local button = ensureSearchHelpButton(self)
     button:ClearAllPoints()
     button:SetPoint("LEFT", BankItemSearchBox, "RIGHT", 4, 0)
@@ -992,12 +992,12 @@ local function ensureContentArea(self, panel)
     self.dropAreaOverlays = self.dropAreaOverlays or {}
 end
 
-local function ensureHeaderFrame(self, index)
-    if self.headerFrames[index] then
-        return self.headerFrames[index]
+local function ensureHeaderFrame(bankView, index)
+    if bankView.headerFrames[index] then
+        return bankView.headerFrames[index]
     end
 
-    local headerFrame = CreateFrame("Frame", nil, self.backgroundFrame, "BackdropTemplate")
+    local headerFrame = CreateFrame("Frame", nil, bankView.backgroundFrame, "BackdropTemplate")
     headerFrame:SetBackdrop({ bgFile = "Interface/Tooltips/UI-Tooltip-Background" })
     headerFrame:SetBackdropColor(1, 0, 0, 0)
 
@@ -1158,11 +1158,11 @@ local function ensureHeaderFrame(self, index)
         AddonNS.gui:StopCategoryDragVisual()
         PlaySound(1200)
     end)
-    function headerFrame:SetText(text)
+    function headerFrame.SetText(_, text)
         label:SetText(text)
     end
 
-    function headerFrame:ApplyCategoryTextLayout()
+    function headerFrame.ApplyCategoryTextLayout(_)
         label:ClearAllPoints()
         label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
         label:SetPoint("TOPRIGHT", headerFrame, "TOPRIGHT", -ITEM_SPACING / 2, -ITEM_SPACING / 2)
@@ -1171,7 +1171,7 @@ local function ensureHeaderFrame(self, index)
         label:SetFontObject("GameFontNormal")
     end
 
-    function headerFrame:ApplyCategoryTextLayoutWithEditButton()
+    function headerFrame.ApplyCategoryTextLayoutWithEditButton(_)
         label:ClearAllPoints()
         label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
         label:SetPoint("TOPRIGHT", editButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
@@ -1180,7 +1180,7 @@ local function ensureHeaderFrame(self, index)
         label:SetFontObject("GameFontNormal")
     end
 
-    function headerFrame:ApplyCategoryTextLayoutWithEditAndDeleteButtons()
+    function headerFrame.ApplyCategoryTextLayoutWithEditAndDeleteButtons(_)
         label:ClearAllPoints()
         label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
         label:SetPoint("TOPRIGHT", scopeVisibilityButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
@@ -1189,7 +1189,7 @@ local function ensureHeaderFrame(self, index)
         label:SetFontObject("GameFontNormal")
     end
 
-    function headerFrame:ApplyCategoryTextLayoutWithScopeAndEditButtons()
+    function headerFrame.ApplyCategoryTextLayoutWithScopeAndEditButtons(_)
         label:ClearAllPoints()
         label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", ITEM_SPACING / 2, -ITEM_SPACING / 2)
         label:SetPoint("TOPRIGHT", scopeVisibilityButton, "TOPLEFT", -4, -ITEM_SPACING / 2)
@@ -1198,7 +1198,7 @@ local function ensureHeaderFrame(self, index)
         label:SetFontObject("GameFontNormal")
     end
 
-    function headerFrame:ApplyAddControlTextLayout()
+    function headerFrame.ApplyAddControlTextLayout(_)
         label:ClearAllPoints()
         label:SetPoint("LEFT", headerFrame, "LEFT", 6, 0)
         label:SetPoint("RIGHT", headerFrame, "RIGHT", -6, 0)
@@ -1215,7 +1215,7 @@ local function ensureHeaderFrame(self, index)
     headerFrame.hintOverlay = hintOverlay
     headerFrame.isAddCategoryControl = false
     AddonNS.gui:EnsureCategoryControlBackdrop(headerFrame)
-    self.headerFrames[index] = headerFrame
+    bankView.headerFrames[index] = headerFrame
     return headerFrame
 end
 
@@ -1259,7 +1259,7 @@ local function ensureDropFrame(self, index)
     return dropFrame
 end
 
-local function placeItemsAndBuildHeaders(scope, panel, categoryAssignments, itemSize)
+local function placeItemsAndBuildHeaders(scope, categoryAssignments, itemSize)
     local categoryPositions = {}
     local positions = {}
     local columnsBottom = {}
@@ -1612,7 +1612,7 @@ function BankView:Refresh(scope)
     end
 
     refreshSearchBoxLayout()
-    showSearchHelpButton(self, panel)
+    showSearchHelpButton(self)
     showSearchScopeDisabledCheckbox(self, panel)
     local activeBankType = BankFrame:GetActiveBankType()
     local activeScope = scope or getScopeForBankType(activeBankType)
@@ -1718,7 +1718,7 @@ function BankView:Refresh(scope)
     self.columnPixelWidth = itemSize * ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
     self.firstColumnStartX = BANK_CONTENT_LEFT_PADDING - ITEM_SPACING / 2
     local categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, activeScope)
-    local positions, categoryPositions, contentBottom = placeItemsAndBuildHeaders(activeScope, panel, categoryAssignments,
+    local positions, categoryPositions, contentBottom = placeItemsAndBuildHeaders(activeScope, categoryAssignments,
         itemSize)
 
     updateFrameSizeForContent(self, panel, contentBottom)
@@ -1897,7 +1897,7 @@ AddonNS.BankViewTestHooks = {
     CalculateScaledDepositButtonWidth = calculateScaledDepositButtonWidth,
     ShouldShowBankResizeHandle = shouldShowBankResizeHandle,
     PlaceItemsAndBuildHeaders = function(scope, panel, categoryAssignments, itemSize)
-        return placeItemsAndBuildHeaders(scope, panel, categoryAssignments, itemSize)
+        return placeItemsAndBuildHeaders(scope, categoryAssignments, itemSize)
     end,
     GetBackgroundHintFrame = getBackgroundHintFrame,
     GetBackgroundColumnFallbackHintFrame = getBackgroundColumnFallbackHintFrame,
