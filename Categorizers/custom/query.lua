@@ -655,7 +655,6 @@ local function evaluate(query, quotedValues)
             return nil, false
         end
         query = trim(query:sub(#tokenString + 1))
-        tokenString = nil
     end
 
     if #orFunctions == 0 then

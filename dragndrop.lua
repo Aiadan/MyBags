@@ -6,9 +6,6 @@ AddonNS.gui.RefreshCategoryDragHints = AddonNS.gui.RefreshCategoryDragHints or f
 end
 local toggleCollapsed = AddonNS.Collapsed.toggleCollapsed;
 
-
-local rows = 0;
-local height = 0;
 local pickedItemID = nil;
 local pickedItemCategory = nil;
 local pickedItemButton = nil;

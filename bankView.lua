@@ -50,7 +50,6 @@ local BANK_RESIZE_HANDLE_SIZE = 16
 local BANK_MIN_NUM_COLUMNS = 5
 local BANK_MAX_NUM_COLUMNS = 10
 local AUTO_DEPOSIT_BUTTON_WIDTH_SCALE = 0.7
-local POSITION_UPDATE_HEIGHT_GROWTH_THRESHOLD = 0.5
 local calculateScaledDepositButtonWidth
 local applyScaledDepositButtonWidth
 
@@ -780,7 +779,7 @@ local function applySearchUnionMatchState(panel, searchEvaluator)
             local info = C_Container.GetContainerItemInfo(bagID, slotID)
             if info then
                 local defaultMatch = not info.isFiltered
-                local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
+                evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
                 itemButton:SetMatchesSearch(true)
             end
         end
@@ -1670,11 +1669,10 @@ function BankView:Refresh(scope)
         local bagID, slotID = resolveBankButtonContainerSlot(itemButton)
         if bagID and slotID then
             local info = containerItemInfoCache:Get(bagID, slotID)
-            local defaultMatch = true
             if info then
                 hadAnyItemData = true
                 local cachedDefaultMatch = itemButton._myBagsDefaultSearchMatch
-                defaultMatch = true
+                local defaultMatch = true
                 if searchActive and type(cachedDefaultMatch) == "boolean" then
                     defaultMatch = cachedDefaultMatch
                 elseif searchActive then

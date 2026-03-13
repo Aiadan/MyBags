@@ -57,7 +57,7 @@ function AddonNS.ItemsOrder:Sort(itemButtonsList)
         local itemB_ID = itemToItemIDMap[itemButtonB]
         local posA = order_map[itemA_ID]
         local posB = order_map[itemB_ID]
-        local inOrder = false
+        local inOrder
 
         if posA and posB then
             inOrder = posA < posB

@@ -171,7 +171,6 @@ function FrameParametersOverride:OverridePoint(frame, ignoreFile)
 end
 
 function FrameParametersOverride:OverrideSize(frame, ignoreFile)
-    local oldSetSize = frame.SetSize
     function frame:SetSize(width, height)
         self:SetWidth(width)
         self:SetHeight(height)
