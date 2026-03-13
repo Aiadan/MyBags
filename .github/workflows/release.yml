@@ -39,7 +39,10 @@ jobs:
           fi
 
       - name: Run tests
-        run: lua tests/Categorizers/query_test.lua
+        run: |
+          lua tests/categories_test.lua
+          lua tests/Categorizers/query_test.lua
+          lua tests/integration/persistence/savedvariable_test.lua
 
       - name: Remove tests directory
         run: rm -rf tests
