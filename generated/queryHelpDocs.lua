@@ -41,7 +41,7 @@ Examples:
 Query field names are not case-sensitive:
 • Field names are case-insensitive: |cff8ebfe9itemType|r, |cff8ebfe9ItemType|r, and |cff8ebfe9ITEMTYPE|r are equivalent.
 • Boolean values should be lowercase: |cff8ebfe9true|r / |cff8ebfe9false|r.
-• String matching is case-insensitive (|cff8ebfe9itemName|r and |cff8ebfe9description|r).
+• String matching is case-insensitive (|cff8ebfe9itemName|r, |cff8ebfe9description|r, and |cff8ebfe9onUseDescription|r).
 • Use uppercase logical operators (|cff8ebfe9AND|r, |cff8ebfe9OR|r, |cff8ebfe9NOT|r) for predictable results.
 
 |cffe6d0a2String Matching|r
@@ -92,12 +92,14 @@ Notes:
 • |cff8ebfe9isCorruptedItem|r: |cff9bb6cfboolean|r
 • |cff8ebfe9isWarbound|r: |cff9bb6cfboolean|r
 • |cff8ebfe9description|r: |cff9bb6cfstring|r
+• |cff8ebfe9onUseDescription|r: |cff9bb6cfstring|r
 • |cff8ebfe9isTransmogCollected|r: |cff9bb6cfboolean|r
 
 
 Notes:
 • |cff8ebfe9isCurioItem|r is intentionally not a separate field; use |cff8ebfe9itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)|r.
 • |cff8ebfe9isHeirloomItem|r is intentionally not a separate field; use |cff8ebfe9quality = 7|r.
+• |cff8ebfe9onUseDescription|r is populated from the localized tooltip text after the item's |cff8ebfe9Use:|r prefix, and is only inspected for items where |cff8ebfe9C_Item.GetItemSpell(itemID)|r reports an on-use spell.
 
 |cffe6d0a2Core Value Tables|r
 
