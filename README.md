@@ -65,6 +65,8 @@ Here are few animations showcasing how easily you can do certain things. You can
    * edit query and priority rules for custom categories
 5. Search filters visible items and combines Blizzard text matching with valid MyBags [query matching](https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md). Query Help is available in-game next to bag/bank search bars.
    * query attributes include item metadata such as anima, artifact power, corruption, transmog-collected state, item description text, and localized `Use:` tooltip text via `onUseDescription`.
+6. The addon starts with a set of default starter groups such as `Junk`, `Quest`, `Warbound`, `Teleport`, and `Uncollected Transmog`. Their definitions are documented in the [Default Starter Groups](https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md#default-starter-groups) section.
+7. If you remove all custom groups and reload the game, MyBags recreates the default starter groups. This is the simplest way to reset your custom-group setup back to the addon defaults.
 
 ## Import and export categories
 
@@ -113,7 +115,7 @@ Please create a list of categories to import:
 ### Other features
 
 * Always-available built-in categories: `Equipment Sets`, `New Items`, and `Unassigned`.
-* Default starter categories include `Junk` and `Uncollected Transmog` (query-based custom categories).
+* Default starter groups are documented in the [Default Starter Groups](https://github.com/MyGamesDevelopmentAcc/MyBags/blob/main/QUERY_ATTRIBUTES.md#default-starter-groups) section of the query reference.
 * `Unassigned` is the default fallback and is always visible.
 * Category headers can be collapsed/expanded.
 * Hold `Shift` on an item tooltip to inspect matched categories and query attributes.

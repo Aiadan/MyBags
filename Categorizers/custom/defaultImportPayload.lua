@@ -1,5 +1,10 @@
 local addonName, AddonNS = ...
 
+-- Keep the default starter groups in QUERY_ATTRIBUTES.md in sync with this payload.
+-- When changing names, queries, priorities, or the intent of these groups here, update
+-- the "Default Starter Groups" section in QUERY_ATTRIBUTES.md and then regenerate
+-- generated/queryHelpDocs.lua with: lua tools/generate_query_help.lua
+
 AddonNS.CustomDefaultImportPayload = {
     version = 1,
     categories = {
@@ -34,7 +39,7 @@ AddonNS.CustomDefaultImportPayload = {
         -- itemType = 20 is Housing class.
         { name = "Decor", query = "itemType = 20", priority = 700, items = {} },
         -- hasLoot catches loot-containing items; plus consumable subtype 8 (Other) and armor subtype 5 (Cosmetic).
-        { name = "Caches / One-time Use", query = "hasLoot = true OR (itemType = 0 AND itemSubType = 8) OR (itemType = 4 AND itemSubType = 5)", priority = 690, items = {} },
+        { name = "Caches / One-time Use", query = "hasLoot = true or onUseDescription = \"Knowledge by\"", priority = 690, items = {} },
     },
 }
 
