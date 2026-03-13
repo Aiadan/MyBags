@@ -1275,8 +1275,6 @@ function AddonNS.createGUI()
                 if category and containerFrame:IsShown() then
                     setSelectedCategoryById(category:GetId())
                 end
-            else
-                AddonNS.printDebug("Please enter a category name.")
             end
         end,
         enterClicksFirstButton = true,
@@ -1322,7 +1320,6 @@ function AddonNS.createGUI()
         button1 = "Confirm deletion",
         button2 = "Cancel",
         OnAccept = function(self, data)
-            AddonNS.printDebug("Category deleted: ", data)
             local deletedCategoryId = data and data.GetId and data:GetId() or nil
             AddonNS.CustomCategories:DeleteCategory(data);
             if deletedCategoryId and getSelectedCategoryId() == deletedCategoryId then
@@ -1348,7 +1345,6 @@ function AddonNS.createGUI()
                 AddonNS.CustomCategories:ApplyImportPreview(preview)
             end)
             if not ok then
-                AddonNS.printDebug("Import failed:", err)
                 return
             end
             refreshSelectedCategoryControls()

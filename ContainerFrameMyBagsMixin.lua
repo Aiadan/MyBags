@@ -58,7 +58,6 @@ function ContainerFrameMyBagsMixin:ApplySearchAnchorLock(lockedTop, lockedRight)
 end
 
 function ContainerFrameMyBagsMixin:UpdateItemLayout()
-    AddonNS.printDebug("UpdateItemLayout")
     self.MyBags.updateItemLayoutCalledAtLeastOnce = true;
     self.MyBags.categorizeItems = true;
     local itemButtons = {}
@@ -73,7 +72,6 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
     local _, relativeTo = anchor:Get();
     anchor:Set("TOPLEFT", relativeTo, "TOPLEFT", 0, 0);
     local point, relativeTo, relativePoint, x, y = anchor:Get();
-    AddonNS.printDebug("Anchor", x, y)
 
     self:UpdateFrameSize();
     if self:IsSearchAnchorLockActive() then
@@ -96,12 +94,10 @@ end
 
 function ContainerFrameMyBagsMixin:EnumerateValidItems()
     if self.MyBags.categorizeItems then
-        AddonNS.printDebug("EnumerateValidItems override used")
         self.MyBags.categorizeItems = false;
         self.MyBags.arrangedItems = {}
         return AddonNS.newEnumerateValidItems(self);
     end
-    AddonNS.printDebug("EnumerateValidItems default used")
     return ContainerFrameCombinedBagsMixin.EnumerateValidItems(self);
 end
 
@@ -113,8 +109,6 @@ the first time the path gets tainted and it is no longer possible to use items l
 potions during combat
 ]]
 local function updateItemSlots(self, ...)
-    AddonNS.printDebug("UpdateItemSlots")
-
     local bagSize = ContainerFrame_GetContainerNumSlots(Enum.BagIndex.ReagentBag);
     for i = 1, bagSize do
         local itemButton = self:AcquireNewItemButton();

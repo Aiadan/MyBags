@@ -55,7 +55,6 @@ function NewItemCategorizer:Categorize(itemID, itemButton)
 end
 
 function NewItemCategorizer:OnRightClick()
-    AddonNS.printDebug("Clearing NEW")
     C_NewItems.ClearAll()
     newItems = {}
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, NewItemCategorizer)
@@ -63,7 +62,6 @@ function NewItemCategorizer:OnRightClick()
 end
 
 function NewItemCategorizer:CheckNewItems(bagID)
-    AddonNS.printDebug("NewItemCategorizer CheckNewItems BAG_UPDATE", bagID)
     newItems[bagID] = newItems[bagID] or {}
     for slotIndex, expectedItemID in pairs(newItems[bagID]) do
         local itemLocation = ItemLocation:CreateFromBagAndSlot(bagID, slotIndex)

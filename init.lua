@@ -44,9 +44,6 @@ local globalDbName = "MyBagsDB";
 
 AddonNS.db = {};
 AddonNS.LegacyDB = nil;
-AddonNS.Profiling = AddonNS.Profiling or {
-    enabled = false,
-}
 AddonNS.currentLayoutScope = "bag"
 AddonNS.init = function()
     AddonNS.LegacyDB = _G[legacyGlobalDbName];
@@ -111,30 +108,3 @@ function AddonNS:SetNumColumns(count, scope)
     return normalized
 end
 
-function AddonNS.printDebug(...)
---@debug@
-    -- print(...)
---@end-debug@
-end
-
-
-
-
---@debug@
-function GLOBAL_MyBagsEnableDebug()
-    AddonNS.printDebug = function(...) print(...) end
-end
-
-function GLOBAL_MyBagsEnableProfiling()
-    AddonNS.Profiling.enabled = true
-    AddonNS.printDebug = function(...) print(...) end
-    print("MyBags profiling enabled")
-end
-
-function GLOBAL_MyBagsDisableProfiling()
-    AddonNS.Profiling.enabled = false
-    print("MyBags profiling disabled")
-end
-
--- AddonNS.printDebug = function(...) print(...) end
---@end-debug@

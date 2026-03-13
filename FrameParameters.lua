@@ -122,7 +122,6 @@ function FrameParametersOverride:OverrideScale(frame, ignoreFile)
         --     scale = frame:GetScale();     -- ignore the change
         -- end
         scale = getFrameScale(self)
-        AddonNS.printDebug("SetScale", scale);
         return oldSetScale(self, scale);
     end
 end
@@ -141,8 +140,6 @@ AddonNS._Test.FrameParameters = {
 function FrameParametersOverride:OverrideHeight(frame, ignoreFile)
     local oldSetHeight = frame.SetHeight
     function frame:SetHeight(height)
-        local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
-        AddonNS.printDebug("SetHeight", stack);
         -- if string.find(stack, ignoreFile) then
         --     height = frame:GetHeight() -- ignore the change
         -- end
@@ -154,8 +151,6 @@ end
 function FrameParametersOverride:OverrideWidth(frame, ignoreFile)
     local oldSetWidth = frame.SetWidth
     function frame:SetWidth(width)
-        local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
-        AddonNS.printDebug("SetWidth", stack);
         -- if string.find(stack, ignoreFile) then
         --     width = frame:GetWidth() -- ignore the change
         -- end
@@ -167,9 +162,6 @@ end
 function FrameParametersOverride:OverridePoint(frame, ignoreFile)
    -- local oldSetPoint = frame.SetPoint
     function frame:SetPoint(...)
-        local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
-        AddonNS.printDebug("SetPoint", stack);
-        AddonNS.printDebug("SetPoint", debugstack());
         -- if string.find(stack, ignoreFile) then
         --     width = frame:GetWidth() -- ignore the change
         -- end
@@ -181,9 +173,6 @@ end
 function FrameParametersOverride:OverrideSize(frame, ignoreFile)
     local oldSetSize = frame.SetSize
     function frame:SetSize(width, height)
-        local stack = debugstack(2, 1, 0) -- Skip 2 levels to get the caller's stack trace
-        AddonNS.printDebug("SetSize", stack);
-        AddonNS.printDebug("SetSize", debugstack());
         self:SetWidth(width)
         self:SetHeight(height)
     end

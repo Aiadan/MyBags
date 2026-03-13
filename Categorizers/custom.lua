@@ -23,24 +23,13 @@ local assignments = {}
 local seenItemInfoRefreshByItemId = {}
 local sortedQueryRawIds = nil
 local invalidate_sorted_query_raw_ids
-local categorizeProfile = {
-    calls = 0,
-    totalMs = 0,
-    infoMs = 0,
-    queryMs = 0,
-    maxMs = 0,
-}
 
-local function profilingEnabled()
-    return AddonNS.Profiling and AddonNS.Profiling.enabled
-end
-
-local function profileNowMs()
-    return debugprofilestop()
+local function nowMs()
+    return GetTimePreciseSec() * 1000
 end
 
 local function shouldProcessItemInfoRefresh(itemId)
-    local now = debugprofilestop()
+    local now = nowMs()
     local last = seenItemInfoRefreshByItemId[itemId]
     if last and (now - last) < 1000 then
         return false
@@ -726,9 +715,7 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
         local resolvedItemId = itemID or containerInfo.itemID
         if resolvedItemId and shouldProcessItemInfoRefresh(resolvedItemId) then
             local item = Item:CreateFromItemID(resolvedItemId)
-            AddonNS.printDebug("SCHEDULING refresh when item loads", containerInfo.itemName)
             item:ContinueOnItemLoad(function()
-                AddonNS.printDebug("Item loaded")
                 AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORIZER_CATEGORIES_UPDATED, CustomCategorizer)
             end)
         end
@@ -801,91 +788,23 @@ function CustomCategorizer:GetAlwaysVisibleCategories()
 end
 
 function CustomCategorizer:Categorize(itemID, itemButton)
-    local startedAt = profilingEnabled() and profileNowMs() or nil
     local db = get_db()
     local normalizedScope = scope_from_item_button(itemButton)
     local assignedId = assignments[itemID]
     if assignedId and is_raw_visible_in_scope(db, assignedId, normalizedScope) then
-        if startedAt then
-            local elapsed = profileNowMs() - startedAt
-            categorizeProfile.calls = categorizeProfile.calls + 1
-            categorizeProfile.totalMs = categorizeProfile.totalMs + elapsed
-        end
         return find_by_id(assignedId)
     end
 
     -- Query-based matching remains internal to custom categorizer.
-    local infoStartedAt = startedAt and profileNowMs() or nil
     local itemInfo = CustomCategories:GetItemQueryPayload(itemID, itemButton)
-    if infoStartedAt then
-        categorizeProfile.infoMs = categorizeProfile.infoMs + (profileNowMs() - infoStartedAt)
-    end
     if not itemInfo then
-        if startedAt then
-            local elapsed = profileNowMs() - startedAt
-            categorizeProfile.calls = categorizeProfile.calls + 1
-            categorizeProfile.totalMs = categorizeProfile.totalMs + elapsed
-        end
         return nil
     end
 
-    local queryStartedAt = startedAt and profileNowMs() or nil
     for _, rawId in ipairs(get_sorted_query_raw_ids(db)) do
         local evaluator = AddonNS.QueryCategories:GetCompiled(rawId)
         if evaluator and evaluator(itemInfo) and is_raw_visible_in_scope(db, rawId, normalizedScope) then
-            if queryStartedAt then
-                categorizeProfile.queryMs = categorizeProfile.queryMs + (profileNowMs() - queryStartedAt)
-            end
-            if startedAt then
-                local elapsed = profileNowMs() - startedAt
-                categorizeProfile.calls = categorizeProfile.calls + 1
-                categorizeProfile.totalMs = categorizeProfile.totalMs + elapsed
-                if elapsed > categorizeProfile.maxMs then
-                    categorizeProfile.maxMs = elapsed
-                end
-                if categorizeProfile.calls >= 100 then
-                    AddonNS.printDebug(
-                        "PROFILE CustomCategorizer:Categorize",
-                        "calls=" .. categorizeProfile.calls,
-                        string.format("avg=%.3fms", categorizeProfile.totalMs / categorizeProfile.calls),
-                        string.format("infoAvg=%.3fms", categorizeProfile.infoMs / categorizeProfile.calls),
-                        string.format("queryAvg=%.3fms", categorizeProfile.queryMs / categorizeProfile.calls),
-                        string.format("max=%.3fms", categorizeProfile.maxMs)
-                    )
-                    categorizeProfile.calls = 0
-                    categorizeProfile.totalMs = 0
-                    categorizeProfile.infoMs = 0
-                    categorizeProfile.queryMs = 0
-                    categorizeProfile.maxMs = 0
-                end
-            end
             return new_raw(rawId, db.categories[rawId])
-        end
-    end
-    if queryStartedAt then
-        categorizeProfile.queryMs = categorizeProfile.queryMs + (profileNowMs() - queryStartedAt)
-    end
-    if startedAt then
-        local elapsed = profileNowMs() - startedAt
-        categorizeProfile.calls = categorizeProfile.calls + 1
-        categorizeProfile.totalMs = categorizeProfile.totalMs + elapsed
-        if elapsed > categorizeProfile.maxMs then
-            categorizeProfile.maxMs = elapsed
-        end
-        if categorizeProfile.calls >= 100 then
-            AddonNS.printDebug(
-                "PROFILE CustomCategorizer:Categorize",
-                "calls=" .. categorizeProfile.calls,
-                string.format("avg=%.3fms", categorizeProfile.totalMs / categorizeProfile.calls),
-                string.format("infoAvg=%.3fms", categorizeProfile.infoMs / categorizeProfile.calls),
-                string.format("queryAvg=%.3fms", categorizeProfile.queryMs / categorizeProfile.calls),
-                string.format("max=%.3fms", categorizeProfile.maxMs)
-            )
-            categorizeProfile.calls = 0
-            categorizeProfile.totalMs = 0
-            categorizeProfile.infoMs = 0
-            categorizeProfile.queryMs = 0
-            categorizeProfile.maxMs = 0
         end
     end
     return nil

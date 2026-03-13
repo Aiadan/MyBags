@@ -54,101 +54,6 @@ local POSITION_UPDATE_HEIGHT_GROWTH_THRESHOLD = 0.5
 local calculateScaledDepositButtonWidth
 local applyScaledDepositButtonWidth
 
-local function profilingEnabled()
-    return AddonNS.Profiling and AddonNS.Profiling.enabled
-end
-
-local function profileNowMs()
-    return debugprofilestop()
-end
-
-local bankSearchProfile = {
-    calls = 0,
-    totalMs = 0,
-    setupMs = 0,
-    loopMs = 0,
-    loopRefreshMs = 0,
-    loopInfoFetchMs = 0,
-    loopSearchEvalMs = 0,
-    loopCategoryMs = 0,
-    loopInsertMs = 0,
-    loopSetMatchMs = 0,
-    arrangeMs = 0,
-    renderMs = 0,
-    maxMs = 0,
-}
-
-local function recordBankSearchProfile(totalMs, setupMs, loopMs, loopRefreshMs, loopInfoFetchMs, loopSearchEvalMs,
-                                       loopCategoryMs, loopInsertMs, loopSetMatchMs, arrangeMs, renderMs, buttonCount,
-                                       matchedCount)
-    bankSearchProfile.calls = bankSearchProfile.calls + 1
-    bankSearchProfile.totalMs = bankSearchProfile.totalMs + totalMs
-    bankSearchProfile.setupMs = bankSearchProfile.setupMs + setupMs
-    bankSearchProfile.loopMs = bankSearchProfile.loopMs + loopMs
-    bankSearchProfile.loopRefreshMs = bankSearchProfile.loopRefreshMs + loopRefreshMs
-    bankSearchProfile.loopInfoFetchMs = bankSearchProfile.loopInfoFetchMs + loopInfoFetchMs
-    bankSearchProfile.loopSearchEvalMs = bankSearchProfile.loopSearchEvalMs + loopSearchEvalMs
-    bankSearchProfile.loopCategoryMs = bankSearchProfile.loopCategoryMs + loopCategoryMs
-    bankSearchProfile.loopInsertMs = bankSearchProfile.loopInsertMs + loopInsertMs
-    bankSearchProfile.loopSetMatchMs = bankSearchProfile.loopSetMatchMs + loopSetMatchMs
-    bankSearchProfile.arrangeMs = bankSearchProfile.arrangeMs + arrangeMs
-    bankSearchProfile.renderMs = bankSearchProfile.renderMs + renderMs
-    if totalMs > bankSearchProfile.maxMs then
-        bankSearchProfile.maxMs = totalMs
-    end
-
-    if totalMs >= 25 then
-        AddonNS.printDebug(
-            "PROFILE bank search slow refresh",
-            string.format("total=%.2fms", totalMs),
-            string.format("setup=%.2fms", setupMs),
-            string.format("loop=%.2fms", loopMs),
-            string.format("loopRefresh=%.2fms", loopRefreshMs),
-            string.format("loopInfo=%.2fms", loopInfoFetchMs),
-            string.format("loopSearchEval=%.2fms", loopSearchEvalMs),
-            string.format("loopCategory=%.2fms", loopCategoryMs),
-            string.format("loopInsert=%.2fms", loopInsertMs),
-            string.format("loopSetMatch=%.2fms", loopSetMatchMs),
-            string.format("arrange=%.2fms", arrangeMs),
-            string.format("render=%.2fms", renderMs),
-            "buttons=" .. buttonCount,
-            "matches=" .. matchedCount
-        )
-    end
-
-    if bankSearchProfile.calls >= 25 then
-        AddonNS.printDebug(
-            "PROFILE bank search refresh",
-            "samples=" .. bankSearchProfile.calls,
-            string.format("avg=%.2fms", bankSearchProfile.totalMs / bankSearchProfile.calls),
-            string.format("setupAvg=%.2fms", bankSearchProfile.setupMs / bankSearchProfile.calls),
-            string.format("loopAvg=%.2fms", bankSearchProfile.loopMs / bankSearchProfile.calls),
-            string.format("loopRefreshAvg=%.2fms", bankSearchProfile.loopRefreshMs / bankSearchProfile.calls),
-            string.format("loopInfoAvg=%.2fms", bankSearchProfile.loopInfoFetchMs / bankSearchProfile.calls),
-            string.format("loopSearchEvalAvg=%.2fms", bankSearchProfile.loopSearchEvalMs / bankSearchProfile.calls),
-            string.format("loopCategoryAvg=%.2fms", bankSearchProfile.loopCategoryMs / bankSearchProfile.calls),
-            string.format("loopInsertAvg=%.2fms", bankSearchProfile.loopInsertMs / bankSearchProfile.calls),
-            string.format("loopSetMatchAvg=%.2fms", bankSearchProfile.loopSetMatchMs / bankSearchProfile.calls),
-            string.format("arrangeAvg=%.2fms", bankSearchProfile.arrangeMs / bankSearchProfile.calls),
-            string.format("renderAvg=%.2fms", bankSearchProfile.renderMs / bankSearchProfile.calls),
-            string.format("max=%.2fms", bankSearchProfile.maxMs)
-        )
-        bankSearchProfile.calls = 0
-        bankSearchProfile.totalMs = 0
-        bankSearchProfile.setupMs = 0
-        bankSearchProfile.loopMs = 0
-        bankSearchProfile.loopRefreshMs = 0
-        bankSearchProfile.loopInfoFetchMs = 0
-        bankSearchProfile.loopSearchEvalMs = 0
-        bankSearchProfile.loopCategoryMs = 0
-        bankSearchProfile.loopInsertMs = 0
-        bankSearchProfile.loopSetMatchMs = 0
-        bankSearchProfile.arrangeMs = 0
-        bankSearchProfile.renderMs = 0
-        bankSearchProfile.maxMs = 0
-    end
-end
-
 local function getScopeForBankType(bankType)
     if bankType == Enum.BankType.Account then
         return BANK_ACCOUNT_SCOPE
@@ -1693,10 +1598,8 @@ local function renderHeaders(self, scope, panel, categoryPositions)
 end
 
 function BankView:Refresh(scope)
-    AddonNS.printDebug("MyBags BankView:Refresh start", scope)
     local panel = getActiveBankPanel()
     if not BankFrame:IsShown() or not panel:IsShown() then
-        AddonNS.printDebug("MyBags BankView:Refresh skipped; frame hidden")
         hideHeaders(self)
         hideContentArea(self)
         hideEditModeButton(self)
@@ -1744,18 +1647,6 @@ function BankView:Refresh(scope)
     local searchActive = searchText ~= ""
     local searchTextChanged = self.lastSearchText ~= searchText
     self.lastSearchText = searchText
-    local profileSearchRefresh = profilingEnabled() and searchActive and searchTextChanged
-    local profileStartedAt = profileSearchRefresh and profileNowMs() or nil
-    local profileSetupMs = 0
-    local profileLoopMs = 0
-    local profileLoopRefreshMs = 0
-    local profileLoopInfoFetchMs = 0
-    local profileLoopSearchEvalMs = 0
-    local profileLoopCategoryMs = 0
-    local profileLoopInsertMs = 0
-    local profileLoopSetMatchMs = 0
-    local profileArrangeMs = 0
-    local profileRenderMs = 0
     updateSearchSizeLock(self, panel, searchText)
     local searchEvaluator = AddonNS.QueryCategories:CompileAdHoc(searchText)
     local shouldRefreshItemButtonVisuals = shouldRegenerateButtons or not searchTextChanged
@@ -1764,37 +1655,21 @@ function BankView:Refresh(scope)
     local firstItemButton = nil
     local hadAnyButtons = false
     local hadAnyItemData = false
-    local buttonCount = 0
-    local matchedCount = 0
-
-    if profileSearchRefresh then
-        profileSetupMs = profileNowMs() - profileStartedAt
-    end
-    local loopStartedAt = profileSearchRefresh and profileNowMs() or nil
 
     AddonNS.emptyItemButton = nil
     for itemButton in panel:EnumerateValidItems() do
         hadAnyButtons = true
-        buttonCount = buttonCount + 1
         ensureItemButtonBagMethods(itemButton)
         ensureItemButtonHooks(itemButton)
         if shouldRefreshItemButtonVisuals then
-            local refreshStartedAt = profileSearchRefresh and profileNowMs() or nil
             itemButton:Refresh() --TODO: BANK_TAINT
-            if refreshStartedAt then
-                profileLoopRefreshMs = profileLoopRefreshMs + (profileNowMs() - refreshStartedAt)
-            end
         end
         itemButton.MyBagsScope = activeScope
 
         itemButton.ItemCategory = nil
         local bagID, slotID = resolveBankButtonContainerSlot(itemButton)
         if bagID and slotID then
-            local infoStartedAt = profileSearchRefresh and profileNowMs() or nil
             local info = containerItemInfoCache:Get(bagID, slotID)
-            if infoStartedAt then
-                profileLoopInfoFetchMs = profileLoopInfoFetchMs + (profileNowMs() - infoStartedAt)
-            end
             local defaultMatch = true
             if info then
                 hadAnyItemData = true
@@ -1805,42 +1680,21 @@ function BankView:Refresh(scope)
                 elseif searchActive then
                     defaultMatch = not info.isFiltered
                 end
-                local searchEvalStartedAt = profileSearchRefresh and profileNowMs() or nil
                 local includeInSearch = evaluateSearchVisibility(defaultMatch, searchEvaluator, info, itemButton)
-                if searchEvalStartedAt then
-                    profileLoopSearchEvalMs = profileLoopSearchEvalMs + (profileNowMs() - searchEvalStartedAt)
-                end
                 itemButton._myBagsItemId = info.itemID
                 local category = nil
                 if searchActive then
-                    local categoryStartedAt = profileSearchRefresh and profileNowMs() or nil
                     category = resolveCachedOrComputeCategory(self, itemButton, info, activeScope)
-                    if categoryStartedAt then
-                        profileLoopCategoryMs = profileLoopCategoryMs + (profileNowMs() - categoryStartedAt)
-                    end
                     itemButton.ItemCategory = category
                     AddonNS.SearchCategoryBaseline:Add(arrangedItems, category, itemButton, false, true)
                 end
                 if includeInSearch then
-                    local setMatchStartedAt = profileSearchRefresh and profileNowMs() or nil
                     itemButton:SetMatchesSearch(true) --TODO: BANK_TAINT
-                    if setMatchStartedAt then
-                        profileLoopSetMatchMs = profileLoopSetMatchMs + (profileNowMs() - setMatchStartedAt)
-                    end
-                    matchedCount = matchedCount + 1
                     if not category then
-                        local categoryStartedAt = profileSearchRefresh and profileNowMs() or nil
                         category = resolveCachedOrComputeCategory(self, itemButton, info, activeScope)
-                        if categoryStartedAt then
-                            profileLoopCategoryMs = profileLoopCategoryMs + (profileNowMs() - categoryStartedAt)
-                        end
                     end
                     itemButton.ItemCategory = category
-                    local insertStartedAt = profileSearchRefresh and profileNowMs() or nil
                     AddonNS.SearchCategoryBaseline:Add(arrangedItems, category, itemButton, true, searchActive)
-                    if insertStartedAt then
-                        profileLoopInsertMs = profileLoopInsertMs + (profileNowMs() - insertStartedAt)
-                    end
                     firstItemButton = firstItemButton or itemButton
                 else
                     AddonNS.emptyItemButton = itemButton
@@ -1850,75 +1704,30 @@ function BankView:Refresh(scope)
             end
         end
     end
-    if profileSearchRefresh then
-        profileLoopMs = profileNowMs() - loopStartedAt
-    end
 
     if not firstItemButton then
-        AddonNS.printDebug("MyBags BankView:Refresh no visible item buttons after classify")
         if shouldRetryForMissingItemData(hadAnyButtons, hadAnyItemData, self.dataRetryCount) then
             self.dataRetryCount = self.dataRetryCount + 1
             self:QueueRefresh(activeScope)
             hideHeaders(self)
             hideAllItemButtons(panel)
-            if profileSearchRefresh then
-                recordBankSearchProfile(
-                    profileNowMs() - profileStartedAt,
-                    profileSetupMs,
-                    profileLoopMs,
-                    profileLoopRefreshMs,
-                    profileLoopInfoFetchMs,
-                    profileLoopSearchEvalMs,
-                    profileLoopCategoryMs,
-                    profileLoopInsertMs,
-                    profileLoopSetMatchMs,
-                    profileArrangeMs,
-                    profileRenderMs,
-                    buttonCount,
-                    matchedCount
-                )
-            end
             return
         end
     end
     self.dataRetryCount = 0
 
-    local arrangeStartedAt = profileSearchRefresh and profileNowMs() or nil
     local itemSize = firstItemButton and (firstItemButton:GetHeight() + ITEM_SPACING) or getCurrentItemSize(panel)
     self.columnPixelWidth = itemSize * ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING
     self.firstColumnStartX = BANK_CONTENT_LEFT_PADDING - ITEM_SPACING / 2
     local categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, activeScope)
     local positions, categoryPositions, contentBottom = placeItemsAndBuildHeaders(activeScope, panel, categoryAssignments,
         itemSize)
-    if profileSearchRefresh then
-        profileArrangeMs = profileNowMs() - arrangeStartedAt
-    end
-    AddonNS.printDebug("MyBags BankView:Refresh rendered categories", #categoryPositions, "scope", activeScope)
 
-    local renderStartedAt = profileSearchRefresh and profileNowMs() or nil
     updateFrameSizeForContent(self, panel, contentBottom)
     refreshResizeHandle(self, panel)
     updateDropAreaOverlays(self, activeScope)
     applyItemPositions(panel, self.backgroundFrame, positions)
     renderHeaders(self, activeScope, panel, categoryPositions)
-    if profileSearchRefresh then
-        profileRenderMs = profileNowMs() - renderStartedAt
-        recordBankSearchProfile(
-            profileNowMs() - profileStartedAt,
-            profileSetupMs,
-            profileLoopMs,
-            profileLoopRefreshMs,
-            profileLoopInfoFetchMs,
-            profileLoopSearchEvalMs,
-            profileLoopCategoryMs,
-            profileLoopInsertMs,
-            profileLoopSetMatchMs,
-            profileArrangeMs,
-            profileRenderMs,
-            buttonCount,
-            matchedCount
-        )
-    end
 end
 
 function BankView:QueueRefresh(scope)
@@ -1946,7 +1755,6 @@ local function tryInstallHooks()
         return true
     end
     if not BankPanel or not BankFrame then
-        AddonNS.printDebug("MyBags BankView:hooks not ready; missing BankPanel/BankFrame")
         return false
     end
 
@@ -2064,7 +1872,6 @@ local function tryInstallHooks()
         end
     end)
 
-    AddonNS.printDebug("MyBags BankView:hooks installed")
     BankView.hooksInstalled = true
     return true
 end
@@ -2102,13 +1909,11 @@ AddonNS.Events:OnInitialize(function()
     tryInstallHooks()
     if BankFrame_Open then
         hooksecurefunc("BankFrame_Open", function()
-            AddonNS.printDebug("MyBags BankView:BankFrame_Open hook")
             tryInstallHooks()
             BankView:RefreshNow()
         end)
     end
     AddonNS.Events:RegisterEvent("BANKFRAME_OPENED", function()
-        AddonNS.printDebug("MyBags BankView:BANKFRAME_OPENED")
         tryInstallHooks()
         BankView:RefreshNow()
     end)

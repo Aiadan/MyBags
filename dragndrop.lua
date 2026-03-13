@@ -166,7 +166,6 @@ local function triggerItemMoved(itemID, targetedItemID, sourceCategory, targetCa
 end
 
 function AddonNS.DragAndDrop.cleanUp()
-    AddonNS.printDebug("cleanUp")
     pickedItemButton = nil;
     pickedItemID = nil
     pickedItemCategory = nil;
@@ -211,10 +210,8 @@ local function getItemIdFromButton(buttonItem)
 end
 
 function AddonNS.DragAndDrop.itemOnClick(self, button)
-    AddonNS.printDebug("itemOnClick")
     if button == "LeftButton" then
         local infoType, itemID, itemLink = getCachedCursorInfo()
-        AddonNS.printDebug(pickedItemButton, infoType, itemID, itemLink)
         if (infoType) then
             local targetScope = getScopeFromButton(self)
             normalizeCrossScopeItemDrag(targetScope)
@@ -258,7 +255,6 @@ end
 
 function AddonNS.DragAndDrop.itemStartDrag(self)
     AddonNS.DragAndDrop.cleanUp()
-    AddonNS.printDebug("itemStartDrag")
     isCategoryDragActive = false;
     pickedScope = getScopeFromButton(self)
     local itemID = getItemIdFromButton(self)
@@ -271,8 +267,6 @@ function AddonNS.DragAndDrop.itemStartDrag(self)
 end
 
 function AddonNS.DragAndDrop.itemOnReceiveDrag(self)
-    AddonNS.printDebug("itemOnReceiveDrag")
-
     local targetItemCategory = self.ItemCategory;
     local targetScope = getScopeFromButton(self)
     normalizeCrossScopeItemDrag(targetScope)
@@ -310,16 +304,13 @@ end
 
 function AddonNS.DragAndDrop.categoryStartDrag(self)
     AddonNS.DragAndDrop.cleanUp()
-    AddonNS.printDebug("categoryStartDrag")
     pickedItemCategory = self.ItemCategory;
     pickedScope = getScopeFromButton(self)
     isCategoryDragActive = true;
-    AddonNS.printDebug("categoryStartDrag", pickedItemCategory)
     AddonNS.gui:RefreshCategoryDragHints()
 end
 
 function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)
-    AddonNS.printDebug("categoryOnMouseUp")
     local infoType = getCachedCursorInfo()
     if infoType then
         if button == "LeftButton" then
@@ -344,12 +335,8 @@ function AddonNS.DragAndDrop.categoryOnMouseUp(self, button)
 end
 
 function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
-    AddonNS.printDebug("categoryOnReceiveDrag")
-
     local targetItemCategory = self.ItemCategory;
     local targetScope = getScopeFromButton(self)
-
-    AddonNS.printDebug("categoryOnReceiveDrag", targetItemCategory)
 
     local infoType, itemID = getCachedCursorInfo()
     if (infoType == "merchant") then
@@ -372,7 +359,6 @@ function AddonNS.DragAndDrop.categoryOnReceiveDrag(self)
         queueRefreshForScope(targetScope);
     elseif isCategoryDragActive and pickedItemCategory and (pickedItemCategory ~= targetItemCategory) then -- category frame
         local moveTail = IsShiftKeyDown()
-        AddonNS.printDebug("sending CATEGORY_MOVED", AddonNS.Const.Events.CATEGORY_MOVED)
         AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED,
             getCategoryId(pickedItemCategory), getCategoryId(targetItemCategory), moveTail, targetScope);
         RunNextFrame(function() -- todo: maybe these actually should be triggered at the point where action is processed... hmm
@@ -422,7 +408,6 @@ end
 
 
 function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self, mouseButtonName)
-    AddonNS.printDebug("backgroundOnReceiveDrag")
     if mouseButtonName and mouseButtonName ~= "LeftButton" then
         return
     end
@@ -451,7 +436,6 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self, mouseButtonName)
             queueRefreshForScope(scope);
         elseif isCategoryDragActive and pickedItemCategory then -- category frame
             local moveTail = IsShiftKeyDown()
-            AddonNS.printDebug("sending CATEGORY_MOVED_TO_COLUMN", AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN)
             local scope = getScopeFromButton(self)
             AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CATEGORY_MOVED_TO_COLUMN,
                 getCategoryId(pickedItemCategory), columnNo, moveTail, scope);
@@ -465,15 +449,12 @@ function AddonNS.DragAndDrop.backgroundOnReceiveDrag(self, mouseButtonName)
 end
 
 function AddonNS.DragAndDrop.customCategoryGUIOnMouseUp(targetCategoryId, button)
-    AddonNS.printDebug("customCategoryGUIOnMouseUp", button)
     if button == "LeftButton" then
         AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetCategoryId)
     end
 end
 
 function AddonNS.DragAndDrop.customCategoryGUIOnReceiveDrag(targetCategoryId)
-    AddonNS.printDebug("customCategoryGUIOnReceiveDrag", pickedItemCategory, targetCategoryId)
-
     if (pickedItemButton) then -- button
         local infoType, itemID, itemLink = getCachedCursorInfo()
         if infoType == "item" and itemID == pickedItemID then

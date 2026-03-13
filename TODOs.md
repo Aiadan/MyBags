@@ -33,7 +33,6 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 - 🛠️ Expectation: collapsed-state and column-assignment persistence should be stored per container scope instead of sharing one bag-oriented shape.
 - 🛠️ Observation: drag/drop cursor checks still rely on `pickedItemButton`; `C_Cursor.GetCursorItem()` may be the cleaner source if behavior matches.
 - 🛠️ Observation: the release workflow still publishes more than the addon zip; this should be reduced only if it does not break downstream consumers such as WoWUpHub.
-- 🛠️ Observation: leftover logs, debug helpers, profiling hooks, and temporary triggers should be removed before release.
 
 ### Doubtful
 
@@ -47,6 +46,7 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
 ## Done
 
 - 2026-03-07 - Re-scoped `TODOs.md` to a concise live backlog and moved the historical log to `.agent/todo-history.md`.
+- 2026-03-13 - Removed leftover runtime debug logs and profiling helpers from release code paths.
 
 ## Rejected
 

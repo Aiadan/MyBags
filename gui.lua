@@ -654,7 +654,6 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
     local moneyFrame = AddonNS.container.MoneyFrame;
     local customCategories = AddonNS.CustomCategories:GetCategories()
     AddonNS.gui.categoryFrameByCategoryId = {}
-    AddonNS.printDebug("money frame:", moneyFrame, AddonNS.container.MoneyFrame)
     backgroundFrame:SetPoint("TOPLEFT", moneyFrame, "TOPLEFT", 0, yFrameOffset)
     for i = 1, #categoriesGUIInfo, 1 do
         local categoryGUIInfo = categoriesGUIInfo[i];
@@ -902,12 +901,10 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                 AddonNS.gui:StartCategoryDragVisual(self.ItemCategory:GetDisplayName() or "Unassigned")
                 AddonNS.DragAndDrop.categoryStartDrag(self);
                 PlaySound(1183 );
-                AddonNS.printDebug("OnDragStart", button)
             end)
             f:SetScript("OnDragStop", function(self)
                 AddonNS.gui:StopCategoryDragVisual()
                 PlaySound(1200);
-                AddonNS.printDebug("OnDragStop")
             end)
             f.fs = fs;
         end
@@ -917,7 +914,6 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         -- if categoryGUIInfo.last then
         --     f:SetPoint("BOTTOM", relativeTo, "TOP", 0, 0)
         -- end
-        -- AddonNS.printDebug(categories[i], pos[i].x, pos[i].y)
         f:SetWidth(categoryGUIInfo.width)
         -- fs.fs:SetWidth(categoryGUIInfo.width)
         f:SetHeight(categoryGUIInfo.height)
@@ -1002,12 +998,10 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                 AddonNS.gui:StartCategoryDragVisual(self.ItemCategory:GetDisplayName() or "Unassigned")
                 AddonNS.DragAndDrop.categoryStartDrag(self);
                 PlaySound(1183 );
-                AddonNS.printDebug("OnDragStart", button)
             end)
             f:SetScript("OnDragStop", function(self)
                 AddonNS.gui:StopCategoryDragVisual()
                 PlaySound(1200);
-                AddonNS.printDebug("OnDragStop")
             end)
             local label = categoryGUIInfo.category:GetDisplayName(categoryGUIInfo.itemsCount) or "Unassigned"
             if isCollapsed(categoryGUIInfo.category) then
