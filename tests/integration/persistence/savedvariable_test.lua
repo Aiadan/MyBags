@@ -172,29 +172,21 @@ local function count_layout_id(columns, targetId)
     return count
 end
 
-local EXPECTED_DEFAULT_QUERIES = {
-    ["Junk"] = { query = "quality = 0", alwaysVisible = true },
-    ["Quest"] = { query = "isQuestItem = true OR itemType = 12" },
-    ["Warbound"] = { query = "isWarbound = true AND isBound = false" },
-    ["BoE"] = { query = "bindType = 2 AND isBound = false" },
-    ["Reagents - Soulbound"] = { query = "isCraftingReagent = true AND isBound = true" },
-    ["Reagents"] = { query = "isCraftingReagent = true AND isBound = false" },
-    ["Recipes"] = { query = "itemType = 9" },
-    ["Gems"] = { query = "itemType = 3" },
-    ["Potions/Flasks/Food"] = { query = "itemType = 0 AND (itemSubType = 1 OR itemSubType = 3 OR itemSubType = 5)" },
-    ["Armor & Weapons"] = { query = "itemType = 2 OR itemType = 4" },
-    ["Uncollected Transmog"] = { query = " isTransmogCollected = false" },
-    ["Teleport"] = { query = nil },
-    ["Mounts & Pets"] = { query = "itemType = 15 AND (itemSubType = 2 OR itemSubType = 5)" },
-    ["Curios"] = { query = "itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)" },
-    ["Decor"] = { query = "itemType = 20" },
-    ["Caches / One-time Use"] = { query = "hasLoot = true OR (itemType = 0 AND itemSubType = 8) OR (itemType = 4 AND itemSubType = 5)" },
-}
-
 local EXPECTED_TELEPORT_ITEMS = {
     147869, 37863, 63207, 63353, 208066, 217956, 18149, 217930, 41255, 44655, 200613, 110560,
     6948, 140192, 173373, 65274, 46874, 21711, 180817, 234389, 116413, 249699, 250411, 238727,
 }
+
+local function getExpectedDefaultQueries(ctx)
+    local expected = {}
+    for _, category in ipairs(ctx.AddonNS.CustomDefaultImportPayload.categories) do
+        expected[category.name] = {
+            query = category.query,
+            alwaysVisible = category.alwaysVisible,
+        }
+    end
+    return expected
+end
 
 local function expected_default_layout(snapshot, configuredColumns)
     local out = {}
@@ -217,10 +209,11 @@ run("fresh install seeds defaults", function()
 
     local snapshot = ctx:snapshot()
     local custom = custom_snapshot(snapshot)
+    local expectedDefaultQueries = getExpectedDefaultQueries(ctx)
     assert_true(custom.id == "cus", "custom bucket seeded")
     assert_true(custom.schemaVersion == 2, "custom schema version seeded")
     local defaultsCount = 0
-    for name, metadata in pairs(EXPECTED_DEFAULT_QUERIES) do
+    for name, metadata in pairs(expectedDefaultQueries) do
         local _, data = raw_by_name(snapshot, name)
         assert_true(data ~= nil, "default category exists: " .. name)
         assert_true(data.query == metadata.query, "default query persisted: " .. name)
@@ -247,10 +240,11 @@ end)
 run("built-in default payload remains import-valid", function()
     local ctx = harness.new()
     local payload = ctx.AddonNS.CustomDefaultImportPayload
+    local expectedDefaultQueries = getExpectedDefaultQueries(ctx)
     assert_true(type(payload) == "table", "default payload is available")
     local preview = ctx.AddonNS.CustomCategories:PreviewImport(payload)
     local expectedCount = 0
-    for _ in pairs(EXPECTED_DEFAULT_QUERIES) do
+    for _ in pairs(expectedDefaultQueries) do
         expectedCount = expectedCount + 1
     end
     assert_true(#preview.toCreate == expectedCount, "default payload contains expected category count")
@@ -279,9 +273,10 @@ run("empty categories reseed defaults and reset layout", function()
     })
     ctx:events():fire_game("PLAYER_LOGOUT")
     local snapshot = ctx:snapshot()
+    local expectedDefaultQueries = getExpectedDefaultQueries(ctx)
     assert_equal(expected_default_layout(snapshot, ctx.AddonNS.CustomDefaultLayoutColumns), snapshot.layout.columns, "empty custom categories trigger default layout reset")
     assert_equal({}, snapshot.layout.collapsed, "collapsed entries cleared during reseed")
-    for name in pairs(EXPECTED_DEFAULT_QUERIES) do
+    for name in pairs(expectedDefaultQueries) do
         local _, data = raw_by_name(snapshot, name)
         assert_true(data ~= nil, "reseeded category exists: " .. name)
     end
