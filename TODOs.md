@@ -13,7 +13,6 @@ This file is the live backlog for MyBags. Keep it concise and outcome-focused.
    ```
 
 - 🐞 Equipment categories under some conditions seem to have positions reset in layout :(
-- 🐞 Sometimes the scale / frame position still does not work as expected. Maybe we could hook to it and if we noticed pos has changed, regardless of the locks, just fix it/readjust it before it is even visible to the user.
 
 ### Normal
 
