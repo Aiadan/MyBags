@@ -131,6 +131,7 @@ This policy also applies to generic or reusable components such as utility funct
 - Before editing `CHANGELOG.md`, check recent local git tags and identify the latest released version/cutoff commit first.
 - When a tracked change is completed and is user-facing or otherwise changelog-worthy, add a dated entry at the top of `CHANGELOG.md` above the latest version cutoff heading only after confirming the correct cutoff from git tags.
 - Prefix all new `CHANGELOG.md` entries with one of `[New]`, `[Tweak]`, or `[Bugfix]`.
+- Do not add explanatory cutoff-marker prose under version headings in `CHANGELOG.md`; use the version heading alone as the boundary.
 - Do not add changelog entries for internal-only work such as process/documentation changes, test-only changes, refactors with no user-visible effect, or agent-workflow changes.
 - `RELEASE_NOTES_TEMPLATE.md` uses the fixed headings `New`, `Tweaks`, and `Bug fixes`, in that order.
 - When updating `RELEASE_NOTES.md`, copy only the headings that actually contain at least one change. Do not copy empty sections from the template.
