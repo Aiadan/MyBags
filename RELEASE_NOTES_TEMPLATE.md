@@ -9,19 +9,17 @@ Guidelines:
 - Merge overlapping points instead of listing near-duplicates.
 - Keep technical details only when they explain a user-visible fix or improvement.
 - Re-review the entire file whenever you add a new stable-worthy item.
+- Do not copy empty headers into `RELEASE_NOTES.md`.
+- Only include a header in `RELEASE_NOTES.md` if that category has at least one real change listed under it.
 
-## Highlights
-
-- None yet.
-
-## Improvements
+## New
 
 - None yet.
 
-## Fixes
+## Tweaks
 
 - None yet.
 
-## Smaller improvements
+## Bug fixes
 
 - None yet.

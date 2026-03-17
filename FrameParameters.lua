@@ -78,6 +78,12 @@ local function computeFrameScales(screenWidth, screenHeight, containerFrameOffse
 end
 
 local function getFrameScale(frame)
+    if frame == ContainerFrameCombinedBags and frame.IsSearchAnchorLockActive and frame:IsSearchAnchorLockActive() then
+        local lockedScale = frame.GetSearchAnchorLockedScale and frame:GetSearchAnchorLockedScale() or nil
+        if lockedScale ~= nil then
+            return lockedScale
+        end
+    end
     local containerFrameOffsetX = EditModeUtil:GetRightActionBarWidth() + 10
     local screenWidth = GetScreenWidth()
     local screenHeight = GetScreenHeight()
@@ -133,6 +139,7 @@ AddonNS._Test.FrameParameters = {
     ComputeWidthScaleFromRemaining = computeWidthScaleFromRemaining,
     ComputeHeightScale = computeHeightScale,
     ClampScale = clampScale,
+    GetFrameScale = getFrameScale,
 }
 
 

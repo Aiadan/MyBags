@@ -17,6 +17,7 @@ function ContainerFrameMyBagsMixin:MyBagsInit()
     self.MyBags.searchAnchorLockActive = false
     self.MyBags.searchLockedTop = nil
     self.MyBags.searchLockedRight = nil
+    self.MyBags.searchLockedScale = nil
 end
 
 function ContainerFrameMyBagsMixin:SetSearchAnchorLockActive(isActive)
@@ -25,6 +26,7 @@ function ContainerFrameMyBagsMixin:SetSearchAnchorLockActive(isActive)
     if not isActive then
         self.MyBags.searchLockedTop = nil
         self.MyBags.searchLockedRight = nil
+        self.MyBags.searchLockedScale = nil
     end
     return changed
 end
@@ -39,6 +41,11 @@ function ContainerFrameMyBagsMixin:CaptureSearchAnchorLockPosition()
     end
     self.MyBags.searchLockedTop = self:GetTop()
     self.MyBags.searchLockedRight = self:GetRight()
+    self.MyBags.searchLockedScale = self:GetScale()
+end
+
+function ContainerFrameMyBagsMixin:GetSearchAnchorLockedScale()
+    return self.MyBags.searchLockedScale
 end
 
 function ContainerFrameMyBagsMixin:MarkSearchAnchorLockPending()

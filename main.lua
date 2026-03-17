@@ -264,6 +264,10 @@ local inventorySearchRefreshQueued = false
 local bagSearchUnlockPending = false
 local searchUnlockReanchorQueued = false
 
+local function isBagFrameAnchorLockSearchBox(searchBox)
+    return searchBox == BagItemSearchBox or searchBox == BankItemSearchBox or searchBox.anchorBag == container
+end
+
 local function getBagCapacityState()
     local freeItemSlots = 0
     local totalItemSlots = 0
@@ -391,8 +395,7 @@ end)
 
 local function refreshSearchAnchorLockState(searchBox)
     local queryEditorLockRequested = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
-    local isBagSearchBox = searchBox == BagItemSearchBox
-    local isContainerSearch = isBagSearchBox or searchBox.anchorBag == container
+    local isContainerSearch = isBagFrameAnchorLockSearchBox(searchBox)
     if not isContainerSearch then
         return
     end
@@ -458,6 +461,13 @@ end)
 BagItemSearchBox:HookScript("OnEditFocusLost", function(searchBox)
     refreshSearchAnchorLockState(searchBox)
 end)
+BankItemSearchBox:HookScript("OnEditFocusGained", function(searchBox)
+    refreshSearchAnchorLockState(searchBox)
+end)
+
+BankItemSearchBox:HookScript("OnEditFocusLost", function(searchBox)
+    refreshSearchAnchorLockState(searchBox)
+end)
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, function()
     refreshSearchAnchorLockState(BagItemSearchBox)
@@ -477,12 +487,12 @@ local function installSearchBoxWrapper(searchBox)
     searchBox:SetScript("OnTextChanged", function(box, userChanged)
         local text = box:GetText() or ""
         refreshSearchQueryState(text)
-        if box == BagItemSearchBox then
+        if isBagFrameAnchorLockSearchBox(box) then
             -- Keep anchor lock state in sync before Blizzard's handler mutates layout/anchors.
             refreshSearchAnchorLockState(box)
         end
         oldOnTextChanged(box, userChanged)
-        if box == BagItemSearchBox then
+        if isBagFrameAnchorLockSearchBox(box) then
             -- Re-assert lock/captured position after the built-in search update path runs.
             refreshSearchAnchorLockState(box)
         end

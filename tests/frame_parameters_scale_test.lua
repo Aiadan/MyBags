@@ -62,6 +62,7 @@ local computeWidthScale = hooks.ComputeWidthScale
 local computeWidthScaleFromRemaining = hooks.ComputeWidthScaleFromRemaining
 local computeHeightScale = hooks.ComputeHeightScale
 local clampScale = hooks.ClampScale
+local getFrameScale = hooks.GetFrameScale
 
 local function assertEqual(expected, actual, message)
     if expected ~= actual then
@@ -171,4 +172,36 @@ run("height-limited bank allows bags to reclaim width in second pass", function(
     )
     assertEqual(1, bagScale, "bag should reclaim width to full scale")
     assertEqual(0.34, math.floor(bankScale * 100 + 0.5) / 100, "bank remains height-limited")
+end)
+
+run("GetFrameScale keeps locked bag scale while search anchor lock is active", function()
+    local originalShown = ContainerFrameCombinedBags.IsShown
+    local originalWidth = ContainerFrameCombinedBags.GetWidth
+    local originalHeight = ContainerFrameCombinedBags.GetHeight
+    local originalIsSearchAnchorLockActive = ContainerFrameCombinedBags.IsSearchAnchorLockActive
+    local originalGetSearchAnchorLockedScale = ContainerFrameCombinedBags.GetSearchAnchorLockedScale
+
+    ContainerFrameCombinedBags.IsShown = function()
+        return true
+    end
+    ContainerFrameCombinedBags.GetWidth = function()
+        return 50000
+    end
+    ContainerFrameCombinedBags.GetHeight = function()
+        return 900
+    end
+    ContainerFrameCombinedBags.IsSearchAnchorLockActive = function()
+        return true
+    end
+    ContainerFrameCombinedBags.GetSearchAnchorLockedScale = function()
+        return 0.77
+    end
+
+    assertEqual(0.77, getFrameScale(ContainerFrameCombinedBags), "locked bag scale should override recomputed scale")
+
+    ContainerFrameCombinedBags.IsShown = originalShown
+    ContainerFrameCombinedBags.GetWidth = originalWidth
+    ContainerFrameCombinedBags.GetHeight = originalHeight
+    ContainerFrameCombinedBags.IsSearchAnchorLockActive = originalIsSearchAnchorLockActive
+    ContainerFrameCombinedBags.GetSearchAnchorLockedScale = originalGetSearchAnchorLockedScale
 end)
