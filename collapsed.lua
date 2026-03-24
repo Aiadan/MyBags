@@ -15,6 +15,5 @@ function AddonNS.Collapsed.toggleCollapsed(category, scope)
     end
     local collapsed = AddonNS.CategoryStore:IsCollapsed(category.id, scope);
     AddonNS.CategoryStore:SetCollapsed(category.id, not collapsed, scope);
-    AddonNS.printDebug("toggleCollapsed", category.id);
     AddonNS.Events:TriggerCustomEvent(COLLAPSED_CHANGED, category, scope);
 end

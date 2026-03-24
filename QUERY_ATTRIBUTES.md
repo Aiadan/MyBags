@@ -2,6 +2,33 @@
 
 This guide explains how to write queries for custom categories.
 
+## Default Starter Groups
+
+MyBags seeds a default set of starter custom groups on a fresh setup.
+
+If you delete all custom groups and reload the game, MyBags recreates that default starter set. This is the quickest way to reset your custom-group setup back to the addon defaults.
+
+Current starter groups:
+
+| Group | What it is for | Default query / source |
+|---|---|---|
+| `Junk` | Poor-quality items. | `quality = 0` |
+| `Quest` | Quest-linked items and quest-item class items. | `isQuestItem = true OR itemType = 12` |
+| `Warbound` | Account-bound-until-equipped items that are not yet fully bound. | `isWarbound = true AND isBound = false` |
+| `BoE` | Bind-on-equip items that are not yet bound. | `bindType = 2 AND isBound = false` |
+| `Reagents - Soulbound` | Crafting reagents that are already soulbound. | `isCraftingReagent = true AND isBound = true` |
+| `Reagents` | Crafting reagents that are still tradable. | `isCraftingReagent = true AND isBound = false` |
+| `Recipes` | Recipe items. | `itemType = 9` |
+| `Gems` | Gem items. | `itemType = 3` |
+| `Potions/Flasks/Food` | Common consumables such as potions, flasks/phials, and food/drink. | `itemType = 0 AND (itemSubType = 1 OR itemSubType = 3 OR itemSubType = 5)` |
+| `Armor & Weapons` | Weapons and armor grouped together. | `itemType = 2 OR itemType = 4` |
+| `Uncollected Transmog` | Items with an uncollected transmog appearance. | `isTransmogCollected = false` |
+| `Teleport` | Manual hearthstone / teleport utility items from the built-in item list. | Manual item list, no query |
+| `Mounts & Pets` | Miscellaneous items such as mounts and pets. | `itemType = 15 AND (itemSubType = 2 OR itemSubType > 4)` |
+| `Curios` | Utility and combat curios. | `itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)` |
+| `Decor` | Housing decor items. | `itemType = 20` |
+| `Caches / One-time Use` | Loot containers and selected one-time-use utility items. | `hasLoot = true OR onUseDescription = "Knowledge by"` |
+
 ## Priority And Match Order
 
 When multiple query categories match the same item:
@@ -38,7 +65,7 @@ NOT isQuestItem = true
 Query field names are not case-sensitive:
 - Field names are case-insensitive: `itemType`, `ItemType`, and `ITEMTYPE` are equivalent.
 - Boolean values should be lowercase: `true` / `false`.
-- String matching is case-insensitive (`itemName` and `description`).
+- String matching is case-insensitive (`itemName`, `description`, and `onUseDescription`).
 - Use uppercase logical operators (`AND`, `OR`, `NOT`) for predictable results.
 
 ## String Matching
@@ -90,6 +117,7 @@ Notes:
 | `isCorruptedItem` | boolean |
 | `isWarbound` | boolean |
 | `description` | string |
+| `onUseDescription` | string |
 | `isTransmogCollected` | boolean |
 | `isWrongArmorType` | boolean |
 | `isWrongPrimaryStat` | boolean |
@@ -101,6 +129,7 @@ Notes:
 Notes:
 - `isCurioItem` is intentionally not a separate field; use `itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)`.
 - `isHeirloomItem` is intentionally not a separate field; use `quality = 7`.
+- `onUseDescription` is populated from the localized tooltip text after the item's `Use:` prefix, and is only inspected for items where `C_Item.GetItemSpell(itemID)` reports an on-use spell.
 
 ## Core Value Tables
 

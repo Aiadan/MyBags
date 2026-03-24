@@ -67,6 +67,7 @@ end
 
 local function install_item_query_stubs(itemID, options)
     options = options or {}
+    _G.ITEM_SPELL_TRIGGER_ONUSE = options.onUsePrefix or "Use:"
     _G.ItemLocation = {
         CreateFromBagAndSlot = function(bagID, slotID)
             return { bagID = bagID, slotID = slotID }
@@ -79,6 +80,9 @@ local function install_item_query_stubs(itemID, options)
         end,
         GetItemInventoryTypeByID = function()
             return options.inventoryType or 0
+        end,
+        GetItemSpell = function()
+            return options.itemSpellName
         end,
         IsAnimaItemByID = function()
             return options.isAnimaItem == true
@@ -102,6 +106,13 @@ local function install_item_query_stubs(itemID, options)
         end,
         GetSourceInfo = function()
             return { isCollected = options.isTransmogCollected == true }
+        end,
+    }
+    _G.C_TooltipInfo = {
+        GetItemByID = function()
+            return {
+                lines = options.tooltipLines or {},
+            }
         end,
     }
     rawset(_G.C_Container, "GetContainerItemQuestInfo", function()
@@ -161,29 +172,21 @@ local function count_layout_id(columns, targetId)
     return count
 end
 
-local EXPECTED_DEFAULT_QUERIES = {
-    ["Junk"] = { query = "quality = 0", alwaysVisible = true },
-    ["Quest"] = { query = "isQuestItem = true OR itemType = 12" },
-    ["Warbound"] = { query = "isWarbound = true AND isBound = false" },
-    ["BoE"] = { query = "bindType = 2 AND isBound = false" },
-    ["Reagents - Soulbound"] = { query = "isCraftingReagent = true AND isBound = true" },
-    ["Reagents"] = { query = "isCraftingReagent = true AND isBound = false" },
-    ["Recipes"] = { query = "itemType = 9" },
-    ["Gems"] = { query = "itemType = 3" },
-    ["Potions/Flasks/Food"] = { query = "itemType = 0 AND (itemSubType = 1 OR itemSubType = 3 OR itemSubType = 5)" },
-    ["Armor & Weapons"] = { query = "itemType = 2 OR itemType = 4" },
-    ["Uncollected Transmog"] = { query = " isTransmogCollected = false" },
-    ["Teleport"] = { query = nil },
-    ["Mounts & Pets"] = { query = "itemType = 15 AND (itemSubType = 2 OR itemSubType = 5)" },
-    ["Curios"] = { query = "itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)" },
-    ["Decor"] = { query = "itemType = 20" },
-    ["Caches / One-time Use"] = { query = "hasLoot = true OR (itemType = 0 AND itemSubType = 8) OR (itemType = 4 AND itemSubType = 5)" },
-}
-
 local EXPECTED_TELEPORT_ITEMS = {
     147869, 37863, 63207, 63353, 208066, 217956, 18149, 217930, 41255, 44655, 200613, 110560,
     6948, 140192, 173373, 65274, 46874, 21711, 180817, 234389, 116413, 249699, 250411, 238727,
 }
+
+local function getExpectedDefaultQueries(ctx)
+    local expected = {}
+    for _, category in ipairs(ctx.AddonNS.CustomDefaultImportPayload.categories) do
+        expected[category.name] = {
+            query = category.query,
+            alwaysVisible = category.alwaysVisible,
+        }
+    end
+    return expected
+end
 
 local function expected_default_layout(snapshot, configuredColumns)
     local out = {}
@@ -206,10 +209,11 @@ run("fresh install seeds defaults", function()
 
     local snapshot = ctx:snapshot()
     local custom = custom_snapshot(snapshot)
+    local expectedDefaultQueries = getExpectedDefaultQueries(ctx)
     assert_true(custom.id == "cus", "custom bucket seeded")
     assert_true(custom.schemaVersion == 2, "custom schema version seeded")
     local defaultsCount = 0
-    for name, metadata in pairs(EXPECTED_DEFAULT_QUERIES) do
+    for name, metadata in pairs(expectedDefaultQueries) do
         local _, data = raw_by_name(snapshot, name)
         assert_true(data ~= nil, "default category exists: " .. name)
         assert_true(data.query == metadata.query, "default query persisted: " .. name)
@@ -236,10 +240,11 @@ end)
 run("built-in default payload remains import-valid", function()
     local ctx = harness.new()
     local payload = ctx.AddonNS.CustomDefaultImportPayload
+    local expectedDefaultQueries = getExpectedDefaultQueries(ctx)
     assert_true(type(payload) == "table", "default payload is available")
     local preview = ctx.AddonNS.CustomCategories:PreviewImport(payload)
     local expectedCount = 0
-    for _ in pairs(EXPECTED_DEFAULT_QUERIES) do
+    for _ in pairs(expectedDefaultQueries) do
         expectedCount = expectedCount + 1
     end
     assert_true(#preview.toCreate == expectedCount, "default payload contains expected category count")
@@ -268,9 +273,10 @@ run("empty categories reseed defaults and reset layout", function()
     })
     ctx:events():fire_game("PLAYER_LOGOUT")
     local snapshot = ctx:snapshot()
+    local expectedDefaultQueries = getExpectedDefaultQueries(ctx)
     assert_equal(expected_default_layout(snapshot, ctx.AddonNS.CustomDefaultLayoutColumns), snapshot.layout.columns, "empty custom categories trigger default layout reset")
     assert_equal({}, snapshot.layout.collapsed, "collapsed entries cleared during reseed")
-    for name in pairs(EXPECTED_DEFAULT_QUERIES) do
+    for name in pairs(expectedDefaultQueries) do
         local _, data = raw_by_name(snapshot, name)
         assert_true(data ~= nil, "reseeded category exists: " .. name)
     end
@@ -811,6 +817,11 @@ run("custom query matching supports new payload attributes", function()
         isCorruptedItem = false,
         isTransmogCollected = true,
         isWarbound = true,
+        itemSpellName = "Vault Recall",
+        tooltipLines = {
+            { leftText = "Flavor line" },
+            { leftText = "Use: Open a special relic from an old vault" },
+        },
         description = "special relic from an old vault",
     })
     local button = item_button(0, 1)
@@ -844,6 +855,46 @@ run("custom query matching supports new payload attributes", function()
     local nilTransmogCategory = ctx.AddonNS.Categories:Categorize(2202, item_button(0, 1))
     assert_true(nilTransmogCategory:GetId() == descriptionCategory:GetId(),
         "isTransmogCollected is nil when source info is missing so true/false transmog queries do not match")
+end)
+
+run("custom query matching supports onUseDescription tooltip attribute", function()
+    local ctx = harness.new({
+        saved = {
+            userCategories = {
+                schemaVersion = 2,
+                id = "cus",
+                name = "Custom",
+                nextId = 1,
+                categories = {
+                    ["1"] = { name = "KeepSeedOff", items = {} },
+                },
+            },
+        },
+    })
+
+    local onUseCategory = ctx.AddonNS.CustomCategories:NewCategory("OnUse")
+    ctx.AddonNS.QueryCategories:SetQuery(onUseCategory, "onUseDescription = \"hidden vault\"")
+    ctx.AddonNS.CustomCategories:SetPriority(onUseCategory, 200)
+
+    install_item_query_stubs(2204, {
+        itemSpellName = "Vault Recall",
+        tooltipLines = {
+            { leftText = "Use: Teleports the caster to a hidden vault" },
+        },
+    })
+    local category = ctx.AddonNS.Categories:Categorize(2204, item_button(0, 1))
+    assert_true(category:GetId() == onUseCategory:GetId(),
+        "onUseDescription query matches localized tooltip text after the Use prefix")
+
+    install_item_query_stubs(2205, {
+        itemSpellName = nil,
+        tooltipLines = {
+            { leftText = "Use: Teleports the caster to a hidden vault" },
+        },
+    })
+    local noSpellPayload = ctx.AddonNS.CustomCategories:GetItemQueryPayload(2205, item_button(0, 1))
+    assert_true(noSpellPayload.onUseDescription == nil,
+        "onUseDescription stays unset when the item has no on-use spell gate")
 end)
 
 run("manual assign to first query-match category via item-move is ignored", function()
@@ -972,6 +1023,43 @@ run("categories config mode scope-disabled visibility is gated by runtime checkb
 
     local reloaded = harness.new({ saved = snapshot })
     assert_true(not reloaded.AddonNS.BagViewState:ShouldShowScopeDisabledInConfigMode(), "checkbox runtime flag is not persisted across sessions")
+end)
+
+run("tooltip mode defaults to default when missing or invalid", function()
+    local ctx = harness.new()
+    assert_true(ctx.AddonNS.TooltipSettings:GetMode() == ctx.AddonNS.TooltipSettings.MODE_DEFAULT, "missing mode defaults to default")
+
+    local invalid = harness.new({
+        saved = {
+            settings = {
+                tooltipMode = "invalid_mode",
+            },
+        },
+    })
+    assert_true(invalid.AddonNS.TooltipSettings:GetMode() == invalid.AddonNS.TooltipSettings.MODE_DEFAULT,
+        "invalid persisted mode normalizes to default")
+end)
+
+run("tooltip mode persists across reload and prunes default value", function()
+    local ctx = harness.new()
+    ctx.AddonNS.TooltipSettings:SetMode(ctx.AddonNS.TooltipSettings.MODE_SHIFT_ONLY)
+    assert_true(ctx.AddonNS.TooltipSettings:GetMode() == ctx.AddonNS.TooltipSettings.MODE_SHIFT_ONLY, "mode set to shift_only")
+    ctx:events():fire_game("PLAYER_LOGOUT")
+
+    local snapshot = ctx:snapshot()
+    assert_true(snapshot.settings ~= nil, "settings table persisted")
+    assert_true(snapshot.settings.tooltipMode == "shift_only", "shift_only mode persisted")
+
+    local reloaded = harness.new({ saved = snapshot })
+    assert_true(reloaded.AddonNS.TooltipSettings:GetMode() == reloaded.AddonNS.TooltipSettings.MODE_SHIFT_ONLY,
+        "shift_only mode survives reload")
+
+    reloaded.AddonNS.TooltipSettings:SetMode(reloaded.AddonNS.TooltipSettings.MODE_DEFAULT)
+    reloaded:events():fire_game("PLAYER_LOGOUT")
+    local defaultSnapshot = reloaded:snapshot()
+    if defaultSnapshot.settings ~= nil then
+        assert_true(defaultSnapshot.settings.tooltipMode == nil, "default mode prunes persisted key")
+    end
 end)
 
 run("selected custom category prefix clears when selection is cleared", function()

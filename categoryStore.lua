@@ -471,7 +471,7 @@ function CategoryStore:GetWrapperForRaw(categorizerId, rawCategory)
     if not rawId then
         return nil
     end
-    local wrapperId, rawKey = compute_wrapper_ids(categorizerId, rawId)
+    local wrapperId = compute_wrapper_ids(categorizerId, rawId)
     local existing = self._wrappersById[wrapperId]
     if existing then
         return existing

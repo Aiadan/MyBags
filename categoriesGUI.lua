@@ -674,11 +674,11 @@ function AddonNS.createGUI()
             outputScroll.EditBox:SetFocus()
         end)
 
-        local closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-        closeButton:SetSize(80, 20)
-        closeButton:SetPoint("LEFT", exportButton, "RIGHT", 8, 0)
-        closeButton:SetText("Close")
-        closeButton:SetScript("OnClick", function()
+        local exportCloseButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        exportCloseButton:SetSize(80, 20)
+        exportCloseButton:SetPoint("LEFT", exportButton, "RIGHT", 8, 0)
+        exportCloseButton:SetText("Close")
+        exportCloseButton:SetScript("OnClick", function()
             frame:Hide()
         end)
 
@@ -746,11 +746,11 @@ function AddonNS.createGUI()
         applyButton:SetText("Apply Import")
         applyButton:Disable()
 
-        local closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-        closeButton:SetSize(80, 20)
-        closeButton:SetPoint("LEFT", applyButton, "RIGHT", 8, 0)
-        closeButton:SetText("Close")
-        closeButton:SetScript("OnClick", function()
+        local importCloseButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        importCloseButton:SetSize(80, 20)
+        importCloseButton:SetPoint("LEFT", applyButton, "RIGHT", 8, 0)
+        importCloseButton:SetText("Close")
+        importCloseButton:SetScript("OnClick", function()
             frame:Hide()
         end)
 
@@ -1514,8 +1514,6 @@ function AddonNS.createGUI()
                 if category and containerFrame:IsShown() then
                     setSelectedCategoryById(category:GetId())
                 end
-            else
-                AddonNS.printDebug("Please enter a category name.")
             end
         end,
         enterClicksFirstButton = true,
@@ -1561,7 +1559,6 @@ function AddonNS.createGUI()
         button1 = "Confirm deletion",
         button2 = "Cancel",
         OnAccept = function(self, data)
-            AddonNS.printDebug("Category deleted: ", data)
             local deletedCategoryId = data and data.GetId and data:GetId() or nil
             AddonNS.CustomCategories:DeleteCategory(data);
             if deletedCategoryId and getSelectedCategoryId() == deletedCategoryId then
@@ -1583,11 +1580,10 @@ function AddonNS.createGUI()
         button2 = "Cancel",
         OnAccept = function(self, data)
             local preview = data or self.data
-            local ok, err = pcall(function()
+            local ok = pcall(function()
                 AddonNS.CustomCategories:ApplyImportPreview(preview)
             end)
             if not ok then
-                AddonNS.printDebug("Import failed:", err)
                 return
             end
             refreshSelectedCategoryControls()

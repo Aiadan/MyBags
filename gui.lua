@@ -123,7 +123,7 @@ local function styleCategoryControl(frame, isHovered)
     frame:SetText(style.label)
 end
 
-function AddonNS.gui:EnsureCategoryControlBackdrop(frame)
+function AddonNS.gui.EnsureCategoryControlBackdrop(_, frame)
     if frame.addControlBackdrop then
         return
     end
@@ -135,7 +135,7 @@ function AddonNS.gui:EnsureCategoryControlBackdrop(frame)
     frame.addControlBackdrop:Hide()
 end
 
-function AddonNS.gui:StyleCategoryControl(frame, isHovered)
+function AddonNS.gui.StyleCategoryControl(_, frame, isHovered)
     styleCategoryControl(frame, isHovered)
 end
 
@@ -409,14 +409,14 @@ function draggableFrame:StopDragging()
     activeDragShiftState = nil
 end
 
-function AddonNS.gui:StartCategoryDragVisual(categoryName)
+function AddonNS.gui.StartCategoryDragVisual(_, categoryName)
     activeDraggedCategoryName = categoryName or "Unassigned"
     refreshDragTooltipText()
     draggableFrame:Show()
     draggableFrame:StartDragging()
 end
 
-function AddonNS.gui:StopCategoryDragVisual()
+function AddonNS.gui.StopCategoryDragVisual(_)
     draggableFrame:Hide()
     draggableFrame:StopDragging()
 end
@@ -545,7 +545,7 @@ freeSlotCountLabel:SetPoint("LEFT", freeSlotCountOverlay, "LEFT", 6, 0)
 freeSlotCountLabel:SetJustifyH("LEFT")
 freeSlotCountLabel:SetTextColor(1, 0.82, 0.2, 1)
 
-function AddonNS.gui:RefreshFreeSlotCountLabel()
+function AddonNS.gui.RefreshFreeSlotCountLabel(_)
     local state = AddonNS.GetBagCapacityState()
     freeSlotCountLabel:SetText(BAG_CAPACITY_LABEL_FORMAT:format(
         state.items.taken,
@@ -651,11 +651,10 @@ end)
 AddonNS.Events:RegisterEvent("PLAYER_REGEN_ENABLED", refreshResizeHandle)
 
 
-function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
+function AddonNS.gui.RegenerateCategories(_, yFrameOffset, categoriesGUIInfo)
     local moneyFrame = AddonNS.container.MoneyFrame;
     local customCategories = AddonNS.CustomCategories:GetCategories()
     AddonNS.gui.categoryFrameByCategoryId = {}
-    AddonNS.printDebug("money frame:", moneyFrame, AddonNS.container.MoneyFrame)
     backgroundFrame:SetPoint("TOPLEFT", moneyFrame, "TOPLEFT", 0, yFrameOffset)
     for i = 1, #categoriesGUIInfo, 1 do
         local categoryGUIInfo = categoriesGUIInfo[i];
@@ -726,17 +725,17 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             editButton.Highlight:SetAlpha(0.45)
             editButton.Highlight:SetBlendMode("ADD")
 
-            editButton:SetScript("OnEnter", function(self)
-                local category = self:GetParent().ItemCategory
-                GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            editButton:SetScript("OnEnter", function(buttonFrame)
+                local category = buttonFrame:GetParent().ItemCategory
+                GameTooltip:SetOwner(buttonFrame, "ANCHOR_TOP")
                 GameTooltip:SetText(EDIT_CATEGORY_TOOLTIP .. " \"" .. category:GetName() .. "\" category")
                 GameTooltip:Show()
             end)
             editButton:SetScript("OnLeave", function()
                 GameTooltip:Hide()
             end)
-            editButton:SetScript("OnClick", function(self)
-                local category = self:GetParent().ItemCategory
+            editButton:SetScript("OnClick", function(buttonFrame)
+                local category = buttonFrame:GetParent().ItemCategory
                 AddonNS.CategoriesGUI:SelectCategoryById(category:GetId())
             end)
 
@@ -770,12 +769,12 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             scopeVisibilityButton.Highlight:SetAlpha(0.45)
             scopeVisibilityButton.Highlight:SetBlendMode("ADD")
 
-            scopeVisibilityButton:SetScript("OnEnter", function(self)
-                local category = self:GetParent().ItemCategory
-                local scope = self:GetParent().MyBagsScope or "bag"
+            scopeVisibilityButton:SetScript("OnEnter", function(buttonFrame)
+                local category = buttonFrame:GetParent().ItemCategory
+                local scope = buttonFrame:GetParent().MyBagsScope or "bag"
                 local scopeLabel = getScopeVisibilityLabel(scope)
                 local visible = AddonNS.CustomCategories:IsVisibleInScope(category, scope)
-                GameTooltip:SetOwner(self, "ANCHOR_TOP")
+                GameTooltip:SetOwner(buttonFrame, "ANCHOR_TOP")
                 if visible then
                     GameTooltip:SetText("Visible in " .. scopeLabel)
                 else
@@ -790,17 +789,17 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             scopeVisibilityButton:SetScript("OnLeave", function()
                 GameTooltip:Hide()
             end)
-            scopeVisibilityButton:SetScript("OnClick", function(self)
-                local parent = self:GetParent()
+            scopeVisibilityButton:SetScript("OnClick", function(buttonFrame)
+                local parent = buttonFrame:GetParent()
                 local category = parent.ItemCategory
                 local scope = parent.MyBagsScope or "bag"
                 local visible = AddonNS.CustomCategories:IsVisibleInScope(category, scope)
                 AddonNS.CustomCategories:SetVisibleInScope(category, scope, not visible)
             end)
 
-            deleteButton:SetScript("OnEnter", function(self)
-                local category = self:GetParent().ItemCategory
-                GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            deleteButton:SetScript("OnEnter", function(buttonFrame)
+                local category = buttonFrame:GetParent().ItemCategory
+                GameTooltip:SetOwner(buttonFrame, "ANCHOR_TOP")
                 GameTooltip:SetText(DELETE_CATEGORY_TOOLTIP .. " \"" .. category:GetName() .. "\" category")
                 GameTooltip:AddLine(DELETE_CATEGORY_HINT, 1, 0.82, 0, true)
                 GameTooltip:Show()
@@ -809,8 +808,8 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
                 GameTooltip:Hide()
             end)
 
-            deleteButton:SetScript("OnClick", function(self)
-                local category = self:GetParent().ItemCategory
+            deleteButton:SetScript("OnClick", function(buttonFrame)
+                local category = buttonFrame:GetParent().ItemCategory
                 if IsShiftKeyDown() then
                     StaticPopupDialogs["DELETE_CATEGORY_CONFIRM"].OnAccept(nil, category)
                     return
@@ -889,7 +888,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.hintOverlay:Hide()
 
             AddonNS.gui.categoriesFrames[i] = f;
-            function f:SetText(text) fs:SetText(text) end
+            function f.SetText(_, text) fs:SetText(text) end
             f.ApplyCategoryTextLayout = applyCategoryTextLayout
             f.ApplyCategoryTextLayoutWithDeleteButton = applyCategoryTextLayoutWithDeleteButton
             f.ApplyCategoryTextLayoutWithEditButton = applyCategoryTextLayoutWithEditButton
@@ -906,22 +905,22 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
 
             f:EnableMouse(true)
             f:SetScript("OnEnter",
-                function(self)
-                    hoveredCategoryFrame = self
-                    if self.isAddCategoryControl then
-                        styleCategoryControl(self, true)
+                function(categoryFrame)
+                    hoveredCategoryFrame = categoryFrame
+                    if categoryFrame.isAddCategoryControl then
+                        styleCategoryControl(categoryFrame, true)
                     end
                     AddonNS.gui:RefreshCategoryDragHints()
                 end)
             f:SetScript("OnLeave",
-                function(self)
-                    -- self:SetBackdrop(test)
-                    -- self:SetBackdropColor(0, 0, 1, .5)
-                    if hoveredCategoryFrame == self then
+                function(categoryFrame)
+                    -- categoryFrame:SetBackdrop(test)
+                    -- categoryFrame:SetBackdropColor(0, 0, 1, .5)
+                    if hoveredCategoryFrame == categoryFrame then
                         hoveredCategoryFrame = nil
                     end
-                    if self.isAddCategoryControl then
-                        styleCategoryControl(self, false)
+                    if categoryFrame.isAddCategoryControl then
+                        styleCategoryControl(categoryFrame, false)
                     end
                     AddonNS.gui:RefreshCategoryDragHints()
                 end)
@@ -931,17 +930,15 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
 
 
             f:RegisterForDrag("LeftButton")
-            f:SetScript("OnDragStart", function(self, button)
+            f:SetScript("OnDragStart", function(categoryFrame)
                 -- adjustDraggableFramePositionToMouse()
-                AddonNS.gui:StartCategoryDragVisual(self.ItemCategory:GetDisplayName() or "Unassigned")
-                AddonNS.DragAndDrop.categoryStartDrag(self);
+                AddonNS.gui:StartCategoryDragVisual(categoryFrame.ItemCategory:GetDisplayName() or "Unassigned")
+                AddonNS.DragAndDrop.categoryStartDrag(categoryFrame);
                 PlaySound(1183 );
-                AddonNS.printDebug("OnDragStart", button)
             end)
-            f:SetScript("OnDragStop", function(self)
+            f:SetScript("OnDragStop", function()
                 AddonNS.gui:StopCategoryDragVisual()
                 PlaySound(1200);
-                AddonNS.printDebug("OnDragStop")
             end)
             f.fs = fs;
         end
@@ -951,7 +948,6 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
         -- if categoryGUIInfo.last then
         --     f:SetPoint("BOTTOM", relativeTo, "TOP", 0, 0)
         -- end
-        -- AddonNS.printDebug(categories[i], pos[i].x, pos[i].y)
         f:SetWidth(categoryGUIInfo.width)
         -- fs.fs:SetWidth(categoryGUIInfo.width)
         f:SetHeight(categoryGUIInfo.height)
@@ -1034,16 +1030,14 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f:RegisterForDrag("LeftButton")
             f:SetScript("OnMouseUp", AddonNS.DragAndDrop.categoryOnMouseUp)
             f:SetScript("OnReceiveDrag", AddonNS.DragAndDrop.categoryOnReceiveDrag)
-            f:SetScript("OnDragStart", function(self, button)
-                AddonNS.gui:StartCategoryDragVisual(self.ItemCategory:GetDisplayName() or "Unassigned")
-                AddonNS.DragAndDrop.categoryStartDrag(self);
+            f:SetScript("OnDragStart", function(categoryFrame)
+                AddonNS.gui:StartCategoryDragVisual(categoryFrame.ItemCategory:GetDisplayName() or "Unassigned")
+                AddonNS.DragAndDrop.categoryStartDrag(categoryFrame);
                 PlaySound(1183 );
-                AddonNS.printDebug("OnDragStart", button)
             end)
-            f:SetScript("OnDragStop", function(self)
+            f:SetScript("OnDragStop", function()
                 AddonNS.gui:StopCategoryDragVisual()
                 PlaySound(1200);
-                AddonNS.printDebug("OnDragStop")
             end)
             local label = categoryGUIInfo.category:GetDisplayName(categoryGUIInfo.itemsCount) or "Unassigned"
             if isCollapsed(categoryGUIInfo.category) then

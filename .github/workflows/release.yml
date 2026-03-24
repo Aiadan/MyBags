@@ -39,7 +39,10 @@ jobs:
           fi
 
       - name: Run tests
-        run: lua tests/Categorizers/query_test.lua
+        run: |
+          lua tests/categories_test.lua
+          lua tests/Categorizers/query_test.lua
+          lua tests/integration/persistence/savedvariable_test.lua
 
       - name: Remove tests directory
         run: rm -rf tests
@@ -48,11 +51,11 @@ jobs:
         run: rm -rf tools
 
       - name: Remove disallowed markdown files
-        run: find . -type f -name '*.md' ! -name 'README.md' ! -name 'QUERY_ATTRIBUTES.md' -delete
+        run: find . -type f -name '*.md' ! -name 'README.md' ! -name 'QUERY_ATTRIBUTES.md' ! -name 'RELEASE_NOTES.md' -delete
 
       - name: Verify markdown whitelist
         run: |
-          disallowed_markdown_files="$(find . -type f -name '*.md' ! -name 'README.md' ! -name 'QUERY_ATTRIBUTES.md')"
+          disallowed_markdown_files="$(find . -type f -name '*.md' ! -name 'README.md' ! -name 'QUERY_ATTRIBUTES.md' ! -name 'RELEASE_NOTES.md')"
           if [ -n "$disallowed_markdown_files" ]; then
             echo "Disallowed markdown files found:"
             echo "$disallowed_markdown_files"

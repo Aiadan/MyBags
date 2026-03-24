@@ -4,15 +4,6 @@ local isCollapsed = AddonNS.Collapsed.isCollapsed;
 local ITEM_SPACING = AddonNS.Const.ITEM_SPACING;
 local SEARCH_BOX_MAX_LETTERS = 255
 AddonNS.itemButtonPlaceholder = {}
-local refreshProfile = nil
-
-local function profilingEnabled()
-    return AddonNS.Profiling and AddonNS.Profiling.enabled
-end
-
-local function profileNowMs()
-    return debugprofilestop()
-end
 
 local container = ContainerFrameCombinedBags;
 AddonNS.container = container;
@@ -64,7 +55,6 @@ local function applySharedFrameScales()
 end
 
 local function triggerContainerOnTokenWatchChanged()
-    AddonNS.printDebug("triggerContainerOnTokenWatchChanged fired")
     if container:IsSearchAnchorLockActive() then
         securecallfunction(container.UpdateTokenTracker, container)
         triggerContainerUpdateItemLayout()
@@ -85,7 +75,6 @@ AddonNS.TriggerContainerUpdateItemLayout = triggerContainerUpdateItemLayout;
 
 local function queueContainerUpdateItemLayout()
     RunNextFrame(function()
-        AddonNS.printDebug("QueueContainerUpdateItemLayout fired");
         triggerContainerUpdateItemLayout();
         applySharedFrameScales()
     end);
@@ -178,6 +167,9 @@ local function addQueryAttributesToTooltip(tooltip, itemID, owner)
 end
 
 local function addCategoriesToTooltip(tooltip)
+    if AddonNS.TooltipSettings:IsTooltipDisabled() then
+        return
+    end
     local owner = resolveTooltipItemFrame(tooltip:GetOwner())
     if not owner then
         return
@@ -189,9 +181,11 @@ local function addCategoriesToTooltip(tooltip)
     local scope = getScopeFromTooltipOwner(owner)
     GameTooltip_AddBlankLineToTooltip(tooltip)
     if not IsShiftKeyDown() then
-        GameTooltip_AddNormalLine(tooltip,  MYBAGS_TOOLTIP_TITLE .. MYBAGS_TOOLTIP_HINT_COLOR_PREFIX ..
-            " - Hold Shift to show matched categories|r")
-        GameTooltip_AddBlankLineToTooltip(tooltip)
+        if AddonNS.TooltipSettings:ShouldShowShiftHintWhenNotHeld() then
+            GameTooltip_AddNormalLine(tooltip,  MYBAGS_TOOLTIP_TITLE .. MYBAGS_TOOLTIP_HINT_COLOR_PREFIX ..
+                " - Hold Shift to show matched categories|r")
+            GameTooltip_AddBlankLineToTooltip(tooltip)
+        end
         return
     end
 
@@ -236,6 +230,9 @@ end
 TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, addCategoriesToTooltip)
 
 local function refreshTooltipOnShiftStateChange()
+    if AddonNS.TooltipSettings:IsTooltipDisabled() then
+        return
+    end
     if not GameTooltip:IsShown() then
         return
     end
@@ -266,6 +263,10 @@ local lockedUpdates = false;
 local inventorySearchRefreshQueued = false
 local bagSearchUnlockPending = false
 local searchUnlockReanchorQueued = false
+
+local function isBagFrameAnchorLockSearchBox(searchBox)
+    return searchBox == BagItemSearchBox or searchBox == BankItemSearchBox or searchBox.anchorBag == container
+end
 
 local function getBagCapacityState()
     local freeItemSlots = 0
@@ -321,7 +322,6 @@ AddonNS.GetBagCapacityState = getBagCapacityState
 AddonNS.GetBankCapacityState = getBankCapacityState
 
 function AddonNS.Events:BAG_UPDATE(event, bagID)
-    AddonNS.printDebug("BAG_UPDATE", bagID)
     if bagID and bagID > Enum.BagIndex.ReagentBag then
         return
     end
@@ -335,7 +335,6 @@ function AddonNS.Events:BAG_UPDATE(event, bagID)
     if (container.MyBags.updateItemLayoutCalledAtLeastOnce) then -- todo: reading this after a while - what the hell is this :D once i know i have to add here proper comments lol
         local newFreeBagSlots = CalculateTotalNumberOfFreeBagSlots()
 
-        AddonNS.printDebug("FREE BAGS", newFreeBagSlots, freeBagSlots)
         if newFreeBagSlots <= freeBagSlots and not lockedUpdates then
             queueContainerUpdateItemLayout();
         end
@@ -351,10 +350,8 @@ local function updateOnTokenWatchChangedOnNextFrame(event) -- todo: i just copie
     if not container:IsShown() then
         return
     end
-    AddonNS.printDebug("updateOnTokenWatchChangedOnNextFrame and locked: ", lockedUpdates)
     if not lockedUpdates then
         RunNextFrame(function()
-            AddonNS.printDebug("updateOnTokenWatchChangedOnNextFrame FIRED")
             triggerContainerOnTokenWatchChanged();
         end);
     end
@@ -365,7 +362,6 @@ local function updateOnTokenWatchChangedOnNextFrame(event) -- todo: i just copie
 end
 
 function AddonNS.Events:INVENTORY_SEARCH_UPDATE(event, bagID)
-    AddonNS.printDebug("INVENTORY_SEARCH_UPDATE", bagID)
     if inventorySearchRefreshQueued then
         return
     end
@@ -399,8 +395,7 @@ end)
 
 local function refreshSearchAnchorLockState(searchBox)
     local queryEditorLockRequested = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
-    local isBagSearchBox = searchBox == BagItemSearchBox
-    local isContainerSearch = isBagSearchBox or searchBox.anchorBag == container
+    local isContainerSearch = isBagFrameAnchorLockSearchBox(searchBox)
     if not isContainerSearch then
         return
     end
@@ -429,9 +424,9 @@ local function refreshSearchAnchorLockState(searchBox)
             searchUnlockReanchorQueued = true
             RunNextFrame(function()
                 searchUnlockReanchorQueued = false
-                local queryEditorLockRequested = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
+                local queryEditorStillLockRequested = AddonNS.BagViewState:IsCategoriesConfigMode() and AddonNS.CategoriesGUI:IsQueryEditorLockRequested()
                 local stillUnlocked = not container:IsSearchAnchorLockActive()
-                local stableUnlockState = (BagItemSearchBox:GetText() == "") and (not BagItemSearchBox:HasFocus()) and (not queryEditorLockRequested)
+                local stableUnlockState = (BagItemSearchBox:GetText() == "") and (not BagItemSearchBox:HasFocus()) and (not queryEditorStillLockRequested)
                 if stillUnlocked and stableUnlockState then
                     UpdateContainerFrameAnchors()
                 end
@@ -466,6 +461,13 @@ end)
 BagItemSearchBox:HookScript("OnEditFocusLost", function(searchBox)
     refreshSearchAnchorLockState(searchBox)
 end)
+BankItemSearchBox:HookScript("OnEditFocusGained", function(searchBox)
+    refreshSearchAnchorLockState(searchBox)
+end)
+
+BankItemSearchBox:HookScript("OnEditFocusLost", function(searchBox)
+    refreshSearchAnchorLockState(searchBox)
+end)
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.CUSTOM_QUERY_EDITOR_FOCUS_CHANGED, function()
     refreshSearchAnchorLockState(BagItemSearchBox)
@@ -485,12 +487,12 @@ local function installSearchBoxWrapper(searchBox)
     searchBox:SetScript("OnTextChanged", function(box, userChanged)
         local text = box:GetText() or ""
         refreshSearchQueryState(text)
-        if box == BagItemSearchBox then
+        if isBagFrameAnchorLockSearchBox(box) then
             -- Keep anchor lock state in sync before Blizzard's handler mutates layout/anchors.
             refreshSearchAnchorLockState(box)
         end
         oldOnTextChanged(box, userChanged)
-        if box == BagItemSearchBox then
+        if isBagFrameAnchorLockSearchBox(box) then
             -- Re-assert lock/captured position after the built-in search update path runs.
             refreshSearchAnchorLockState(box)
         end
@@ -538,26 +540,15 @@ end
 local it = container:EnumerateValidItems()
 
 AddonNS.emptyItemButton = nil
-local function newIterator(container, index)
-    local arrangedItems = container.MyBags.arrangedItems;
-    local positionsInBags = container.MyBags.positionsInBags;
-    local index, itemButton = it(container, index);
+local function newIterator(iteratorContainer, index)
+    local arrangedItems = iteratorContainer.MyBags.arrangedItems;
+    local positionsInBags = iteratorContainer.MyBags.positionsInBags;
+    local itemButton
+    index, itemButton = it(iteratorContainer, index);
     if (index == 1) then
         AddonNS.emptyItemButton = nil -- reset itemButom
         bagSearchText = BagItemSearchBox:GetText() or ""
         bagSearchActive = bagSearchText ~= ""
-        if profilingEnabled() then
-            refreshProfile = {
-                startedAt = profileNowMs(),
-                itemsSeen = 0,
-                categorizeMs = 0,
-                arrangeMs = 0,
-                placeMs = 0,
-                totalMs = 0,
-            }
-        else
-            refreshProfile = nil
-        end
     end
     if (itemButton) then
         -- [[ checking hooks]]
@@ -588,27 +579,16 @@ local function newIterator(container, index)
             local includeInSearch = evaluateSearchVisibility(defaultMatch, searchQueryState.evaluator, info, itemButton)
             local category = nil
             if bagSearchActive then
-                local categorizeStartedAt = refreshProfile and profileNowMs() or nil
                 category = resolveCachedOrComputeBagCategory(itemButton, info)
-                if refreshProfile then
-                    refreshProfile.categorizeMs = refreshProfile.categorizeMs + (profileNowMs() - categorizeStartedAt)
-                end
                 AddonNS.SearchCategoryBaseline:Add(arrangedItems, category, itemButton, false, true)
             end
             if includeInSearch then
                 itemButton:SetMatchesSearch(true)
                 itemButton._myBagsItemId = info.itemID
                 if not category then
-                    local categorizeStartedAt = refreshProfile and profileNowMs() or nil
                     category = resolveCachedOrComputeBagCategory(itemButton, info)
-                    if refreshProfile then
-                        refreshProfile.categorizeMs = refreshProfile.categorizeMs + (profileNowMs() - categorizeStartedAt)
-                    end
                 end
                 itemButton.ItemCategory = category
-                if refreshProfile then
-                    refreshProfile.itemsSeen = refreshProfile.itemsSeen + 1
-                end
                 AddonNS.SearchCategoryBaseline:Add(arrangedItems, category, itemButton, true, bagSearchActive)
             elseif itemButton:GetBagID() ~= Enum.BagIndex.ReagentBag then
                 AddonNS.emptyItemButton = itemButton;
@@ -725,16 +705,10 @@ local function newIterator(container, index)
         end
 
         -- Calculate positions for each column
-        local categoryAssignments = {}
-        local arrangeStartedAt = refreshProfile and profileNowMs() or nil
-        categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, "bag") -- todo: this object is quite weird. Why is it a local global used among two functions :/
-        if refreshProfile then
-            refreshProfile.arrangeMs = refreshProfile.arrangeMs + (profileNowMs() - arrangeStartedAt)
-        end
+        local categoryAssignments = AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, "bag") -- todo: this object is quite weird. Why is it a local global used among two functions :/
 
 
         local columnSize = itemSize * AddonNS.Const.ITEMS_PER_ROW + AddonNS.Const.COLUMN_SPACING;
-        local placeStartedAt = refreshProfile and profileNowMs() or nil
         local columnBottomYByIndex = {}
         for colIndex, categoryObjs in ipairs(categoryAssignments) do
             local columnStartX = (colIndex - 1) * columnSize
@@ -776,22 +750,10 @@ local function newIterator(container, index)
                 container.MyBags.height = addControlBottomY
             end
         end
-        if refreshProfile then
-            refreshProfile.placeMs = refreshProfile.placeMs + (profileNowMs() - placeStartedAt)
-            refreshProfile.totalMs = profileNowMs() - refreshProfile.startedAt
-            AddonNS.printDebug(
-                "PROFILE bag refresh",
-                "items=" .. refreshProfile.itemsSeen,
-                string.format("categorize=%.2fms", refreshProfile.categorizeMs),
-                string.format("arrange=%.2fms", refreshProfile.arrangeMs),
-                string.format("place=%.2fms", refreshProfile.placeMs),
-                string.format("total=%.2fms", refreshProfile.totalMs)
-            )
-        end
     end
     return index, itemButton;
 end
 
-function AddonNS.newEnumerateValidItems(container)
-    return newIterator, container, 0;
+function AddonNS.newEnumerateValidItems(iteratorContainer)
+    return newIterator, iteratorContainer, 0;
 end

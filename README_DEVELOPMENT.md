@@ -12,25 +12,6 @@ Run the commands from the addon's root directory (`Interface/AddOns/!dev_MyBags`
 
 The integration harness deliberately stubs UI libraries (`MyLibrary_GUI`, `WowList-1.5`) and `C_Container` calls so the tests focus on data persistence without loading Blizzard frames. If you add new persistence paths, extend `tests/integration/persistence/savedvariable_test.lua` and update the harness when additional APIs need stubbing.
 
-## Runtime Profiling
-
-The addon includes opt-in profiling for bag refresh hotspots:
-
-- refresh total and phase split (`categorize`, `arrange`, `place`)
-- custom categorizer timing (`info` and `query` parts)
-- category arrangement timing split
-- items-order sorting timing split (`rebuild`, `map`, `sort`, `comparator`, `append`, `uncounted`)
-
-Enable profiling in-game:
-
-- `/run GLOBAL_MyBagsEnableProfiling()`
-
-Disable profiling in-game:
-
-- `/run GLOBAL_MyBagsDisableProfiling()`
-
-Use it only during diagnostics. Keep profiling disabled during normal play.
-
 ## Bank Layout Notes
 
 - MyBags bank view is scroll-free. The panel resizes to content and uses frame scaling to stay within screen bounds.

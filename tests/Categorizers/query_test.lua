@@ -27,6 +27,7 @@ local Query = addonEnv._Test.Query
 local testItem1 = {
   itemName = "Epic",
   description = "Recovered from a mysterious vault",
+  onUseDescription = "Teleports the caster to a hidden vault",
   isCraftingReagent = true,
   itemType = 3,
   ilvl = 120,
@@ -150,6 +151,18 @@ local testCases = {
     item = testItem1,
     expected = true,
   },
+  {
+    name = "supports onUseDescription string field with quoted pattern",
+    query = "onUseDescription = \"hidden vault\"",
+    item = testItem1,
+    expected = true,
+  },
+  {
+    name = "supports case-insensitive onUseDescription matching",
+    query = "onUseDescription = \"TELEPORTS THE CASTER\"",
+    item = testItem1,
+    expected = true,
+  },
 }
 
 for _, case in ipairs(testCases) do
@@ -182,6 +195,7 @@ local tooltipRows = addonEnv.QueryCategories:GetTooltipAttributeRows({
   hasLoot = false,
   itemName = "",
   description = "Recovered from a mysterious vault",
+  onUseDescription = "Teleports the caster to a hidden vault",
   isAnimaItem = true,
   isArtifactPowerItem = false,
   isCorruptedItem = false,
@@ -201,6 +215,8 @@ assert(rowByName.hasLoot and rowByName.hasLoot.value == false, "boolean false va
 assert(rowByName.itemName and rowByName.itemName.value == "", "empty string values are included")
 assert(rowByName.description and rowByName.description.value == "Recovered from a mysterious vault",
   "description string values are included")
+assert(rowByName.onUseDescription and rowByName.onUseDescription.value == "Teleports the caster to a hidden vault",
+  "onUseDescription string values are included")
 assert(rowByName.isAnimaItem and rowByName.isAnimaItem.value == true, "isAnimaItem boolean values are included")
 assert(rowByName.isArtifactPowerItem and rowByName.isArtifactPowerItem.value == false,
   "isArtifactPowerItem false values are included")

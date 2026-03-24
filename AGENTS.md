@@ -113,14 +113,34 @@ This policy also applies to generic or reusable components such as utility funct
 ## Planning and documentation
 
 - Store plans/decisions you create under `.agent/` as Markdown files.
-- Update `TODOs.md` for every completed code change.
-- Before closing any task, check whether the change maps to an existing `TODOs.md` item:
-  - if it does, update that item's status/details and prefix completed entries with a checkmark icon as appropriate.
-  - if it does not, add a short new entry describing the completed change in the appropriate section.
-  - when adding a new completed entry to a `DONE` list, append it at the end of that list (do not insert it by topic in the middle).
-  - if unrelated `TODOs.md` entries were added/edited concurrently for other tasks, leave them as-is and update only the entry for the task you are closing.
-- For iterative work on the same feature/thread, prefer updating one existing `TODOs.md` entry (expand/refine its text) instead of appending multiple near-duplicate entries for each intermediate step.
-- If multiple temporary entries were created for the same feature, consolidate them into one final entry before closing the task.
+- `TODOs.md` is a concise backlog, not a changelog.
+- The user-facing changelog is separate from `TODOs.md`.
+- Update `TODOs.md` only when:
+  - the work completes or materially changes an existing tracked item;
+  - the work is a user-visible or backlog-worthy improvement;
+  - the work is a substantial maintenance/refactor effort worth tracking; or
+  - the user explicitly asks to track it there.
+- Do not add `TODOs.md` entries for small technical fixes, narrow refactors, tests-only changes, naming cleanups, or implementation details unless they resolve an existing tracked item.
+- Keep `TODOs.md` entries brief and outcome-focused. Describe what changed for the project, not how the code was written.
+- `Done` entries in `TODOs.md` must include the completion date in `YYYY-MM-DD` format.
+- For iterative work on the same feature/thread, keep one consolidated `TODOs.md` item instead of appending near-duplicate follow-ups.
+- Put technical/implementation details in ExecPlans, tests, commits, code comments, or other appropriate documentation, not in `TODOs.md`.
+- Maintain curated release notes in `RELEASE_NOTES.md` and keep `CHANGELOG.md` updated with completed user-facing work.
+- Completing a tracked `TODOs.md` item requires an explicit `RELEASE_NOTES.md` review decision: either add a concise release-note bullet or confirm it is intentionally omitted because it is internal-only.
+- When a tracked change is completed and is user-facing or otherwise release-note-worthy, add one concise user-facing bullet to `RELEASE_NOTES.md` in the appropriate section.
+- Before editing `CHANGELOG.md`, check recent local git tags and identify the latest released version/cutoff commit first.
+- When a tracked change is completed and is user-facing or otherwise changelog-worthy, add a dated entry at the top of `CHANGELOG.md` above the latest version cutoff heading only after confirming the correct cutoff from git tags.
+- Prefix all new `CHANGELOG.md` entries with one of `[New]`, `[Tweak]`, or `[Bugfix]`.
+- Do not add explanatory cutoff-marker prose under version headings in `CHANGELOG.md`; use the version heading alone as the boundary.
+- Do not add changelog entries for internal-only work such as process/documentation changes, test-only changes, refactors with no user-visible effect, or agent-workflow changes.
+- `RELEASE_NOTES_TEMPLATE.md` uses the fixed headings `New`, `Tweaks`, and `Bug fixes`, in that order.
+- When updating `RELEASE_NOTES.md`, copy only the headings that actually contain at least one change. Do not copy empty sections from the template.
+- `RELEASE_NOTES.md` contains the notes for all releases since the last stable release, including alpha releases in the same cycle.
+- Every update to `RELEASE_NOTES.md` must include a review of the whole file for wording, grouping, deduplication, and importance order. Do not treat it as append-only.
+- Before adding new unreleased entries to `CHANGELOG.md`, check recent tagged commits with git rather than relying on the file contents alone. If the latest released version is missing from the file, add a cutoff heading for that version first so it is clear older history belongs to a prior release.
+- If a stable tag and an alpha tag point to the same commit, use the stable version as the cutoff heading in `CHANGELOG.md` instead of duplicating both.
+- After a stable release, move the reviewed notes into a versioned section in `CHANGELOG.md`, replace any same-commit alpha cutoff with the stable release heading if needed, and then clear `RELEASE_NOTES.md` for the next cycle.
+- Before cutting a release tag, review `RELEASE_NOTES.md`, merge overlaps, and keep low-signal technical items near the bottom.
 - Modify `README.md` only when explicitly asked, or when resolving a `TODOs.md` item that requires it.
 - `README.md` is user-facing documentation. Keep language user-oriented and avoid internal implementation details there.
 - If a task introduces a user-facing feature, update `README.md` with a short description of that feature.

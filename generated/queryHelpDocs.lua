@@ -5,6 +5,33 @@ AddonNS.QueryHelpDocs.text = [[
 
 This guide explains how to write queries for custom categories.
 
+|cffe6d0a2Default Starter Groups|r
+
+MyBags seeds a default set of starter custom groups on a fresh setup.
+
+If you delete all custom groups and reload the game, MyBags recreates that default starter set. This is the quickest way to reset your custom-group setup back to the addon defaults.
+
+Current starter groups:
+
+|cffe0d8c4Group | What it is for | Default query / source|r
+• |cff8ebfe9Junk|r | Poor-quality items. | |cff8ebfe9quality = 0|r
+• |cff8ebfe9Quest|r | Quest-linked items and quest-item class items. | |cff8ebfe9isQuestItem = true OR itemType = 12|r
+• |cff8ebfe9Warbound|r | Account-bound-until-equipped items that are not yet fully bound. | |cff8ebfe9isWarbound = true AND isBound = false|r
+• |cff8ebfe9BoE|r | Bind-on-equip items that are not yet bound. | |cff8ebfe9bindType = 2 AND isBound = false|r
+• |cff8ebfe9Reagents - Soulbound|r | Crafting reagents that are already soulbound. | |cff8ebfe9isCraftingReagent = true AND isBound = true|r
+• |cff8ebfe9Reagents|r | Crafting reagents that are still tradable. | |cff8ebfe9isCraftingReagent = true AND isBound = false|r
+• |cff8ebfe9Recipes|r | Recipe items. | |cff8ebfe9itemType = 9|r
+• |cff8ebfe9Gems|r | Gem items. | |cff8ebfe9itemType = 3|r
+• |cff8ebfe9Potions/Flasks/Food|r | Common consumables such as potions, flasks/phials, and food/drink. | |cff8ebfe9itemType = 0 AND (itemSubType = 1 OR itemSubType = 3 OR itemSubType = 5)|r
+• |cff8ebfe9Armor & Weapons|r | Weapons and armor grouped together. | |cff8ebfe9itemType = 2 OR itemType = 4|r
+• |cff8ebfe9Uncollected Transmog|r | Items with an uncollected transmog appearance. | |cff8ebfe9isTransmogCollected = false|r
+• |cff8ebfe9Teleport|r | Manual hearthstone / teleport utility items from the built-in item list. | Manual item list, no query
+• |cff8ebfe9Mounts & Pets|r | Miscellaneous items such as mounts and pets. | |cff8ebfe9itemType = 15 AND (itemSubType = 2 OR itemSubType > 4)|r
+• |cff8ebfe9Curios|r | Utility and combat curios. | |cff8ebfe9itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)|r
+• |cff8ebfe9Decor|r | Housing decor items. | |cff8ebfe9itemType = 20|r
+• |cff8ebfe9Caches / One-time Use|r | Loot containers and selected one-time-use utility items. | |cff8ebfe9hasLoot = true OR onUseDescription = "Knowledge by"|r
+
+
 |cffe6d0a2Priority And Match Order|r
 
 When multiple query categories match the same item:
@@ -41,7 +68,7 @@ Examples:
 Query field names are not case-sensitive:
 • Field names are case-insensitive: |cff8ebfe9itemType|r, |cff8ebfe9ItemType|r, and |cff8ebfe9ITEMTYPE|r are equivalent.
 • Boolean values should be lowercase: |cff8ebfe9true|r / |cff8ebfe9false|r.
-• String matching is case-insensitive (|cff8ebfe9itemName|r and |cff8ebfe9description|r).
+• String matching is case-insensitive (|cff8ebfe9itemName|r, |cff8ebfe9description|r, and |cff8ebfe9onUseDescription|r).
 • Use uppercase logical operators (|cff8ebfe9AND|r, |cff8ebfe9OR|r, |cff8ebfe9NOT|r) for predictable results.
 
 |cffe6d0a2String Matching|r
@@ -92,6 +119,7 @@ Notes:
 • |cff8ebfe9isCorruptedItem|r: |cff9bb6cfboolean|r
 • |cff8ebfe9isWarbound|r: |cff9bb6cfboolean|r
 • |cff8ebfe9description|r: |cff9bb6cfstring|r
+• |cff8ebfe9onUseDescription|r: |cff9bb6cfstring|r
 • |cff8ebfe9isTransmogCollected|r: |cff9bb6cfboolean|r
 • |cff8ebfe9isWrongArmorType|r: |cff9bb6cfboolean|r
 • |cff8ebfe9isWrongPrimaryStat|r: |cff9bb6cfboolean|r
@@ -104,6 +132,7 @@ Notes:
 Notes:
 • |cff8ebfe9isCurioItem|r is intentionally not a separate field; use |cff8ebfe9itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)|r.
 • |cff8ebfe9isHeirloomItem|r is intentionally not a separate field; use |cff8ebfe9quality = 7|r.
+• |cff8ebfe9onUseDescription|r is populated from the localized tooltip text after the item's |cff8ebfe9Use:|r prefix, and is only inspected for items where |cff8ebfe9C_Item.GetItemSpell(itemID)|r reports an on-use spell.
 
 |cffe6d0a2Core Value Tables|r
 

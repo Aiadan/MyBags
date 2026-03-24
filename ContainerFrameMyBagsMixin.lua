@@ -17,6 +17,7 @@ function ContainerFrameMyBagsMixin:MyBagsInit()
     self.MyBags.searchAnchorLockActive = false
     self.MyBags.searchLockedTop = nil
     self.MyBags.searchLockedRight = nil
+    self.MyBags.searchLockedScale = nil
 end
 
 function ContainerFrameMyBagsMixin:SetSearchAnchorLockActive(isActive)
@@ -25,6 +26,7 @@ function ContainerFrameMyBagsMixin:SetSearchAnchorLockActive(isActive)
     if not isActive then
         self.MyBags.searchLockedTop = nil
         self.MyBags.searchLockedRight = nil
+        self.MyBags.searchLockedScale = nil
     end
     return changed
 end
@@ -39,6 +41,11 @@ function ContainerFrameMyBagsMixin:CaptureSearchAnchorLockPosition()
     end
     self.MyBags.searchLockedTop = self:GetTop()
     self.MyBags.searchLockedRight = self:GetRight()
+    self.MyBags.searchLockedScale = self:GetScale()
+end
+
+function ContainerFrameMyBagsMixin:GetSearchAnchorLockedScale()
+    return self.MyBags.searchLockedScale
 end
 
 function ContainerFrameMyBagsMixin:MarkSearchAnchorLockPending()
@@ -58,7 +65,6 @@ function ContainerFrameMyBagsMixin:ApplySearchAnchorLock(lockedTop, lockedRight)
 end
 
 function ContainerFrameMyBagsMixin:UpdateItemLayout()
-    AddonNS.printDebug("UpdateItemLayout")
     self.MyBags.updateItemLayoutCalledAtLeastOnce = true;
     self.MyBags.categorizeItems = true;
     local itemButtons = {}
@@ -73,7 +79,6 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
     local _, relativeTo = anchor:Get();
     anchor:Set("TOPLEFT", relativeTo, "TOPLEFT", 0, 0);
     local point, relativeTo, relativePoint, x, y = anchor:Get();
-    AddonNS.printDebug("Anchor", x, y)
 
     self:UpdateFrameSize();
     if self:IsSearchAnchorLockActive() then
@@ -96,12 +101,10 @@ end
 
 function ContainerFrameMyBagsMixin:EnumerateValidItems()
     if self.MyBags.categorizeItems then
-        AddonNS.printDebug("EnumerateValidItems override used")
         self.MyBags.categorizeItems = false;
         self.MyBags.arrangedItems = {}
         return AddonNS.newEnumerateValidItems(self);
     end
-    AddonNS.printDebug("EnumerateValidItems default used")
     return ContainerFrameCombinedBagsMixin.EnumerateValidItems(self);
 end
 
@@ -113,8 +116,6 @@ the first time the path gets tainted and it is no longer possible to use items l
 potions during combat
 ]]
 local function updateItemSlots(self, ...)
-    AddonNS.printDebug("UpdateItemSlots")
-
     local bagSize = ContainerFrame_GetContainerNumSlots(Enum.BagIndex.ReagentBag);
     for i = 1, bagSize do
         local itemButton = self:AcquireNewItemButton();
@@ -124,7 +125,9 @@ local function updateItemSlots(self, ...)
 end;
 hooksecurefunc(ContainerFrameCombinedBags, "UpdateItemSlots", updateItemSlots)
 
--- Workaround: forcing OpenAllBags before the default bank open flow avoids the observed bank taint path.
+-- Workaround: Blizzard normally opens bags from BankFrame:OnShow after ShowUIPanel(BankFrame).
+-- Forcing OpenAllBags before BankFrame_Open changes that order so bag frames are already open
+-- before the bank frame runs its normal show flow, which avoids the observed taint path.
 local oldBankFrame_Open = BankFrame_Open
 function BankFrame_Open()
     OpenAllBags(BankFrame)
