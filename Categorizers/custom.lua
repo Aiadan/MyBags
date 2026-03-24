@@ -200,6 +200,7 @@ local function normalize_storage(storage)
             protected = entry.protected == true or nil,
             alwaysVisible = entry.alwaysVisible == true or nil,
             query = (entry.query and entry.query ~= "") and entry.query or nil,
+            sortOrder = (entry.sortOrder and entry.sortOrder ~= "") and entry.sortOrder or nil,
             priority = normalize_priority_from_storage(normalizedRawId, entry.priority),
             scopes = normalize_scope_overrides_from_storage(entry.scopes),
             items = normalize_array(entry.items),
@@ -1047,6 +1048,7 @@ function CustomCategories:DeleteCategory(categoryOrId)
     end
     local db = get_db()
     db.categories[rawId] = nil
+    AddonNS.SortOrder:SyncCompiledSortOrder(rawId, nil)
     invalidate_sorted_query_raw_ids()
     fireUpdate()
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_DELETED, CATEGORIZER_ID .. "-" .. rawId)
@@ -1075,6 +1077,22 @@ function CustomCategories:SetQuery(rawId, query)
     entry.query = (query and query ~= "") and query or nil
     AddonNS.QueryCategories:SyncCompiledQuery(resolvedRawId, entry.query)
     invalidate_sorted_query_raw_ids()
+    fireUpdate()
+end
+
+function CustomCategories:SetSortOrder(rawId, sortOrderText)
+    local resolvedRawId = resolve_raw_id(rawId)
+    if not resolvedRawId then
+        return
+    end
+    local db = get_db()
+    local entry = db.categories[resolvedRawId]
+    if not entry then
+        return
+    end
+    local text = (sortOrderText and sortOrderText ~= "") and sortOrderText or nil
+    entry.sortOrder = text
+    AddonNS.SortOrder:SyncCompiledSortOrder(resolvedRawId, text)
     fireUpdate()
 end
 
@@ -1127,6 +1145,18 @@ end
 function CustomCategories:AssignToCategoryByName(name, itemID)
     local raw = find_by_name(name)
     return self:AssignToCategory(raw and raw:GetId() or nil, itemID)
+end
+
+function CustomCategories:GetSortOrder(rawId)
+    local resolvedRawId = resolve_raw_id(rawId)
+    if not resolvedRawId then
+        return ""
+    end
+    local entry = get_db().categories[resolvedRawId]
+    if not entry then
+        return ""
+    end
+    return entry.sortOrder or ""
 end
 
 function CustomCategories:GetQuery(rawId)
@@ -1207,6 +1237,9 @@ local function encodeExportPayload(payload)
         if category.query and category.query ~= "" then
             table.insert(lines, "      query = " .. encodeLuaString(category.query) .. ",")
         end
+        if category.sortOrder and category.sortOrder ~= "" then
+            table.insert(lines, "      sortOrder = " .. encodeLuaString(category.sortOrder) .. ",")
+        end
         if category.priority ~= nil then
             table.insert(lines, "      priority = " .. tostring(category.priority) .. ",")
         end
@@ -1263,6 +1296,7 @@ function CustomCategories:BuildExportPayload(categoryIds)
                 id = wrappedId,
                 name = entry.name or "",
                 query = entry.query or nil,
+                sortOrder = entry.sortOrder or nil,
                 priority = effective_priority_for_raw_id(db, rawId),
                 alwaysVisible = entry.alwaysVisible == true,
                 items = normalize_array(entry.items),
@@ -1271,7 +1305,7 @@ function CustomCategories:BuildExportPayload(categoryIds)
     end
     table.sort(selected, categorySortByNameThenId)
     return {
-        version = 1,
+        version = 2,
         categories = selected,
     }
 end
@@ -1292,7 +1326,7 @@ function CustomCategories:PreviewImport(payloadOrText)
     if type(payload) ~= "table" then
         fail("Import payload root must be a table")
     end
-    if payload.version ~= 1 then
+    if payload.version ~= 1 and payload.version ~= 2 then
         fail("Unsupported import payload version: " .. tostring(payload.version))
     end
     if type(payload.categories) ~= "table" then
@@ -1323,6 +1357,9 @@ function CustomCategories:PreviewImport(payloadOrText)
         if item.alwaysVisible ~= nil and type(item.alwaysVisible) ~= "boolean" then
             fail("Import category " .. categoryLabel .. " has invalid alwaysVisible")
         end
+        if item.sortOrder ~= nil and type(item.sortOrder) ~= "string" then
+            fail("Import category " .. categoryLabel .. " has invalid sortOrder")
+        end
         local itemsProvided = item.items ~= nil
         local items = {}
         if itemsProvided then
@@ -1350,6 +1387,7 @@ function CustomCategories:PreviewImport(payloadOrText)
         local entry = {
             name = name,
             query = (item.query and item.query ~= "") and item.query or nil,
+            sortOrder = (item.sortOrder and item.sortOrder ~= "") and item.sortOrder or nil,
             priority = item.priority and math.floor(item.priority) or nil,
             alwaysVisible = item.alwaysVisible == true,
             items = items,
@@ -1383,7 +1421,11 @@ function CustomCategories:ApplyImportPreview(preview)
         createdEntry.query = entry.query
         createdEntry.priority = normalize_priority_override(createdRawId, entry.priority)
         createdEntry.alwaysVisible = entry.alwaysVisible == true or nil
+        createdEntry.sortOrder = entry.sortOrder
         AddonNS.QueryCategories:SyncCompiledQuery(createdRawId, createdEntry.query)
+        if createdEntry.sortOrder then
+            AddonNS.SortOrder:SyncCompiledSortOrder(createdRawId, createdEntry.sortOrder)
+        end
         entry.existingRawId = createdRawId
         if entry.itemsProvided then
             providedItemsByRawId[createdRawId] = normalize_array(entry.items)
@@ -1425,6 +1467,15 @@ end
 
 AddonNS.Events:OnInitialize(function()
     rebuild_assignments()
+    for rawId, data in pairs(get_db().categories) do
+        if data.sortOrder and data.sortOrder ~= "" then
+            AddonNS.SortOrder:SyncCompiledSortOrder(rawId, data.sortOrder)
+        end
+    end
+    local defaultSortOrder = AddonNS.CategoryStore:GetDefaultSortOrder()
+    if defaultSortOrder and defaultSortOrder ~= "" then
+        AddonNS.SortOrder:SetDefaultSortExpression(defaultSortOrder)
+    end
 end)
 
 AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, function()

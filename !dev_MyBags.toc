@@ -50,4 +50,5 @@ Categorizers/EquipmentSet.lua
 Categorizers/custom/defaultImportPayload.lua
 Categorizers/custom.lua
 Categorizers/custom/query.lua
+Categorizers/custom/sortOrder.lua
 Categorizers/unassigned.lua

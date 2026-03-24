@@ -104,7 +104,20 @@ local function addCategoryToColumn(categoryAssignmentsForColumn, category, items
         displayItems = { AddonNS.itemButtonPlaceholder }
     end
     local sortStartedAt = profile and profileNowMs() or nil
-    AddonNS.ItemsOrder:Sort(displayItems)
+    local sorted = false
+    local catId = category:GetId()
+    local rawId = catId:match("^cus%-(.+)$")
+    local sortComparator = rawId and AddonNS.SortOrder:GetCompiledSortComparator(rawId) or nil
+    if not sortComparator then
+        sortComparator = AddonNS.SortOrder:GetDefaultCompiledSortComparator()
+    end
+    if sortComparator then
+        AddonNS.SortOrder:SortItemButtons(displayItems, sortComparator)
+        sorted = true
+    end
+    if not sorted then
+        AddonNS.ItemsOrder:Sort(displayItems)
+    end
     if profile then
         profile.sortMs = profile.sortMs + (profileNowMs() - sortStartedAt)
     end
@@ -379,9 +392,42 @@ local function categoryDeleted(eventName, category, scope)
     end
 end
 
-local function customCategoryCreated(eventName, category, scope)
-    AddonNS.printDebug(eventName)
+local function insertAfterInLayout(newCategoryIdValue, afterCategoryIdValue, scope)
     local normalizedScope = getLayoutScope(scope)
+    ensureRuntimeColumns(normalizedScope)
+    local newId = categoryId(newCategoryIdValue)
+    local afterId = categoryId(afterCategoryIdValue)
+    if not newId or not afterId then
+        return false
+    end
+    local runtimeColumns = runtimeColumnsByScope[normalizedScope]
+    local numColumns = getNumColumns(normalizedScope)
+    for columnIndex = 1, numColumns do
+        local column = runtimeColumns[columnIndex]
+        for rowIndex = 1, #column do
+            if column[rowIndex] == afterId then
+                table.insert(column, rowIndex + 1, newId)
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local function customCategoryCreated(eventName, category, insertAfterCategory)
+    AddonNS.printDebug(eventName)
+    if insertAfterCategory then
+        local placed = false
+        for scope in pairs(runtimeColumnsLoadedByScope) do
+            if insertAfterInLayout(category, insertAfterCategory, scope) then
+                placed = true
+            end
+        end
+        if placed then
+            return
+        end
+    end
+    local normalizedScope = getLayoutScope()
     if isLayoutEmpty(normalizedScope) then
         return
     end

@@ -51,6 +51,7 @@ AddonNS.gui.categoriesFrames = {};
 local hoveredCategoryFrame = nil
 local backgroundFrame = nil
 local EDIT_CATEGORY_TOOLTIP = "Edit"
+local DUPLICATE_CATEGORY_TOOLTIP = "Duplicate"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Hold-shift to skip confirmation prompt"
 local CATEGORY_VISIBLE_TEXTURE = "Interface\\FriendsFrame\\StatusIcon-Online"
@@ -687,9 +688,27 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             deleteButton.Highlight:SetAlpha(0.45)
             deleteButton.Highlight:SetBlendMode("ADD")
 
+            local duplicateButton = CreateFrame("Button", nil, f)
+            duplicateButton:SetSize(16, 16)
+            duplicateButton:SetPoint("TOPRIGHT", deleteButton, "TOPLEFT", -2, 0)
+            duplicateButton:SetFrameLevel(f:GetFrameLevel() + 25)
+            duplicateButton:Hide()
+
+            duplicateButton.Icon = duplicateButton:CreateTexture(nil, "ARTWORK")
+            duplicateButton.Icon:SetAllPoints()
+            duplicateButton.Icon:SetTexture("Interface\\AddOns\\MyBags\\textures\\icon-duplicate")
+            duplicateButton.Icon:SetVertexColor(1, 0.85, 0.2, 1)
+
+            duplicateButton.Highlight = duplicateButton:CreateTexture(nil, "HIGHLIGHT")
+            duplicateButton.Highlight:SetAllPoints()
+            duplicateButton.Highlight:SetTexture("Interface\\AddOns\\MyBags\\textures\\icon-duplicate")
+            duplicateButton.Highlight:SetVertexColor(1, 0.85, 0.2, 1)
+            duplicateButton.Highlight:SetAlpha(0.45)
+            duplicateButton.Highlight:SetBlendMode("ADD")
+
             local editButton = CreateFrame("Button", nil, f)
             editButton:SetSize(16, 16)
-            editButton:SetPoint("TOPRIGHT", deleteButton, "TOPLEFT", -2, 0)
+            editButton:SetPoint("TOPRIGHT", duplicateButton, "TOPLEFT", -2, 0)
             editButton:SetFrameLevel(f:GetFrameLevel() + 25)
             editButton:Hide()
 
@@ -719,6 +738,20 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             editButton:SetScript("OnClick", function(self)
                 local category = self:GetParent().ItemCategory
                 AddonNS.CategoriesGUI:SelectCategoryById(category:GetId())
+            end)
+
+            duplicateButton:SetScript("OnEnter", function(self)
+                local category = self:GetParent().ItemCategory
+                GameTooltip:SetOwner(self, "ANCHOR_TOP")
+                GameTooltip:SetText(DUPLICATE_CATEGORY_TOOLTIP .. " \"" .. category:GetName() .. "\" category")
+                GameTooltip:Show()
+            end)
+            duplicateButton:SetScript("OnLeave", function()
+                GameTooltip:Hide()
+            end)
+            duplicateButton:SetScript("OnClick", function(self)
+                local category = self:GetParent().ItemCategory
+                AddonNS.CustomCategories:DuplicateCategory(category)
             end)
 
             local scopeVisibilityButton = CreateFrame("Button", nil, f)
@@ -867,6 +900,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.MyBagsScope = "bag"
             f.MyBagsContainerRef = AddonNS.container
             f.deleteButton = deleteButton
+            f.duplicateButton = duplicateButton
             f.editButton = editButton
             f.scopeVisibilityButton = scopeVisibilityButton
 
@@ -939,6 +973,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             f.bg:Hide()
             f.addControlBackdrop:Show()
             f.editButton:Hide()
+            f.duplicateButton:Hide()
             f.deleteButton:Hide()
             f.scopeVisibilityButton:Hide()
             f:ApplyAddControlTextLayout()
@@ -976,6 +1011,7 @@ function AddonNS.gui:RegenerateCategories(yFrameOffset, categoriesGUIInfo)
             local canDeleteCategory = canEditCategory and
                 not f.ItemCategory:IsProtected()
             f.editButton:SetShown(canEditCategory)
+            f.duplicateButton:SetShown(canDeleteCategory)
             f.scopeVisibilityButton:SetShown(canToggleScopeVisibility)
             f.deleteButton:SetShown(canDeleteCategory)
             if canToggleScopeVisibility then

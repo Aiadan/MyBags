@@ -264,6 +264,12 @@ local Retrievers = {
     isWarbound = { type = ValueType.BOOL },
     description = { type = ValueType.STRING },
     isTransmogCollected = { type = ValueType.BOOL },
+    upgradeTrack = { type = ValueType.STRING },
+    upgradeTrackID = { type = ValueType.NUMBER },
+    upgradeLevel = { type = ValueType.NUMBER },
+    upgradeMaxLevel = { type = ValueType.NUMBER },
+    isWrongArmorType = { type = ValueType.BOOL },
+    isWrongPrimaryStat = { type = ValueType.BOOL },
 }
 
 local QueryTooltipDefinitions = {
@@ -281,6 +287,12 @@ local QueryTooltipDefinitions = {
         "isArtifactPowerItem",
         "isCorruptedItem",
         "isTransmogCollected",
+        "isWrongArmorType",
+        "isWrongPrimaryStat",
+        "upgradeTrack",
+        "upgradeLevel",
+        "upgradeMaxLevel",
+        "upgradeTrackID",
         "isReadable",
         "isQuestItemActive",
         "quality",
@@ -763,6 +775,7 @@ function AddonNS.QueryCategories:EvaluateSearchUnion(defaultMatch, evaluator, it
 end
 
 AddonNS.QueryCategories.TooltipAttributeDefinitions = QueryTooltipDefinitions
+AddonNS.QueryCategories.RetrieversByLowerName = RetrieversByLowerName
 
 function AddonNS.QueryCategories:GetTooltipAttributeRows(payload)
     local rows = {}

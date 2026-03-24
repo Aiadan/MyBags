@@ -91,6 +91,12 @@ Notes:
 | `isWarbound` | boolean |
 | `description` | string |
 | `isTransmogCollected` | boolean |
+| `isWrongArmorType` | boolean |
+| `isWrongPrimaryStat` | boolean |
+| `upgradeTrack` | string |
+| `upgradeTrackID` | number |
+| `upgradeLevel` | number |
+| `upgradeMaxLevel` | number |
 
 Notes:
 - `isCurioItem` is intentionally not a separate field; use `itemType = 0 AND (itemSubType = 10 OR itemSubType = 11)`.
@@ -263,6 +269,59 @@ Whether the item's transmog source is collected.
 | `true` | Transmog source is collected |
 | `false` | Transmog source is not collected |
 | `nil` | Item has no transmog source info |
+
+### `isWrongArmorType`
+
+Whether the item is an armor type the player's class does not primarily wear.
+
+| Value | Meaning |
+|---|---|
+| `true` | Item is a different armor type than the player's class |
+| `false` | Item matches the player's armor type |
+| `nil` | Item is not a standard armor piece (Cloth/Leather/Mail/Plate) |
+
+### `isWrongPrimaryStat`
+
+Whether the item has a primary stat that none of the player's class specs use.
+
+| Value | Meaning |
+|---|---|
+| `true` | Item has a primary stat, but none match any of the player's specs |
+| `false` | Item has a primary stat matching at least one of the player's specs |
+| `nil` | Item has no primary stat (rings, amulets, some trinkets) |
+
+### `upgradeTrack`
+
+The item's upgrade track name.
+
+| Value | Meaning |
+|---|---|
+| `"Adventurer"` | Adventurer track |
+| `"Veteran"` | Veteran track |
+| `"Champion"` | Champion track |
+| `"Hero"` | Hero track |
+| `"Myth"` | Myth track |
+| `nil` | Item has no upgrade track |
+
+### `upgradeTrackID`
+
+Numeric ID for the upgrade track. Useful for sorting by track potency.
+
+| Value | Meaning |
+|---|---|
+| `971` | Adventurer |
+| `972` | Veteran |
+| `973` | Champion |
+| `974` | Hero |
+| `975` | Myth |
+
+### `upgradeLevel`
+
+Current upgrade level within the track (e.g., 4 of 8).
+
+### `upgradeMaxLevel`
+
+Maximum upgrade level for the track (e.g., 8).
 
 ## Detailed `itemSubType` Tables (by `itemType`)
 

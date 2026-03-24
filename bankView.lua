@@ -40,6 +40,7 @@ local QUERY_HELP_SIDE_RIGHT = "right"
 local QUERY_HELP_TOOLTIP_TEXT = "Open query syntax and priority help"
 local SCOPE_DISABLED_CHECKBOX_TOOLTIP_TEXT = "Show scope-disabled categories in edit mode"
 local EDIT_CATEGORY_TOOLTIP = "Edit"
+local DUPLICATE_CATEGORY_TOOLTIP = "Duplicate"
 local DELETE_CATEGORY_TOOLTIP = "Delete"
 local DELETE_CATEGORY_HINT = "Shift-click to delete without confirmation."
 local CATEGORY_VISIBLE_TEXTURE = "Interface\\FriendsFrame\\StatusIcon-Online"
@@ -1126,9 +1127,27 @@ local function ensureHeaderFrame(self, index)
     deleteButton.Highlight:SetAlpha(0.45)
     deleteButton.Highlight:SetBlendMode("ADD")
 
+    local duplicateButton = CreateFrame("Button", nil, headerFrame)
+    duplicateButton:SetSize(16, 16)
+    duplicateButton:SetPoint("TOPRIGHT", deleteButton, "TOPLEFT", -2, 0)
+    duplicateButton:SetFrameLevel(headerFrame:GetFrameLevel() + 25)
+    duplicateButton:Hide()
+
+    duplicateButton.Icon = duplicateButton:CreateTexture(nil, "ARTWORK")
+    duplicateButton.Icon:SetAllPoints()
+    duplicateButton.Icon:SetTexture("Interface\\AddOns\\MyBags\\textures\\icon-duplicate")
+    duplicateButton.Icon:SetVertexColor(1, 0.85, 0.2, 1)
+
+    duplicateButton.Highlight = duplicateButton:CreateTexture(nil, "HIGHLIGHT")
+    duplicateButton.Highlight:SetAllPoints()
+    duplicateButton.Highlight:SetTexture("Interface\\AddOns\\MyBags\\textures\\icon-duplicate")
+    duplicateButton.Highlight:SetVertexColor(1, 0.85, 0.2, 1)
+    duplicateButton.Highlight:SetAlpha(0.45)
+    duplicateButton.Highlight:SetBlendMode("ADD")
+
     local editButton = CreateFrame("Button", nil, headerFrame)
     editButton:SetSize(16, 16)
-    editButton:SetPoint("TOPRIGHT", deleteButton, "TOPLEFT", -2, 0)
+    editButton:SetPoint("TOPRIGHT", duplicateButton, "TOPLEFT", -2, 0)
     editButton:SetFrameLevel(headerFrame:GetFrameLevel() + 25)
     editButton:Hide()
 
@@ -1158,6 +1177,20 @@ local function ensureHeaderFrame(self, index)
     editButton:SetScript("OnClick", function(selfButton)
         local category = selfButton:GetParent().ItemCategory
         AddonNS.CategoriesGUI:SelectCategoryById(category:GetId())
+    end)
+
+    duplicateButton:SetScript("OnEnter", function(selfButton)
+        local category = selfButton:GetParent().ItemCategory
+        GameTooltip:SetOwner(selfButton, "ANCHOR_TOP")
+        GameTooltip:SetText(DUPLICATE_CATEGORY_TOOLTIP .. " \"" .. category:GetName() .. "\" category")
+        GameTooltip:Show()
+    end)
+    duplicateButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    duplicateButton:SetScript("OnClick", function(selfButton)
+        local category = selfButton:GetParent().ItemCategory
+        AddonNS.CustomCategories:DuplicateCategory(category)
     end)
 
     local scopeVisibilityButton = CreateFrame("Button", nil, headerFrame)
@@ -1306,6 +1339,7 @@ local function ensureHeaderFrame(self, index)
     headerFrame.label = label
     headerFrame.fs = label
     headerFrame.editButton = editButton
+    headerFrame.duplicateButton = duplicateButton
     headerFrame.deleteButton = deleteButton
     headerFrame.scopeVisibilityButton = scopeVisibilityButton
     headerFrame.hintOverlay = hintOverlay
@@ -1586,6 +1620,7 @@ local function renderHeaders(self, scope, panel, categoryPositions)
             frame.ItemCategory = nil
             frame.isAddCategoryControl = true
             frame.editButton:Hide()
+            frame.duplicateButton:Hide()
             frame.deleteButton:Hide()
             frame.scopeVisibilityButton:Hide()
             frame:RegisterForDrag("LeftButton")
@@ -1641,6 +1676,7 @@ local function renderHeaders(self, scope, panel, categoryPositions)
             local canToggleScopeVisibility = canEditCategory
             local canDeleteCategory = canEditCategory and not categoryPosition.category:IsProtected()
             frame.editButton:SetShown(canEditCategory)
+            frame.duplicateButton:SetShown(canDeleteCategory)
             frame.scopeVisibilityButton:SetShown(canToggleScopeVisibility)
             frame.deleteButton:SetShown(canDeleteCategory)
             if canToggleScopeVisibility then

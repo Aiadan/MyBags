@@ -588,4 +588,15 @@ function CategoryStore:GetUnassigned()
     return self._unassigned
 end
 
+function CategoryStore:GetDefaultSortOrder()
+    ensure_db(self)
+    return self.db.defaultSortOrder or ""
+end
+
+function CategoryStore:SetDefaultSortOrder(text)
+    ensure_db(self)
+    self.db.defaultSortOrder = (text and text ~= "") and text or nil
+    AddonNS.SortOrder:SetDefaultSortExpression(self.db.defaultSortOrder)
+end
+
 AddonNS.CategoryStore = CategoryStore:new()

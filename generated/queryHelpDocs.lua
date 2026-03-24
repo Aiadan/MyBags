@@ -93,6 +93,12 @@ Notes:
 • |cff8ebfe9isWarbound|r: |cff9bb6cfboolean|r
 • |cff8ebfe9description|r: |cff9bb6cfstring|r
 • |cff8ebfe9isTransmogCollected|r: |cff9bb6cfboolean|r
+• |cff8ebfe9isWrongArmorType|r: |cff9bb6cfboolean|r
+• |cff8ebfe9isWrongPrimaryStat|r: |cff9bb6cfboolean|r
+• |cff8ebfe9upgradeTrack|r: |cff9bb6cfstring|r
+• |cff8ebfe9upgradeTrackID|r: |cff9bb6cfnumber|r
+• |cff8ebfe9upgradeLevel|r: |cff9bb6cfnumber|r
+• |cff8ebfe9upgradeMaxLevel|r: |cff9bb6cfnumber|r
 
 
 Notes:
@@ -265,6 +271,55 @@ Whether the item's transmog source is collected.
 • |cff8ebfe9true|r: |cff9bb6cfTransmog source is collected|r
 • |cff8ebfe9false|r: |cff9bb6cfTransmog source is not collected|r
 • |cff8ebfe9nil|r: |cff9bb6cfItem has no transmog source info|r
+
+|cffd8d8b0|cff8ebfe9isWrongArmorType|r|r
+
+Whether the item is an armor type the player's class does not primarily wear.
+
+|cffe0d8c4Value / Meaning|r
+• |cff8ebfe9true|r: |cff9bb6cfItem is a different armor type than the player's class|r
+• |cff8ebfe9false|r: |cff9bb6cfItem matches the player's armor type|r
+• |cff8ebfe9nil|r: |cff9bb6cfItem is not a standard armor piece (Cloth/Leather/Mail/Plate)|r
+
+|cffd8d8b0|cff8ebfe9isWrongPrimaryStat|r|r
+
+Whether the item has a primary stat that none of the player's class specs use.
+
+|cffe0d8c4Value / Meaning|r
+• |cff8ebfe9true|r: |cff9bb6cfItem has a primary stat, but none match any of the player's specs|r
+• |cff8ebfe9false|r: |cff9bb6cfItem has a primary stat matching at least one of the player's specs|r
+• |cff8ebfe9nil|r: |cff9bb6cfItem has no primary stat (rings, amulets, some trinkets)|r
+
+|cffd8d8b0|cff8ebfe9upgradeTrack|r|r
+
+The item's upgrade track name.
+
+|cffe0d8c4Value / Meaning|r
+• |cff8ebfe9"Adventurer"|r: |cff9bb6cfAdventurer track|r
+• |cff8ebfe9"Veteran"|r: |cff9bb6cfVeteran track|r
+• |cff8ebfe9"Champion"|r: |cff9bb6cfChampion track|r
+• |cff8ebfe9"Hero"|r: |cff9bb6cfHero track|r
+• |cff8ebfe9"Myth"|r: |cff9bb6cfMyth track|r
+• |cff8ebfe9nil|r: |cff9bb6cfItem has no upgrade track|r
+
+|cffd8d8b0|cff8ebfe9upgradeTrackID|r|r
+
+Numeric ID for the upgrade track. Useful for sorting by track potency.
+
+|cffe0d8c4Value / Meaning|r
+• |cff8ebfe9971|r: |cff9bb6cfAdventurer|r
+• |cff8ebfe9972|r: |cff9bb6cfVeteran|r
+• |cff8ebfe9973|r: |cff9bb6cfChampion|r
+• |cff8ebfe9974|r: |cff9bb6cfHero|r
+• |cff8ebfe9975|r: |cff9bb6cfMyth|r
+
+|cffd8d8b0|cff8ebfe9upgradeLevel|r|r
+
+Current upgrade level within the track (e.g., 4 of 8).
+
+|cffd8d8b0|cff8ebfe9upgradeMaxLevel|r|r
+
+Maximum upgrade level for the track (e.g., 8).
 
 
 |cffe6d0a2Detailed |cff8ebfe9itemSubType|r Tables (by |cff8ebfe9itemType|r)|r

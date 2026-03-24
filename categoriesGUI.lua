@@ -48,7 +48,7 @@ function AddonNS.createGUI()
     local exportFrame
     local importFrame
     local containerFrame = CreateFrame("Frame", addonName .. "_CategoryEditorFrame", UIParent, "DefaultPanelFlatTemplate")
-    containerFrame:SetSize(520, 360)
+    containerFrame:SetSize(520, 410)
     containerFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     containerFrame:SetFrameStrata("DIALOG")
     containerFrame:EnableMouse(true)
@@ -352,7 +352,130 @@ function AddonNS.createGUI()
         setCogColor(COLOR_COG_NORMAL)
     end
 
+    settingsButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+
+    local settingsPopover = nil
+
+    local function createSettingsPopover()
+        local popover = CreateFrame("Frame", addonName .. "_SettingsPopover", UIParent, "DefaultPanelFlatTemplate")
+        popover:SetSize(350, 130)
+        popover:SetFrameStrata("DIALOG")
+        popover:EnableMouse(true)
+        popover:SetMovable(false)
+        popover:Hide()
+
+        local popoverTitle = popover:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        popoverTitle:SetPoint("TOPLEFT", popover, "TOPLEFT", 16, -12)
+        popoverTitle:SetText("Settings")
+
+        local defaultSortLabel = popover:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        defaultSortLabel:SetPoint("TOPLEFT", popoverTitle, "BOTTOMLEFT", 0, -10)
+        defaultSortLabel:SetText("Default Sort Order")
+        defaultSortLabel:EnableMouse(true)
+
+        local defaultSortEditBox = CreateFrame("EditBox", nil, popover, "SearchBoxTemplate")
+        defaultSortEditBox:SetSize(318, 26)
+        defaultSortEditBox:SetPoint("TOPLEFT", defaultSortLabel, "BOTTOMLEFT", 0, -6)
+        defaultSortEditBox:SetAutoFocus(false)
+        defaultSortEditBox:SetMaxLetters(255)
+        defaultSortEditBox.instructionText = "e.g. quality DESC; ilvl DESC"
+        defaultSortEditBox.Instructions:SetText(defaultSortEditBox.instructionText)
+
+        local defaultSortValidationText = popover:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+        defaultSortValidationText:SetPoint("TOPLEFT", defaultSortEditBox, "BOTTOMLEFT", 0, -4)
+        defaultSortValidationText:SetPoint("TOPRIGHT", defaultSortEditBox, "BOTTOMRIGHT", 0, -4)
+        defaultSortValidationText:SetJustifyH("LEFT")
+        defaultSortValidationText:SetTextColor(1, 0.25, 0.25, 1)
+        defaultSortValidationText:SetText("")
+
+        local savePopoverButton = CreateFrame("Button", nil, popover, "UIPanelButtonTemplate")
+        savePopoverButton:SetSize(80, 22)
+        savePopoverButton:SetPoint("BOTTOMRIGHT", popover, "BOTTOMRIGHT", -14, 10)
+        savePopoverButton:SetText("Save")
+
+        local closePopoverButton = CreateFrame("Button", nil, popover, "UIPanelButtonTemplate")
+        closePopoverButton:SetSize(80, 22)
+        closePopoverButton:SetPoint("RIGHT", savePopoverButton, "LEFT", -8, 0)
+        closePopoverButton:SetText("Close")
+
+        local function refreshDefaultSortValidation(text)
+            local err = AddonNS.SortOrder:ValidateExpression(text)
+            if err then
+                defaultSortValidationText:SetText(err)
+                defaultSortEditBox:SetTextColor(1, 0.45, 0.45)
+            else
+                defaultSortValidationText:SetText("")
+                defaultSortEditBox:SetTextColor(1, 1, 1)
+            end
+        end
+
+        defaultSortEditBox:HookScript("OnTextChanged", function(self, userInput)
+            if userInput then
+                refreshDefaultSortValidation(self:GetText())
+            end
+        end)
+        defaultSortEditBox:SetScript("OnEscapePressed", function(self)
+            self:ClearFocus()
+        end)
+
+        local function showSortOrderLabelTooltip(owner)
+            showAnchorTooltip(owner, "Default Sort Order",
+                "Applied to all categories that have no per-category sort order set.\n\n"
+                .. "Use attribute names with ASC or DESC, separated by semicolons.\n"
+                .. "Example: expansionID DESC; quality DESC; ilvl DESC\n\n"
+                .. "Leave empty to use drag-and-drop ordering.")
+        end
+        defaultSortLabel:SetScript("OnEnter", function(self)
+            showSortOrderLabelTooltip(self)
+        end)
+        defaultSortLabel:SetScript("OnLeave", function()
+            GameTooltip:Hide()
+        end)
+
+        savePopoverButton:SetScript("OnClick", function()
+            local text = defaultSortEditBox:GetText() or ""
+            local err = AddonNS.SortOrder:ValidateExpression(text)
+            if err then
+                refreshDefaultSortValidation(text)
+                defaultSortValidationText:SetText("Cannot save: " .. err)
+                return
+            end
+            AddonNS.CategoryStore:SetDefaultSortOrder(text)
+            AddonNS.QueueContainerUpdateItemLayout()
+            popover:Hide()
+        end)
+
+        closePopoverButton:SetScript("OnClick", function()
+            popover:Hide()
+        end)
+
+        popover:SetScript("OnShow", function()
+            local current = AddonNS.CategoryStore:GetDefaultSortOrder()
+            defaultSortEditBox:SetText(current or "")
+            refreshDefaultSortValidation(current or "")
+        end)
+
+        return popover
+    end
+
+    local function toggleSettingsPopover()
+        if not settingsPopover then
+            settingsPopover = createSettingsPopover()
+        end
+        if settingsPopover:IsShown() then
+            settingsPopover:Hide()
+            return
+        end
+        settingsPopover:ClearAllPoints()
+        settingsPopover:SetPoint("TOPRIGHT", settingsButton, "BOTTOMRIGHT", 0, -4)
+        settingsPopover:Show()
+    end
+
     settingsButton:SetScript("OnClick", function(self, button)
+        if button == "RightButton" then
+            toggleSettingsPopover()
+            return
+        end
         if AddonNS.BagViewState:IsCategoriesConfigMode() then
             requestCloseCategoryEditor(function()
                 AddonNS.BagViewState:SetMode("normal")
@@ -360,6 +483,15 @@ function AddonNS.createGUI()
             return
         end
         AddonNS.BagViewState:SetMode("categories_config")
+    end)
+
+    settingsButton:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText("Left-click: Edit categories\nRight-click: Settings")
+        GameTooltip:Show()
+    end)
+    settingsButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
     end)
 
     local function updateTopRightButtons()
@@ -798,6 +930,40 @@ function AddonNS.createGUI()
         toggleQueryHelpFrame(containerFrame, QUERY_HELP_SIDE_RIGHT)
     end)
 
+    local sortOrderLabel = editorContent:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    sortOrderLabel:SetPoint("TOPLEFT", queryValidationText, "BOTTOMLEFT", 0, -10)
+    sortOrderLabel:SetText("Sort Order")
+    sortOrderLabel:EnableMouse(true)
+
+    local sortOrderEditBox = CreateFrame("EditBox", nil, editorContent, "SearchBoxTemplate")
+    sortOrderEditBox:SetSize(420, 26)
+    sortOrderEditBox:SetPoint("TOPLEFT", sortOrderLabel, "BOTTOMLEFT", 0, -6)
+    sortOrderEditBox:SetAutoFocus(false)
+    sortOrderEditBox:SetMaxLetters(255)
+    sortOrderEditBox.instructionText = "e.g. expansionID DESC; quality DESC"
+    sortOrderEditBox.Instructions:SetText(sortOrderEditBox.instructionText)
+
+    local sortOrderValidationBorder = CreateFrame("Frame", nil, editorContent, "BackdropTemplate")
+    sortOrderValidationBorder:SetPoint("TOPLEFT", sortOrderEditBox, "TOPLEFT", -3, 3)
+    sortOrderValidationBorder:SetPoint("BOTTOMRIGHT", sortOrderEditBox, "BOTTOMRIGHT", 3, -3)
+    sortOrderValidationBorder:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 12,
+        insets = { left = 2, right = 2, top = 2, bottom = 2 },
+    })
+    sortOrderValidationBorder:SetBackdropColor(0.2, 0.05, 0.05, 0.45)
+    sortOrderValidationBorder:SetBackdropBorderColor(1, 0.18, 0.18, 1)
+    sortOrderValidationBorder:EnableMouse(false)
+    sortOrderValidationBorder:Hide()
+
+    local sortOrderValidationText = editorContent:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    sortOrderValidationText:SetPoint("TOPLEFT", sortOrderEditBox, "BOTTOMLEFT", 0, -4)
+    sortOrderValidationText:SetPoint("TOPRIGHT", sortOrderEditBox, "BOTTOMRIGHT", 0, -4)
+    sortOrderValidationText:SetJustifyH("LEFT")
+    sortOrderValidationText:SetTextColor(1, 0.25, 0.25, 1)
+    sortOrderValidationText:SetText("")
+
     local saveButton = CreateFrame("Button", nil, editorContent, "UIPanelButtonTemplate")
     saveButton:SetSize(100, 22)
     saveButton:SetPoint("BOTTOMRIGHT", editorContent, "BOTTOMRIGHT", -14, 14)
@@ -813,6 +979,7 @@ function AddonNS.createGUI()
         return {
             name = category:GetName() or "",
             query = AddonNS.CustomCategories:GetQuery(category),
+            sortOrder = AddonNS.CustomCategories:GetSortOrder(category),
             priority = AddonNS.CustomCategories:GetEffectivePriority(category),
             alwaysShow = AddonNS.CategorShowAlways:ShouldAlwaysShow(category) == true,
             scopeVisibility = {
@@ -828,6 +995,7 @@ function AddonNS.createGUI()
             and right
             and left.name == right.name
             and left.query == right.query
+            and left.sortOrder == right.sortOrder
             and left.priority == right.priority
             and left.alwaysShow == right.alwaysShow
             and left.scopeVisibility[BAG_SCOPE] == right.scopeVisibility[BAG_SCOPE]
@@ -887,11 +1055,33 @@ function AddonNS.createGUI()
         return true
     end
 
+    local function getSortOrderValidationError(text)
+        if not text or text == "" then
+            return nil
+        end
+        return AddonNS.SortOrder:ValidateExpression(text)
+    end
+
+    local function refreshSortOrderValidationState(text)
+        local message = getSortOrderValidationError(text)
+        if message then
+            sortOrderValidationBorder:Show()
+            sortOrderValidationText:SetText(message)
+            sortOrderEditBox:SetTextColor(1, 0.45, 0.45)
+            return false
+        end
+        sortOrderValidationBorder:Hide()
+        sortOrderValidationText:SetText("")
+        sortOrderEditBox:SetTextColor(1, 1, 1)
+        return true
+    end
+
     local function readDraftState()
         local rawPriority = priorityEditBox:GetText()
         return {
             name = nameEditBox:GetText() or "",
             query = queryEditBox:GetText() or "",
+            sortOrder = sortOrderEditBox:GetText() or "",
             priority = rawPriority ~= "" and tonumber(rawPriority) or nil,
             alwaysShow = alwaysShowCheckbox:GetChecked() == true,
             scopeVisibility = {
@@ -930,6 +1120,7 @@ function AddonNS.createGUI()
         suspendControlHandlers = true
         nameEditBox:SetText(state.name)
         queryEditBox:SetText(state.query)
+        sortOrderEditBox:SetText(state.sortOrder or "")
         priorityEditBox:SetText(tostring(state.priority))
         alwaysShowCheckbox:SetChecked(state.alwaysShow)
         visibleBagsCheckbox:SetChecked(state.scopeVisibility[BAG_SCOPE] == true)
@@ -937,6 +1128,7 @@ function AddonNS.createGUI()
         visibleWarbankCheckbox:SetChecked(state.scopeVisibility[WARBANK_SCOPE] == true)
         suspendControlHandlers = false
         refreshQueryValidationState(state.query)
+        refreshSortOrderValidationState(state.sortOrder or "")
         refreshActionButtonsState()
     end
 
@@ -952,6 +1144,12 @@ function AddonNS.createGUI()
             queryValidationText:SetText("Cannot save: " .. queryValidationError)
             return false
         end
+        local sortOrderValidationError = getSortOrderValidationError(draftState.sortOrder)
+        if sortOrderValidationError then
+            refreshSortOrderValidationState(draftState.sortOrder)
+            sortOrderValidationText:SetText("Cannot save: " .. sortOrderValidationError)
+            return false
+        end
         local currentState = normalizeCategoryState(category)
         if draftState.name == "" then
             draftState.name = currentState.name
@@ -963,6 +1161,10 @@ function AddonNS.createGUI()
         end
         if draftState.query ~= currentState.query then
             AddonNS.CustomCategories:SetQuery(category, draftState.query)
+            changed = true
+        end
+        if draftState.sortOrder ~= currentState.sortOrder then
+            AddonNS.CustomCategories:SetSortOrder(category, draftState.sortOrder)
             changed = true
         end
         if draftState.priority ~= currentState.priority then
@@ -1173,6 +1375,39 @@ function AddonNS.createGUI()
         GameTooltip:Hide()
     end)
 
+    sortOrderEditBox:HookScript("OnTextChanged", function(self, userInput)
+        if suspendControlHandlers then
+            return
+        end
+        refreshSortOrderValidationState(self:GetText())
+        if userInput then
+            refreshActionButtonsState()
+        end
+    end)
+    sortOrderEditBox:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+    end)
+    local function showSortOrderTooltip(owner)
+        showAnchorTooltip(owner, "Sort Order",
+            "Controls item ordering within this category.\n\n"
+            .. "Use attribute names with ASC or DESC, separated by semicolons.\n"
+            .. "Example: expansionID DESC; quality DESC; ilvl DESC\n\n"
+            .. "If empty, the default sort order is used.\n"
+            .. "Attributes are the same as in query expressions.")
+    end
+    sortOrderLabel:SetScript("OnEnter", function(self)
+        showSortOrderTooltip(self)
+    end)
+    sortOrderLabel:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    sortOrderEditBox:SetScript("OnEnter", function(self)
+        showSortOrderTooltip(self)
+    end)
+    sortOrderEditBox:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
     saveButton:SetScript("OnClick", function()
         saveSelectedCategoryDraft()
     end)
@@ -1198,6 +1433,7 @@ function AddonNS.createGUI()
             visibleWarbankCheckbox:Enable()
             priorityEditBox:Enable()
             queryEditBox:Enable()
+            sortOrderEditBox:Enable()
             local state = normalizeCategoryState(category)
             applyStateToControls(state)
             return
@@ -1211,8 +1447,10 @@ function AddonNS.createGUI()
         visibleBankCheckbox:SetChecked(false)
         visibleWarbankCheckbox:SetChecked(false)
         queryEditBox:SetText("")
+        sortOrderEditBox:SetText("")
         priorityEditBox:SetText("")
         refreshQueryValidationState("")
+        refreshSortOrderValidationState("")
         nameEditBox:Disable()
         alwaysShowCheckbox:Disable()
         visibleBagsCheckbox:Disable()
@@ -1220,6 +1458,7 @@ function AddonNS.createGUI()
         visibleWarbankCheckbox:Disable()
         priorityEditBox:Disable()
         queryEditBox:Disable()
+        sortOrderEditBox:Disable()
         suspendControlHandlers = false
         refreshActionButtonsState()
     end
