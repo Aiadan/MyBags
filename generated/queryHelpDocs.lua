@@ -121,7 +121,7 @@ Notes:
 • |cff8ebfe9description|r: |cff9bb6cfstring|r
 • |cff8ebfe9onUseDescription|r: |cff9bb6cfstring|r
 • |cff8ebfe9isTransmogCollected|r: |cff9bb6cfboolean|r
-• |cff8ebfe9isWrongArmorType|r: |cff9bb6cfboolean|r
+• |cff8ebfe9isWrongGearType|r: |cff9bb6cfboolean|r
 • |cff8ebfe9isWrongPrimaryStat|r: |cff9bb6cfboolean|r
 • |cff8ebfe9upgradeTrack|r: |cff9bb6cfstring|r
 • |cff8ebfe9upgradeTrackID|r: |cff9bb6cfnumber|r
@@ -301,7 +301,7 @@ Whether the item's transmog source is collected.
 • |cff8ebfe9false|r: |cff9bb6cfTransmog source is not collected|r
 • |cff8ebfe9nil|r: |cff9bb6cfItem has no transmog source info|r
 
-|cffd8d8b0|cff8ebfe9isWrongArmorType|r|r
+|cffd8d8b0|cff8ebfe9isWrongGearType|r|r
 
 Whether the item is an armor type the player's class does not primarily wear.
 

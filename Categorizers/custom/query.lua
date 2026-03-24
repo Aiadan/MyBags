@@ -269,7 +269,7 @@ local Retrievers = {
     upgradeTrackID = { type = ValueType.NUMBER },
     upgradeLevel = { type = ValueType.NUMBER },
     upgradeMaxLevel = { type = ValueType.NUMBER },
-    isWrongArmorType = { type = ValueType.BOOL },
+    isWrongGearType = { type = ValueType.BOOL },
     isWrongPrimaryStat = { type = ValueType.BOOL },
 }
 
@@ -288,7 +288,7 @@ local QueryTooltipDefinitions = {
         "isArtifactPowerItem",
         "isCorruptedItem",
         "isTransmogCollected",
-        "isWrongArmorType",
+        "isWrongGearType",
         "isWrongPrimaryStat",
         "upgradeTrack",
         "upgradeLevel",

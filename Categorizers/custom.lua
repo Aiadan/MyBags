@@ -709,6 +709,26 @@ local function resolve_raw_id(categoryOrId)
     return strip_raw_id_prefix(tostring(categoryOrId))
 end
 
+-- Weapon subclass IDs each class can equip (Enum.ItemWeaponSubclass values).
+-- 0=1HA 1=2HA 2=Bow 3=Gun 4=1HM 5=2HM 6=Polearm 7=1HS 8=2HS 9=Warglaive
+-- 10=Staff 13=Fist 15=Dagger 18=Crossbow 19=Wand 20=FishingPole
+local WEAPON_PROFICIENCIES = {
+    [1]  = {[0]=1,[1]=1,[4]=1,[5]=1,[6]=1,[7]=1,[8]=1,[10]=1,[13]=1,[15]=1},               -- Warrior
+    [2]  = {[0]=1,[1]=1,[4]=1,[5]=1,[6]=1,[7]=1,[8]=1},                                     -- Paladin
+    [3]  = {[0]=1,[1]=1,[2]=1,[3]=1,[6]=1,[7]=1,[8]=1,[10]=1,[13]=1,[15]=1,[18]=1},         -- Hunter
+    [4]  = {[0]=1,[4]=1,[7]=1,[13]=1,[15]=1},                                                -- Rogue
+    [5]  = {[4]=1,[10]=1,[15]=1,[19]=1},                                                     -- Priest
+    [6]  = {[0]=1,[1]=1,[4]=1,[5]=1,[6]=1,[7]=1,[8]=1},                                     -- Death Knight
+    [7]  = {[0]=1,[1]=1,[4]=1,[5]=1,[10]=1,[13]=1,[15]=1},                                  -- Shaman
+    [8]  = {[7]=1,[10]=1,[15]=1,[19]=1},                                                     -- Mage
+    [9]  = {[7]=1,[10]=1,[15]=1,[19]=1},                                                     -- Warlock
+    [10] = {[0]=1,[4]=1,[6]=1,[7]=1,[10]=1,[13]=1},                                         -- Monk
+    [11] = {[4]=1,[5]=1,[6]=1,[10]=1,[13]=1,[15]=1},                                        -- Druid
+    [12] = {[0]=1,[7]=1,[9]=1,[13]=1},                                                       -- Demon Hunter
+    [13] = {[0]=1,[4]=1,[7]=1,[10]=1,[13]=1,[15]=1},                                        -- Evoker
+}
+local playerClassID = select(3, UnitClass("player"))
+
 local function buildQueryPayload(itemID, itemButton, containerInfo)
     if not itemButton then
         return nil, nil
@@ -768,6 +788,44 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
     if (transmogSourceInfo) then
         isTransmogCollected = transmogSourceInfo.isCollected
     end
+    local upgradeTrack, upgradeTrackID, upgradeLevel, upgradeMaxLevel
+    local upgradeInfo = C_Item.GetItemUpgradeInfo(containerInfo.hyperlink)
+    if upgradeInfo then
+        upgradeTrack = upgradeInfo.trackString
+        upgradeTrackID = upgradeInfo.trackStringID
+        upgradeLevel = upgradeInfo.currentLevel
+        upgradeMaxLevel = upgradeInfo.maxLevel
+    end
+    local isWrongGearType = nil
+    local isWrongPrimaryStat = nil
+    if classID == Enum.ItemClass.Armor and subclassID and subclassID >= 1 and subclassID <= 4 then
+        isWrongGearType = not IsItemPreferredArmorType(itemLocation)
+    elseif classID == Enum.ItemClass.Weapon and subclassID then
+        local allowed = WEAPON_PROFICIENCIES[playerClassID]
+        if allowed and not allowed[subclassID] then
+            isWrongGearType = true
+        end
+    end
+    if inventoryType and inventoryType > 0 and containerInfo.hyperlink then
+        local stats = C_Item.GetItemStats(containerInfo.hyperlink)
+        if stats then
+            local hasStr = (stats["ITEM_MOD_STRENGTH_SHORT"] or 0) > 0
+            local hasAgi = (stats["ITEM_MOD_AGILITY_SHORT"] or 0) > 0
+            local hasInt = (stats["ITEM_MOD_INTELLECT_SHORT"] or 0) > 0
+            if hasStr or hasAgi or hasInt then
+                local specIndex = GetSpecialization()
+                if specIndex then
+                    local _, _, _, _, _, primaryStat = GetSpecializationInfo(specIndex)
+                    if primaryStat then
+                        local hasPrimary = (primaryStat == 1 and hasStr)
+                            or (primaryStat == 2 and hasAgi)
+                            or (primaryStat == 4 and hasInt)
+                        isWrongPrimaryStat = not hasPrimary
+                    end
+                end
+            end
+        end
+    end
     local payload = {
         stackCount = containerInfo.stackCount,
         quality = containerInfo.quality,
@@ -796,6 +854,12 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
         description = itemDescription,
         onUseDescription = extractOnUseDescriptionText(resolvedItemID),
         isTransmogCollected = isTransmogCollected,
+        upgradeTrack = upgradeTrack,
+        upgradeTrackID = upgradeTrackID,
+        upgradeLevel = upgradeLevel,
+        upgradeMaxLevel = upgradeMaxLevel,
+        isWrongGearType = isWrongGearType,
+        isWrongPrimaryStat = isWrongPrimaryStat,
     }
     itemButton._myBagsQueryPayloadCacheKey = cacheKey
     itemButton._myBagsQueryPayloadCacheValue = payload

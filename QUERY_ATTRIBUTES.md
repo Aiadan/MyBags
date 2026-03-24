@@ -119,7 +119,7 @@ Notes:
 | `description` | string |
 | `onUseDescription` | string |
 | `isTransmogCollected` | boolean |
-| `isWrongArmorType` | boolean |
+| `isWrongGearType` | boolean |
 | `isWrongPrimaryStat` | boolean |
 | `upgradeTrack` | string |
 | `upgradeTrackID` | number |
@@ -299,15 +299,15 @@ Whether the item's transmog source is collected.
 | `false` | Transmog source is not collected |
 | `nil` | Item has no transmog source info |
 
-### `isWrongArmorType`
+### `isWrongGearType`
 
-Whether the item is an armor type the player's class does not primarily wear.
+Whether the item is a gear type the player's class cannot use — wrong armor type (Cloth/Leather/Mail/Plate) or a weapon type the class can't equip in any spec.
 
 | Value | Meaning |
 |---|---|
-| `true` | Item is a different armor type than the player's class |
-| `false` | Item matches the player's armor type |
-| `nil` | Item is not a standard armor piece (Cloth/Leather/Mail/Plate) |
+| `true` | Item is a wrong armor type or an unusable weapon type for the player's class |
+| `false` | Item matches the player's armor type (for armor) |
+| `nil` | Item is not a standard armor piece or weapon |
 
 ### `isWrongPrimaryStat`
 
