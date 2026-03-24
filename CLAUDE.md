@@ -4,17 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MyBags is a World of Warcraft retail addon (version 12.0.1-3.30) that enhances the default bag interface with manual and automatic item categorization, flexible column layouts, and search via a custom query language. It supports bags, bank, and warband (account-wide bank) views.
+MyBags is a World of Warcraft retail addon (version 12.0.1-3.34) that enhances the default bag interface with manual and automatic item categorization, flexible column layouts, and search via a custom query language. It supports bags, bank, and warband (account-wide bank) views.
 
 ## Development Workflow
 
 No build process — pure Lua. To test changes:
 1. Save files
 2. In-game: `/reload` to reload the UI
-
-For profiling performance:
-- Enable: `/run GLOBAL_MyBagsEnableProfiling()`
-- Disable: `/run GLOBAL_MyBagsDisableProfiling()`
 
 ## Architecture
 
@@ -107,6 +103,8 @@ Supports Lua pattern matching, comparisons (`=`, `!=`, `<`, `>`, `<=`, `>=`), an
 | File | Role |
 |------|------|
 | `init.lua` | Constants, events, DB names, bootstrap |
+| `tooltipSettings.lua` | Tooltip display behavior settings |
+| `addonSettings.lua` | Addon settings panel registration |
 | `main.lua` | Item layout, search, tooltip, categorization cache |
 | `categories.lua` | Categorizer registry & match engine |
 | `categoryStore.lua` | Single source of truth for category metadata |
@@ -115,5 +113,6 @@ Supports Lua pattern matching, comparisons (`=`, `!=`, `<`, `>`, `<=`, `>=`), an
 | `gui.lua` | Category header rendering & controls |
 | `categoriesGUI.lua` | Category editor UI (query input, import/export) |
 | `Categorizers/custom/query.lua` | Query parser & evaluator |
+| `Categorizers/custom/sortOrder.lua` | Sort order expression compiler & sorter |
 | `bankView.lua` | Bank-specific UI view |
 | `ContainerFrameMyBagsMixin.lua` | WoW frame integration mixin |

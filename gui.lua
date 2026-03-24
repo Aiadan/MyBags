@@ -739,17 +739,17 @@ function AddonNS.gui.RegenerateCategories(_, yFrameOffset, categoriesGUIInfo)
                 AddonNS.CategoriesGUI:SelectCategoryById(category:GetId())
             end)
 
-            duplicateButton:SetScript("OnEnter", function(self)
-                local category = self:GetParent().ItemCategory
-                GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            duplicateButton:SetScript("OnEnter", function(buttonFrame)
+                local category = buttonFrame:GetParent().ItemCategory
+                GameTooltip:SetOwner(buttonFrame, "ANCHOR_TOP")
                 GameTooltip:SetText(DUPLICATE_CATEGORY_TOOLTIP .. " \"" .. category:GetName() .. "\" category")
                 GameTooltip:Show()
             end)
             duplicateButton:SetScript("OnLeave", function()
                 GameTooltip:Hide()
             end)
-            duplicateButton:SetScript("OnClick", function(self)
-                local category = self:GetParent().ItemCategory
+            duplicateButton:SetScript("OnClick", function(buttonFrame)
+                local category = buttonFrame:GetParent().ItemCategory
                 AddonNS.CustomCategories:DuplicateCategory(category)
             end)
 

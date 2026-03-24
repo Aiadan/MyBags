@@ -94,8 +94,6 @@ local function addCategoryToColumn(categoryAssignmentsForColumn, category, items
     if isCollapsed(category, scope) then
         displayItems = { AddonNS.itemButtonPlaceholder }
     end
-    local sortStartedAt = profile and profileNowMs() or nil
-    local sorted = false
     local catId = category:GetId()
     local rawId = catId:match("^cus%-(.+)$")
     local sortComparator = rawId and AddonNS.SortOrder:GetCompiledSortComparator(rawId) or nil
@@ -104,13 +102,8 @@ local function addCategoryToColumn(categoryAssignmentsForColumn, category, items
     end
     if sortComparator then
         AddonNS.SortOrder:SortItemButtons(displayItems, sortComparator)
-        sorted = true
-    end
-    if not sorted then
+    else
         AddonNS.ItemsOrder:Sort(displayItems)
-    end
-    if profile then
-        profile.sortMs = profile.sortMs + (profileNowMs() - sortStartedAt)
     end
     table.insert(categoryAssignmentsForColumn, { category = category, items = displayItems, itemsCount = itemCount, scope = scope })
 end
@@ -341,7 +334,6 @@ local function insertAfterInLayout(newCategoryIdValue, afterCategoryIdValue, sco
 end
 
 local function customCategoryCreated(eventName, category, insertAfterCategory)
-    AddonNS.printDebug(eventName)
     if insertAfterCategory then
         local placed = false
         for scope in pairs(runtimeColumnsLoadedByScope) do
