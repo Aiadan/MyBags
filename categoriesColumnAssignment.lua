@@ -36,11 +36,15 @@ local function ensureRuntimeColumns(scope)
     end
     local persistedColumns = AddonNS.CategoryStore:GetLayoutColumns(normalizedScope)
     local numColumns = getNumColumns(normalizedScope)
+    local seen = {}
     runtimeColumnsByScope[normalizedScope] = {}
     for index = 1, numColumns do
         runtimeColumnsByScope[normalizedScope][index] = {}
         for _, categoryId in ipairs(persistedColumns[index] or {}) do
-            table.insert(runtimeColumnsByScope[normalizedScope][index], categoryId)
+            if not seen[categoryId] then
+                seen[categoryId] = true
+                table.insert(runtimeColumnsByScope[normalizedScope][index], categoryId)
+            end
         end
     end
     runtimeColumnsLoadedByScope[normalizedScope] = true
@@ -127,12 +131,15 @@ local function appendToLayout(columnIndex, categoryIdValue, scope)
         return
     end
     local runtimeColumns = runtimeColumnsByScope[normalizedScope]
-    local column = runtimeColumns[columnIndex]
-    for _, existing in ipairs(column) do
-        if existing == id then
-            return
+    local numColumns = getNumColumns(normalizedScope)
+    for colIdx = 1, numColumns do
+        for _, existing in ipairs(runtimeColumns[colIdx] or {}) do
+            if existing == id then
+                return
+            end
         end
     end
+    local column = runtimeColumns[columnIndex]
     table.insert(column, id)
 end
 
@@ -165,23 +172,27 @@ function AddonNS.Categories:ArrangeCategoriesIntoColumns(arrangedItems, scope)
     for index = 1, numColumns do
         categoryAssignments[index] = {}
     end
-    local known = {}
+    local knownById = {}
 
     for columnIndex = 1, numColumns do
         local assignmentsForColumn = categoryAssignments[columnIndex]
         local ids = runtimeColumns[columnIndex]
         for _, id in ipairs(ids) do
-            local category = AddonNS.CategoryStore:Get(id)
-            if category and arrangedItems[category] then
-                addCategoryToColumn(assignmentsForColumn, category, arrangedItems[category], normalizedScope)
-                known[category] = true
+            if not knownById[id] then
+                local category = AddonNS.CategoryStore:Get(id)
+                if category and arrangedItems[category] then
+                    addCategoryToColumn(assignmentsForColumn, category, arrangedItems[category], normalizedScope)
+                    knownById[id] = true
+                end
             end
         end
     end
 
     local unmatched = {}
     for category in pairs(arrangedItems) do
-        if not known[category] then
+        local catId = category:GetId()
+        if not knownById[catId] then
+            knownById[catId] = true
             table.insert(unmatched, category)
         end
     end
@@ -267,6 +278,7 @@ local function categoryMoved(eventName, pickedCategory, targetCategory, moveTail
     for offset, id in ipairs(movedCategoryIds) do
         table.insert(targetColumnRef, targetRow + offset - 1, id)
     end
+    persistRuntimeColumns(normalizedScope)
 end
 
 local function categoryMovedToColumn(eventName, pickedCategory, columnIndex, moveTail, scope)
@@ -297,6 +309,7 @@ local function categoryMovedToColumn(eventName, pickedCategory, columnIndex, mov
     for _, id in ipairs(movedCategoryIds) do
         table.insert(runtimeColumns[columnIndex], id)
     end
+    persistRuntimeColumns(normalizedScope)
 end
 
 local function categoryDeleted(eventName, category, scope)
@@ -369,9 +382,18 @@ function AddonNS.Categories:SetColumnCount(columnCount, scope)
         end
     else
         local lastVisible = runtimeColumns[currentCount]
+        local seen = {}
+        for colIdx = 1, currentCount do
+            for _, id in ipairs(runtimeColumns[colIdx]) do
+                seen[id] = true
+            end
+        end
         for columnIndex = currentCount + 1, previousCount do
             for _, id in ipairs(runtimeColumns[columnIndex] or {}) do
-                table.insert(lastVisible, id)
+                if not seen[id] then
+                    table.insert(lastVisible, id)
+                    seen[id] = true
+                end
             end
             runtimeColumns[columnIndex] = nil
         end

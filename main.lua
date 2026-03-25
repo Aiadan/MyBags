@@ -383,6 +383,11 @@ AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.ITEM_MOVED, function()
     invalidateBagCategorizationCacheVersion()
 end)
 
+AddonNS.Events:RegisterCustomEvent(AddonNS.Const.Events.BAG_VIEW_MODE_CHANGED, function()
+    invalidateBagCategorizationCacheVersion()
+    queueContainerUpdateItemLayout()
+end)
+
 AddonNS.Events:RegisterEvent("INVENTORY_SEARCH_UPDATE");
 
 AddonNS.Events:RegisterEvent("BAG_UPDATE");

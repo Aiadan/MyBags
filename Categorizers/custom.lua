@@ -782,7 +782,7 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
     local isCorruptedItem = C_Item.IsCorruptedItem(resolvedItemID) == true
     local itemLocation = ItemLocation:CreateFromBagAndSlot(bagID, slotID)
     local isWarbound = C_Item.IsBoundToAccountUntilEquip(itemLocation) == true
-    local _, transmogSourceID = C_TransmogCollection.GetItemInfo(resolvedItemID)
+    local _, transmogSourceID = C_TransmogCollection.GetItemInfo(containerInfo.hyperlink)
     local transmogSourceInfo = transmogSourceID and C_TransmogCollection.GetSourceInfo(transmogSourceID) or nil
     local isTransmogCollected = nil
     if (transmogSourceInfo) then
@@ -1035,6 +1035,49 @@ function CustomCategories:NewCategory(name, opts)
     fireUpdate()
     AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_CREATED, wrappedId)
     return AddonNS.CategoryStore:GetWrapperForRaw(CATEGORIZER_ID, new_raw(rawId, db.categories[rawId]))
+end
+
+function CustomCategories:DuplicateCategory(categoryOrId)
+    local sourceRawId = resolve_raw_id(categoryOrId)
+    if not sourceRawId then
+        return nil
+    end
+    local db = get_db()
+    local sourceEntry = db.categories[sourceRawId]
+    if not sourceEntry then
+        return nil
+    end
+    local newRawId = tostring((db.nextId or 0) + 1)
+    db.nextId = tonumber(newRawId)
+    local newEntry = {
+        name = (sourceEntry.name or "") .. " (copy)",
+        protected = false,
+        alwaysVisible = sourceEntry.alwaysVisible or false,
+        items = {},
+        query = sourceEntry.query,
+        sortOrder = sourceEntry.sortOrder,
+        priority = effective_priority_for_raw_id(db, sourceRawId),
+    }
+    if sourceEntry.scopes then
+        newEntry.scopes = {}
+        for scope, value in pairs(sourceEntry.scopes) do
+            newEntry.scopes[scope] = value
+        end
+    end
+    newEntry.priority = normalize_priority_override(newRawId, newEntry.priority)
+    db.categories[newRawId] = newEntry
+    if newEntry.query then
+        AddonNS.QueryCategories:SyncCompiledQuery(newRawId, newEntry.query)
+    end
+    if newEntry.sortOrder then
+        AddonNS.SortOrder:SyncCompiledSortOrder(newRawId, newEntry.sortOrder)
+    end
+    local wrappedId = CATEGORIZER_ID .. "-" .. newRawId
+    invalidate_sorted_query_raw_ids()
+    fireUpdate()
+    local sourceWrappedId = CATEGORIZER_ID .. "-" .. sourceRawId
+    AddonNS.Events:TriggerCustomEvent(AddonNS.Const.Events.CUSTOM_CATEGORY_CREATED, wrappedId, sourceWrappedId)
+    return AddonNS.CategoryStore:GetWrapperForRaw(CATEGORIZER_ID, new_raw(newRawId, db.categories[newRawId]))
 end
 
 function CustomCategories:RenameCategory(categoryOrId, newName)

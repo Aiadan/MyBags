@@ -85,9 +85,11 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
         self:ApplyStoredSearchAnchorLock()
     end
     for i, itemButton in ipairs(itemButtons) do
-        if (itemButton.ItemCategory and not isCollapsed(itemButton.ItemCategory, "bag")) then
-            local newXOffset = self.MyBags.positionsInBags[itemButton:GetBagID()][itemButton:GetID()].x;
-            local newYOffset = -self.MyBags.positionsInBags[itemButton:GetBagID()][itemButton:GetID()].y + yFrameOffset;
+        local bagPositions = self.MyBags.positionsInBags[itemButton:GetBagID()]
+        local slotPosition = bagPositions and bagPositions[itemButton:GetID()]
+        if (itemButton.ItemCategory and not isCollapsed(itemButton.ItemCategory, "bag") and slotPosition) then
+            local newXOffset = slotPosition.x;
+            local newYOffset = -slotPosition.y + yFrameOffset;
             itemButton:ClearAllPoints();
             itemButton:SetPoint(point, relativeTo, relativePoint, x + newXOffset, y + newYOffset);
             itemButton:Show();
@@ -97,6 +99,7 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
     end
 
     AddonNS.gui:RegenerateCategories(yFrameOffset, self.MyBags.categoryPositions);
+    self:UpdateFrameSize();
 end
 
 function ContainerFrameMyBagsMixin:EnumerateValidItems()
