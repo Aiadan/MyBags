@@ -419,11 +419,15 @@ function AddonNS.createGUI()
         end)
 
         local function showSortOrderLabelTooltip(owner)
-            showAnchorTooltip(owner, "Default Sort Order",
+            GameTooltip:SetOwner(owner, "ANCHOR_TOP")
+            GameTooltip:SetText("Default Sort Order")
+            GameTooltip:AddLine(
                 "Applied to all categories that have no per-category sort order set.\n\n"
                 .. "Use attribute names with ASC or DESC, separated by semicolons.\n"
                 .. "Example: expansionID DESC; quality DESC; ilvl DESC\n\n"
-                .. "Leave empty to use drag-and-drop ordering.")
+                .. "Leave empty to use drag-and-drop ordering.",
+                1, 1, 1, true)
+            GameTooltip:Show()
         end
         defaultSortLabel:SetScript("OnEnter", function(self)
             showSortOrderLabelTooltip(self)

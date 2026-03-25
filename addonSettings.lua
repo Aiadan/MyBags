@@ -39,6 +39,7 @@ local function registerAddonSettings()
         local container = Settings.CreateControlTextContainer()
         container:Add(AddonNS.TooltipSettings.MODE_DEFAULT, "Default (show hint; details on Shift)")
         container:Add(AddonNS.TooltipSettings.MODE_SHIFT_ONLY, "Hide hint; details only on Shift")
+        container:Add(AddonNS.TooltipSettings.MODE_EDIT_ONLY, "Only show in edit mode (Shift for details)")
         container:Add(AddonNS.TooltipSettings.MODE_DISABLED, "Disable MyBags tooltip additions")
         return container:GetData()
     end

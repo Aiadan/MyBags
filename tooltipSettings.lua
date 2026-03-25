@@ -2,10 +2,11 @@ local addonName, AddonNS = ...
 
 local MODE_DEFAULT = "default"
 local MODE_SHIFT_ONLY = "shift_only"
+local MODE_EDIT_ONLY = "edit_only"
 local MODE_DISABLED = "disabled"
 
 local function normalizeMode(value)
-    if value == MODE_DEFAULT or value == MODE_SHIFT_ONLY or value == MODE_DISABLED then
+    if value == MODE_DEFAULT or value == MODE_SHIFT_ONLY or value == MODE_EDIT_ONLY or value == MODE_DISABLED then
         return value
     end
     return MODE_DEFAULT
@@ -46,6 +47,7 @@ end
 AddonNS.TooltipSettings = {
     MODE_DEFAULT = MODE_DEFAULT,
     MODE_SHIFT_ONLY = MODE_SHIFT_ONLY,
+    MODE_EDIT_ONLY = MODE_EDIT_ONLY,
     MODE_DISABLED = MODE_DISABLED,
 }
 
@@ -69,7 +71,14 @@ function AddonNS.TooltipSettings:SetMode(mode)
 end
 
 function AddonNS.TooltipSettings:IsTooltipDisabled()
-    return self:GetMode() == MODE_DISABLED
+    local mode = self:GetMode()
+    if mode == MODE_DISABLED then
+        return true
+    end
+    if mode == MODE_EDIT_ONLY then
+        return not (AddonNS.BagViewState and AddonNS.BagViewState:IsCategoriesConfigMode())
+    end
+    return false
 end
 
 function AddonNS.TooltipSettings:ShouldShowShiftHintWhenNotHeld()
