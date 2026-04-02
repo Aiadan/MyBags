@@ -7,7 +7,6 @@ local TaintingContainerFrameMyBagsMixin = {};
 
 function ContainerFrameMyBagsMixin:MyBagsInit()
     self.MyBags = {};
-    self.MyBags.categorizeItems = true;
     self.MyBags.arrangedItems = {};
     self.MyBags.positionsInBags = {};
     self.MyBags.categoryPositions = {};
@@ -66,9 +65,9 @@ end
 
 function ContainerFrameMyBagsMixin:UpdateItemLayout()
     self.MyBags.updateItemLayoutCalledAtLeastOnce = true;
-    self.MyBags.categorizeItems = true;
+    self.MyBags.arrangedItems = {}
     local itemButtons = {}
-    for i, itemButton in self:EnumerateValidItems() do -- todo: can refactor this to single loop once I stop using enumerate to assign positions in bags. Otherwsie I have to run over this function first before putting items into proper places
+    for i, itemButton in AddonNS.newEnumerateValidItems(self) do
         table.insert(itemButtons, itemButton);
     end
     local yFrameOffset = self:CalculateHeight() - self:GetPaddingHeight() -
@@ -102,14 +101,12 @@ function ContainerFrameMyBagsMixin:UpdateItemLayout()
     self:UpdateFrameSize();
 end
 
-function ContainerFrameMyBagsMixin:EnumerateValidItems()
-    if self.MyBags.categorizeItems then
-        self.MyBags.categorizeItems = false;
-        self.MyBags.arrangedItems = {}
-        return AddonNS.newEnumerateValidItems(self);
-    end
-    return ContainerFrameCombinedBagsMixin.EnumerateValidItems(self);
-end
+-- EnumerateValidItems is intentionally NOT overridden here.
+-- Blizzard code calls container:EnumerateValidItems() from secure paths
+-- (Update, UpdateItems, UpdateSearchResults, etc.). Overriding it with addon
+-- code taints those paths, which during combat causes ADDON_ACTION_FORBIDDEN
+-- for protected functions like UseContainerItem. Instead, UpdateItemLayout
+-- calls AddonNS.newEnumerateValidItems() directly for the categorized iterator.
 
 --[[
 Note:
