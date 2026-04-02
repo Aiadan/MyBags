@@ -782,6 +782,7 @@ local function buildQueryPayload(itemID, itemButton, containerInfo)
     local isCorruptedItem = C_Item.IsCorruptedItem(resolvedItemID) == true
     local itemLocation = ItemLocation:CreateFromBagAndSlot(bagID, slotID)
     local isWarbound = C_Item.IsBoundToAccountUntilEquip(itemLocation) == true
+        or C_Item.IsItemBindToAccount(containerInfo.hyperlink) == true
     local _, transmogSourceID = C_TransmogCollection.GetItemInfo(containerInfo.hyperlink)
     local transmogSourceInfo = transmogSourceID and C_TransmogCollection.GetSourceInfo(transmogSourceID) or nil
     local isTransmogCollected = nil
