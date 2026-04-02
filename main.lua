@@ -258,7 +258,6 @@ end
 
 AddonNS.Events:RegisterEvent("MODIFIER_STATE_CHANGED")
 
-local freeBagSlots = 10000;
 local lockedUpdates = false;
 local inventorySearchRefreshQueued = false
 local bagSearchUnlockPending = false
@@ -332,17 +331,14 @@ function AddonNS.Events:BAG_UPDATE(event, bagID)
     end
     invalidateBagCategorizationCacheVersion()
 
-    if (container.MyBags.updateItemLayoutCalledAtLeastOnce) then -- todo: reading this after a while - what the hell is this :D once i know i have to add here proper comments lol
-        local newFreeBagSlots = CalculateTotalNumberOfFreeBagSlots()
-
-        if newFreeBagSlots <= freeBagSlots and not lockedUpdates then
+    if container.MyBags.updateItemLayoutCalledAtLeastOnce and container:IsShown() then
+        if not lockedUpdates then
             queueContainerUpdateItemLayout();
         end
         lockedUpdates = true;
         RunNextFrame(function()
-            lockedUpdates = false; -- and also why is this not in the run next frame above? eh
+            lockedUpdates = false;
         end);
-        freeBagSlots = newFreeBagSlots;
     end
 end
 

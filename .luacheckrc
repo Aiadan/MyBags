@@ -30,7 +30,6 @@ globals = {
     "C_NewItems",
     "C_TransmogCollection",
     "CONTAINER_OFFSET_Y",
-    "CalculateTotalNumberOfFreeBagSlots",
     "ClearCursor",
     "CloseBackpack",
     "CloseBag",
