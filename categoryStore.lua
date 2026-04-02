@@ -424,7 +424,9 @@ function CategoryStore:ResetWrappers()
 end
 
 function CategoryStore:RefreshCategorizer(categorizerId, rawCategories)
-    -- Drop existing wrappers for this categorizer.
+    -- Drop existing wrappers from ID and name indexes.
+    -- Preserve _wrappersByRaw so wrap_category() reuses the same Lua table,
+    -- keeping object identity stable for code that stores wrappers as table keys.
     local existing = self._wrappersByCategorizer[categorizerId]
     if existing then
         for _, wrapper in ipairs(existing) do
@@ -432,16 +434,6 @@ function CategoryStore:RefreshCategorizer(categorizerId, rawCategories)
             local name = wrapper:GetName()
             if name and self._wrappersByName[name] then
                 self._wrappersByName[name][wrapper.id] = nil
-            end
-            local rawKey = wrapper._rawKey
-            if not rawKey then
-                local rawId = wrapper:GetId():match("^[^%-]+%-(.+)$")
-                if rawId then
-                    rawKey = wrapper._categorizerId .. "::" .. rawId
-                end
-            end
-            if rawKey then
-                self._wrappersByRaw[rawKey] = nil
             end
         end
     end
